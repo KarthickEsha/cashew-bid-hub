@@ -1,9 +1,10 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { 
-  Home, 
-  Store, 
-  FileText, 
-  MessageSquare, 
+import { LogOut } from "lucide-react";
+import {
+  Home,
+  Store,
+  FileText,
+  MessageSquare,
   Plus,
   Bell,
   User,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useClerk } from "@clerk/clerk-react";
 
 const mainNavItems = [
   { path: "/", label: "Dashboard", icon: Home },
@@ -45,6 +47,7 @@ export function AppSidebar() {
     isActive ? "bg-primary/10 text-primary font-medium" : "hover:bg-accent/50";
 
   const collapsed = state === "collapsed";
+  const { signOut } = useClerk();
 
   return (
     <Sidebar collapsible="icon" className={collapsed ? "w-16" : "w-64"}>
@@ -75,7 +78,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.path} end className={getNavCls}>
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.label}</span>}
+                      {!collapsed && <span className="text-[15px]">{item.label}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -94,7 +97,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.path} className={getNavCls}>
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.label}</span>}
+                      {!collapsed && <span className="text-[15px]">{item.label}</span>}
                       {item.path === "/responses" && !collapsed && (
                         <Badge variant="destructive" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
                           7
@@ -109,7 +112,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Bottom Actions */}
-        <div className="mt-auto p-4 space-y-2">
+        {/* <div className="mt-auto p-4 space-y-2">
           <Button variant="ghost" size="sm" className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}>
             <Bell size={16} />
             {!collapsed && (
@@ -125,7 +128,16 @@ export function AppSidebar() {
             <User size={16} />
             {!collapsed && <span className="ml-2">Profile</span>}
           </Button>
-        </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
+              onClick={() => signOut()}   // 👈 sign out here
+            >
+              <LogOut size={16} />
+              {!collapsed && <span className="ml-2">Logout</span>}
+            </Button>
+        </div> */}
       </SidebarContent>
     </Sidebar>
   );

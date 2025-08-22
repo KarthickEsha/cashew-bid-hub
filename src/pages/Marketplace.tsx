@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 
 const Marketplace = () => {
   const [filters, setFilters] = useState({
+    search: "",
     grade: "",
     location: "",
     pricingType: "",
@@ -79,12 +80,74 @@ const Marketplace = () => {
     }
   ];
 
+  // filtered products state
+  const [filteredProducts, setFilteredProducts] = useState(products);
+
+  // apply filters
+  const applyFilters = () => {
+    let result = [...products];
+
+    if (filters.search) {
+      result = result.filter(
+        (p) =>
+          p.merchantName.toLowerCase().includes(filters.search.toLowerCase()) ||
+          p.description.toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+
+    if (filters.grade) {
+      result = result.filter((p) => p.grade === filters.grade);
+    }
+
+    if (filters.location) {
+      result = result.filter((p) =>
+        p.location.toLowerCase().includes(filters.location.toLowerCase())
+      );
+    }
+
+    if (filters.pricingType) {
+      result = result.filter((p) => p.pricingType === filters.pricingType);
+    }
+
+    if (filters.minPrice) {
+      result = result.filter(
+        (p) =>
+          parseInt(p.pricePerTon.replace(/[^0-9]/g, "")) >=
+          parseInt(filters.minPrice)
+      );
+    }
+
+    if (filters.maxPrice) {
+      result = result.filter(
+        (p) =>
+          parseInt(p.pricePerTon.replace(/[^0-9]/g, "")) <=
+          parseInt(filters.maxPrice)
+      );
+    }
+
+    setFilteredProducts(result);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      search: "",
+      grade: "",
+      location: "",
+      pricingType: "",
+      minPrice: "",
+      maxPrice: ""
+    });
+    setFilteredProducts(products);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground mb-2">Cashew Marketplace</h1>
-        <p className="text-muted-foreground">Discover premium cashews from verified merchants worldwide</p>
+        <p className="text-muted-foreground">
+          Discover premium cashews from verified merchants worldwide
+        </p>
       </div>
 
       {/* Filters */}
@@ -97,19 +160,34 @@ const Marketplace = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Search */}
             <div>
               <label className="text-sm font-medium mb-2 block">Search</label>
               <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                <Input 
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
                   placeholder="Search products..."
                   className="pl-10"
+                  value={filters.search}
+                  onChange={(e) =>
+                    setFilters({ ...filters, search: e.target.value })
+                  }
                 />
               </div>
             </div>
+
+            {/* Grade */}
             <div>
               <label className="text-sm font-medium mb-2 block">Grade</label>
-              <Select value={filters.grade} onValueChange={(value) => setFilters({...filters, grade: value})}>
+              <Select
+                value={filters.grade}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, grade: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select grade" />
                 </SelectTrigger>
@@ -122,9 +200,16 @@ const Marketplace = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Location */}
             <div>
               <label className="text-sm font-medium mb-2 block">Location</label>
-              <Select value={filters.location} onValueChange={(value) => setFilters({...filters, location: value})}>
+              <Select
+                value={filters.location}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, location: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
@@ -136,9 +221,16 @@ const Marketplace = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Pricing Type */}
             <div>
               <label className="text-sm font-medium mb-2 block">Pricing Type</label>
-              <Select value={filters.pricingType} onValueChange={(value) => setFilters({...filters, pricingType: value})}>
+              <Select
+                value={filters.pricingType}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, pricingType: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
@@ -148,35 +240,48 @@ const Marketplace = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Price Range */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Price Range ($/ton)</label>
+              <label className="text-sm font-medium mb-2 block">
+                Price Range ($/ton)
+              </label>
               <div className="flex space-x-2">
-                <Input 
+                <Input
                   placeholder="Min"
                   value={filters.minPrice}
-                  onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
+                  onChange={(e) =>
+                    setFilters({ ...filters, minPrice: e.target.value })
+                  }
                 />
-                <Input 
+                <Input
                   placeholder="Max"
                   value={filters.maxPrice}
-                  onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
+                  onChange={(e) =>
+                    setFilters({ ...filters, maxPrice: e.target.value })
+                  }
                 />
               </div>
             </div>
           </div>
+
+          {/* Buttons */}
           <div className="flex justify-end mt-4 space-x-3">
-            <Button variant="outline" onClick={() => setFilters({grade: "", location: "", pricingType: "", minPrice: "", maxPrice: ""})}>
+            <Button variant="outline" onClick={clearFilters}>
               Clear Filters
             </Button>
-            <Button>Apply Filters</Button>
+            <Button onClick={applyFilters}>Apply Filters</Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((product) => (
-          <Card key={product.id} className="hover:shadow-warm transition-all duration-200 hover:-translate-y-1">
+        {filteredProducts.map((product) => (
+          <Card
+            key={product.id}
+            className="hover:shadow-warm transition-all duration-200 hover:-translate-y-1"
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div>
@@ -201,7 +306,7 @@ const Marketplace = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">{product.description}</p>
-              
+
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">Grade:</span>
@@ -213,13 +318,19 @@ const Marketplace = () => {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Price:</span>
-                  <div className="font-semibold text-primary">{product.pricePerTon}</div>
+                  <div className="font-semibold text-primary">
+                    {product.pricePerTon}
+                  </div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Type:</span>
                   <div className="flex items-center">
-                    {product.pricingType === 'bidding' && <TrendingUp size={14} className="mr-1 text-primary" />}
-                    <span className="font-semibold capitalize">{product.pricingType}</span>
+                    {product.pricingType === "bidding" && (
+                      <TrendingUp size={14} className="mr-1 text-primary" />
+                    )}
+                    <span className="font-semibold capitalize">
+                      {product.pricingType}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -237,27 +348,14 @@ const Marketplace = () => {
                   </Button>
                 </Link>
                 <Button size="sm" variant="outline">
-                  {product.pricingType === 'bidding' ? 'Place Bid' : 'Quick Order'}
+                  {product.pricingType === "bidding"
+                    ? "Place Bid"
+                    : "Quick Order"}
                 </Button>
               </div>
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {/* Pagination */}
-      <div className="flex justify-center mt-8">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" disabled>
-            Previous
-          </Button>
-          <Button size="sm">1</Button>
-          <Button variant="outline" size="sm">2</Button>
-          <Button variant="outline" size="sm">3</Button>
-          <Button variant="outline" size="sm">
-            Next
-          </Button>
-        </div>
       </div>
     </div>
   );

@@ -20,21 +20,31 @@ const Login = () => {
             </p>
           </CardHeader>
           <CardContent>
-            <SignIn 
-              appearance={{
-                elements: {
-                  rootBox: "w-full",
-                  card: "shadow-none border-0 p-0",
-                  headerTitle: "hidden",
-                  headerSubtitle: "hidden",
-                  socialButtonsBlockButton: "bg-primary hover:bg-primary/90 text-white",
-                  formButtonPrimary: "bg-primary hover:bg-primary/90",
-                  footerActionLink: "text-primary hover:text-primary/80"
-                }
-              }}
+            <SignIn
+              // appearance={{
+              //   elements: {
+              //     rootBox: "w-full",
+              //     card: "shadow-none border-0 p-0",
+              //     headerTitle: "hidden",
+              //     headerSubtitle: "hidden",
+
+              //     // Buttons
+              //     socialButtonsBlockButton: "bg-primary hover:bg-primary/90 text-white py-3 px-6 rounded-lg",
+              //     formButtonPrimary: "bg-primary hover:bg-primary/90 w-full py-3 rounded-lg",
+
+              //     // Links
+              //     footerActionLink: "text-primary hover:text-primary/80",
+
+              //     // Add padding
+              //     form: "space-y-4 p-4",          // padding around the whole form
+              //     formField: "mb-4",              // spacing between fields
+              //     formFieldInput: "p-3 rounded-lg border" // padding inside each input
+              //   }
+              // }}
               fallbackRedirectUrl="/"
               forceRedirectUrl="/"
             />
+
           </CardContent>
         </Card>
       </div>

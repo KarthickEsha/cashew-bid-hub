@@ -1,12 +1,13 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Calendar, 
-  MapPin, 
-  Package, 
+import {
+  Calendar,
+  MapPin,
+  Package,
   Search,
   Eye,
   Clock,
@@ -34,7 +35,7 @@ const MyRequests = () => {
     {
       id: 2,
       productName: "SW240 Cashews",
-      merchantName: "Vietnam Cashew Export", 
+      merchantName: "Vietnam Cashew Export",
       quantityRequested: "50 tons",
       bidPrice: "$9,000/ton",
       totalValue: "$450,000",
@@ -48,7 +49,7 @@ const MyRequests = () => {
       id: 3,
       productName: "Organic W240 Cashews",
       merchantName: "Global Nuts Trading",
-      quantityRequested: "15 tons", 
+      quantityRequested: "15 tons",
       bidPrice: "$8,500/ton",
       totalValue: "$127,500",
       status: "rejected",
@@ -62,7 +63,7 @@ const MyRequests = () => {
       productName: "W320 Cashews",
       merchantName: "African Cashew Co",
       quantityRequested: "40 tons",
-      bidPrice: "$7,800/ton", 
+      bidPrice: "$7,800/ton",
       totalValue: "$312,000",
       status: "negotiating",
       submittedDate: "2024-08-17",
@@ -71,6 +72,70 @@ const MyRequests = () => {
       location: "Accra, Ghana"
     }
   ];
+
+  // 🔹 States for filters
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const [dateRange, setDateRange] = useState("");
+  const [filteredRequests, setFilteredRequests] = useState(requests);
+
+  // 🔹 Apply Filter Logic
+  // 🔹 Apply Filter Logic
+  // 🔹 Apply Filter Logic
+  const applyFilters = () => {
+    let result = [...requests];
+
+    // Search filter
+    if (search.trim() !== "") {
+      result = result.filter((r) =>
+        r.productName.toLowerCase().includes(search.toLowerCase()) ||
+        r.merchantName.toLowerCase().includes(search.toLowerCase()) ||
+        r.location.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Status filter
+    if (status !== "all") {
+      result = result.filter((r) => r.status === status);
+    }
+
+    // 🔹 Use the "latest submittedDate" from dataset as 'now'
+    const datasetLatest = new Date(
+      Math.max(...requests.map(r => new Date(r.submittedDate).getTime()))
+    );
+
+    // ✅ Fixed Date range filter
+    if (dateRange) {
+      result = result.filter((r) => {
+        const submitted = new Date(r.submittedDate);
+
+        if (dateRange === "week") {
+          const lastWeek = new Date(datasetLatest);
+          lastWeek.setDate(datasetLatest.getDate() - 7);
+          return submitted >= lastWeek && submitted <= datasetLatest;
+        }
+
+        if (dateRange === "month") {
+          const lastMonth = new Date(datasetLatest);
+          lastMonth.setMonth(datasetLatest.getMonth() - 1);
+          return (
+            submitted.getMonth() === lastMonth.getMonth() &&
+            submitted.getFullYear() === lastMonth.getFullYear()
+          );
+        }
+
+        if (dateRange === "quarter") {
+          const lastQuarter = new Date(datasetLatest);
+          lastQuarter.setMonth(datasetLatest.getMonth() - 3);
+          return submitted >= lastQuarter && submitted <= datasetLatest;
+        }
+
+        return true;
+      });
+    }
+    setFilteredRequests(result);
+  };
+
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -126,9 +191,14 @@ const MyRequests = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search requests..." className="pl-10" />
+              <Input
+                placeholder="Search requests..."
+                className="pl-10"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
-            <Select>
+            <Select onValueChange={(val) => setStatus(val)} defaultValue="all">
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -140,7 +210,7 @@ const MyRequests = () => {
                 <SelectItem value="negotiating">Negotiating</SelectItem>
               </SelectContent>
             </Select>
-            <Select>
+            <Select onValueChange={(val) => setDateRange(val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Date Range" />
               </SelectTrigger>
@@ -150,105 +220,121 @@ const MyRequests = () => {
                 <SelectItem value="quarter">Last 3 Months</SelectItem>
               </SelectContent>
             </Select>
-            <Button>Apply Filters</Button>
+            <Button onClick={applyFilters}>Apply Filters</Button>
           </div>
         </CardContent>
       </Card>
-
       {/* Requests List */}
       <div className="space-y-4">
-        {requests.map((request) => (
-          <Card key={request.id} className="hover:shadow-warm transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="text-lg font-semibold">{request.productName}</h3>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(request.status)}
-                      <Badge className={getStatusColor(request.status)}>
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                      </Badge>
+        {filteredRequests.length === 0 ? (
+          <div className="text-center text-muted-foreground py-10">
+            No data found for the selected filters.
+          </div>
+        ) : (
+          filteredRequests.map((request) => (
+            <Card key={request.id} className="hover:shadow-warm transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h3 className="text-lg font-semibold">{request.productName}</h3>
+                      <div className="flex items-center space-x-1">
+                        {getStatusIcon(request.status)}
+                        <Badge className={getStatusColor(request.status)}>
+                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        </Badge>
+                      </div>
+                    </div>
+                    <p className="text-muted-foreground">{request.merchantName}</p>
+                    <div className="flex items-center text-sm text-muted-foreground mt-1">
+                      <MapPin size={14} className="mr-1" />
+                      {request.location}
                     </div>
                   </div>
-                  <p className="text-muted-foreground">{request.merchantName}</p>
-                  <div className="flex items-center text-sm text-muted-foreground mt-1">
-                    <MapPin size={14} className="mr-1" />
-                    {request.location}
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-primary">{request.totalValue}</div>
+                    <div className="text-sm text-muted-foreground">Total Value</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-primary">{request.totalValue}</div>
-                  <div className="text-sm text-muted-foreground">Total Value</div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div className="flex items-center space-x-2">
-                  <Package size={16} className="text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">Quantity</div>
-                    <div className="font-medium">{request.quantityRequested}</div>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Bid Price</div>
-                  <div className="font-medium">{request.bidPrice}</div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar size={16} className="text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">Submitted</div>
-                    <div className="font-medium">{new Date(request.submittedDate).toLocaleDateString()}</div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Clock size={16} className="text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      {request.status === 'pending' ? 'Expected Response' : 
-                       request.status === 'negotiating' ? 'Last Activity' : 'Responded'}
-                    </div>
-                    <div className="font-medium">
-                      {request.status === 'pending' ? new Date(request.expectedResponse).toLocaleDateString() :
-                       request.status === 'negotiating' ? new Date(request.lastActivity).toLocaleDateString() :
-                       new Date(request.respondedDate || request.submittedDate).toLocaleDateString()}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Package size={16} className="text-muted-foreground" />
+                    <div>
+                      <div className="text-sm text-muted-foreground">Quantity</div>
+                      <div className="font-medium">{request.quantityRequested}</div>
                     </div>
                   </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Bid Price</div>
+                    <div className="font-medium">{request.bidPrice}</div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar size={16} className="text-muted-foreground" />
+                    <div>
+                      <div className="text-sm text-muted-foreground">Submitted</div>
+                      <div className="font-medium">
+                        {new Date(request.submittedDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Clock size={16} className="text-muted-foreground" />
+                    <div>
+                      <div className="text-sm text-muted-foreground">
+                        {request.status === "pending"
+                          ? "Expected Response"
+                          : request.status === "negotiating"
+                            ? "Last Activity"
+                            : "Responded"}
+                      </div>
+                      <div className="font-medium">
+                        {request.status === "pending"
+                          ? new Date(request.expectedResponse).toLocaleDateString()
+                          : request.status === "negotiating"
+                            ? new Date(request.lastActivity).toLocaleDateString()
+                            : new Date(
+                              request.respondedDate || request.submittedDate
+                            ).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {request.message && (
-                <div className="bg-accent/50 p-3 rounded-lg mb-4">
-                  <div className="text-sm text-muted-foreground mb-1">Message</div>
-                  <p className="text-sm">{request.message}</p>
-                </div>
-              )}
-
-              {request.rejectionReason && (
-                <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-4">
-                  <div className="text-sm text-red-700 font-medium mb-1">Rejection Reason</div>
-                  <p className="text-sm text-red-600">{request.rejectionReason}</p>
-                </div>
-              )}
-
-              <div className="flex justify-end space-x-2">
-                <Link to={`/request/${request.id}`}>
-                  <Button variant="outline" size="sm">
-                    <Eye size={14} className="mr-2" />
-                    View Details
-                  </Button>
-                </Link>
-                {request.status === 'negotiating' && (
-                  <Button size="sm">Continue Negotiation</Button>
+                {request.message && (
+                  <div className="bg-accent/50 p-3 rounded-lg mb-4">
+                    <div className="text-sm text-muted-foreground mb-1">Message</div>
+                    <p className="text-sm">{request.message}</p>
+                  </div>
                 )}
-                {request.status === 'approved' && (
-                  <Button size="sm">Proceed to Order</Button>
+
+                {request.rejectionReason && (
+                  <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-4">
+                    <div className="text-sm text-red-700 font-medium mb-1">
+                      Rejection Reason
+                    </div>
+                    <p className="text-sm text-red-600">{request.rejectionReason}</p>
+                  </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+
+                <div className="flex justify-end space-x-2">
+                  <Link to={`/request/${request.id}`}>
+                    <Button variant="outline" size="sm">
+                      <Eye size={14} className="mr-2" />
+                      View Details
+                    </Button>
+                  </Link>
+                  {request.status === "negotiating" && (
+                    <Button size="sm">Continue Negotiation</Button>
+                  )}
+                  {request.status === "approved" && (
+                    <Button size="sm">Proceed to Order</Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       {/* Pagination */}
