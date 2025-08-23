@@ -48,14 +48,14 @@ const Layout = ({ children }: LayoutProps) => {
                   </Button>
 
                   {/* Logout */}
-                  <Button
+                  {/* <Button
                     variant="ghost"
                     size="sm"
                     className="p-2"
                     onClick={() => signOut()} // 👈 Logout action
                   >
                     <LogOut size={18} />
-                  </Button>
+                  </Button> */}
                 </div>
               </header>
 

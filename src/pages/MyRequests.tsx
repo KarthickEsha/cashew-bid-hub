@@ -1,9 +1,20 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Calendar,
   MapPin,
@@ -13,7 +24,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -30,7 +41,7 @@ const MyRequests = () => {
       submittedDate: "2024-08-20",
       expectedResponse: "2024-08-22",
       message: "Looking for high quality cashews for export to Europe",
-      location: "Mumbai, India"
+      location: "Mumbai, India",
     },
     {
       id: 2,
@@ -43,7 +54,7 @@ const MyRequests = () => {
       submittedDate: "2024-08-18",
       respondedDate: "2024-08-19",
       message: "Bulk order for retail distribution",
-      location: "Ho Chi Minh City, Vietnam"
+      location: "Ho Chi Minh City, Vietnam",
     },
     {
       id: 3,
@@ -56,7 +67,7 @@ const MyRequests = () => {
       submittedDate: "2024-08-15",
       respondedDate: "2024-08-16",
       rejectionReason: "Minimum order quantity not met",
-      location: "California, USA"
+      location: "California, USA",
     },
     {
       id: 4,
@@ -69,28 +80,38 @@ const MyRequests = () => {
       submittedDate: "2024-08-17",
       lastActivity: "2024-08-21",
       message: "Price negotiation in progress",
-      location: "Accra, Ghana"
-    }
+      location: "Accra, Ghana",
+    },
   ];
 
-  // 🔹 States for filters
+  // 🔹 States
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [dateRange, setDateRange] = useState("");
   const [filteredRequests, setFilteredRequests] = useState(requests);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // 🔹 Apply Filter Logic
-  // 🔹 Apply Filter Logic
+  // 🔹 Pagination setup
+  const itemsPerPage = 6;
+  const itemsToShow = filteredRequests;
+  const totalPages = Math.ceil(itemsToShow.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentRequests = itemsToShow.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
   // 🔹 Apply Filter Logic
   const applyFilters = () => {
     let result = [...requests];
 
     // Search filter
     if (search.trim() !== "") {
-      result = result.filter((r) =>
-        r.productName.toLowerCase().includes(search.toLowerCase()) ||
-        r.merchantName.toLowerCase().includes(search.toLowerCase()) ||
-        r.location.toLowerCase().includes(search.toLowerCase())
+      result = result.filter(
+        (r) =>
+          r.productName.toLowerCase().includes(search.toLowerCase()) ||
+          r.merchantName.toLowerCase().includes(search.toLowerCase()) ||
+          r.location.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -101,20 +122,18 @@ const MyRequests = () => {
 
     // 🔹 Use the "latest submittedDate" from dataset as 'now'
     const datasetLatest = new Date(
-      Math.max(...requests.map(r => new Date(r.submittedDate).getTime()))
+      Math.max(...requests.map((r) => new Date(r.submittedDate).getTime()))
     );
 
-    // ✅ Fixed Date range filter
+    // ✅ Date range filter
     if (dateRange) {
       result = result.filter((r) => {
         const submitted = new Date(r.submittedDate);
-
         if (dateRange === "week") {
           const lastWeek = new Date(datasetLatest);
           lastWeek.setDate(datasetLatest.getDate() - 7);
           return submitted >= lastWeek && submitted <= datasetLatest;
         }
-
         if (dateRange === "month") {
           const lastMonth = new Date(datasetLatest);
           lastMonth.setMonth(datasetLatest.getMonth() - 1);
@@ -123,37 +142,46 @@ const MyRequests = () => {
             submitted.getFullYear() === lastMonth.getFullYear()
           );
         }
-
         if (dateRange === "quarter") {
           const lastQuarter = new Date(datasetLatest);
           lastQuarter.setMonth(datasetLatest.getMonth() - 3);
           return submitted >= lastQuarter && submitted <= datasetLatest;
         }
-
         return true;
       });
     }
-    setFilteredRequests(result);
-  };
 
+    setFilteredRequests(result);
+    setCurrentPage(1); // reset to first page after filtering
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock size={16} className="text-yellow-500" />;
-      case 'approved': return <CheckCircle size={16} className="text-green-500" />;
-      case 'rejected': return <XCircle size={16} className="text-red-500" />;
-      case 'negotiating': return <AlertCircle size={16} className="text-blue-500" />;
-      default: return <Clock size={16} className="text-gray-500" />;
+      case "pending":
+        return <Clock size={16} className="text-yellow-500" />;
+      case "approved":
+        return <CheckCircle size={16} className="text-green-500" />;
+      case "rejected":
+        return <XCircle size={16} className="text-red-500" />;
+      case "negotiating":
+        return <AlertCircle size={16} className="text-blue-500" />;
+      default:
+        return <Clock size={16} className="text-gray-500" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'negotiating': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "negotiating":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -162,7 +190,9 @@ const MyRequests = () => {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground mb-2">My Requests</h1>
-        <p className="text-muted-foreground">Track your bid requests and order status</p>
+        <p className="text-muted-foreground">
+          Track your bid requests and order status
+        </p>
       </div>
 
       {/* Stats */}
@@ -171,7 +201,7 @@ const MyRequests = () => {
           { label: "Total Requests", value: "12", color: "text-blue-600" },
           { label: "Pending", value: "5", color: "text-yellow-600" },
           { label: "Approved", value: "4", color: "text-green-600" },
-          { label: "In Negotiation", value: "3", color: "text-orange-600" }
+          { label: "In Negotiation", value: "3", color: "text-orange-600" },
         ].map((stat, index) => (
           <Card key={index}>
             <CardContent className="p-4">
@@ -190,7 +220,10 @@ const MyRequests = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+              />
               <Input
                 placeholder="Search requests..."
                 className="pl-10"
@@ -198,6 +231,7 @@ const MyRequests = () => {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+
             <Select onValueChange={(val) => setStatus(val)} defaultValue="all">
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
@@ -210,6 +244,7 @@ const MyRequests = () => {
                 <SelectItem value="negotiating">Negotiating</SelectItem>
               </SelectContent>
             </Select>
+
             <Select onValueChange={(val) => setDateRange(val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Date Range" />
@@ -220,28 +255,33 @@ const MyRequests = () => {
                 <SelectItem value="quarter">Last 3 Months</SelectItem>
               </SelectContent>
             </Select>
+
             <Button onClick={applyFilters}>Apply Filters</Button>
           </div>
         </CardContent>
       </Card>
+
       {/* Requests List */}
       <div className="space-y-4">
-        {filteredRequests.length === 0 ? (
+        {currentRequests.length === 0 ? (
           <div className="text-center text-muted-foreground py-10">
             No data found for the selected filters.
           </div>
         ) : (
-          filteredRequests.map((request) => (
+          currentRequests.map((request) => (
             <Card key={request.id} className="hover:shadow-warm transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="text-lg font-semibold">{request.productName}</h3>
+                      <h3 className="text-lg font-semibold">
+                        {request.productName}
+                      </h3>
                       <div className="flex items-center space-x-1">
                         {getStatusIcon(request.status)}
                         <Badge className={getStatusColor(request.status)}>
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          {request.status.charAt(0).toUpperCase() +
+                            request.status.slice(1)}
                         </Badge>
                       </div>
                     </div>
@@ -252,7 +292,9 @@ const MyRequests = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-primary">{request.totalValue}</div>
+                    <div className="text-2xl font-bold text-primary">
+                      {request.totalValue}
+                    </div>
                     <div className="text-sm text-muted-foreground">Total Value</div>
                   </div>
                 </div>
@@ -262,13 +304,17 @@ const MyRequests = () => {
                     <Package size={16} className="text-muted-foreground" />
                     <div>
                       <div className="text-sm text-muted-foreground">Quantity</div>
-                      <div className="font-medium">{request.quantityRequested}</div>
+                      <div className="font-medium">
+                        {request.quantityRequested}
+                      </div>
                     </div>
                   </div>
+
                   <div>
                     <div className="text-sm text-muted-foreground">Bid Price</div>
                     <div className="font-medium">{request.bidPrice}</div>
                   </div>
+
                   <div className="flex items-center space-x-2">
                     <Calendar size={16} className="text-muted-foreground" />
                     <div>
@@ -278,6 +324,7 @@ const MyRequests = () => {
                       </div>
                     </div>
                   </div>
+
                   <div className="flex items-center space-x-2">
                     <Clock size={16} className="text-muted-foreground" />
                     <div>
@@ -285,15 +332,15 @@ const MyRequests = () => {
                         {request.status === "pending"
                           ? "Expected Response"
                           : request.status === "negotiating"
-                            ? "Last Activity"
-                            : "Responded"}
+                          ? "Last Activity"
+                          : "Responded"}
                       </div>
                       <div className="font-medium">
                         {request.status === "pending"
                           ? new Date(request.expectedResponse).toLocaleDateString()
                           : request.status === "negotiating"
-                            ? new Date(request.lastActivity).toLocaleDateString()
-                            : new Date(
+                          ? new Date(request.lastActivity).toLocaleDateString()
+                          : new Date(
                               request.respondedDate || request.submittedDate
                             ).toLocaleDateString()}
                       </div>
@@ -313,20 +360,23 @@ const MyRequests = () => {
                     <div className="text-sm text-red-700 font-medium mb-1">
                       Rejection Reason
                     </div>
-                    <p className="text-sm text-red-600">{request.rejectionReason}</p>
+                    <p className="text-sm text-red-600">
+                      {request.rejectionReason}
+                    </p>
                   </div>
                 )}
 
                 <div className="flex justify-end space-x-2">
                   <Link to={`/request/${request.id}`}>
                     <Button variant="outline" size="sm">
-                      <Eye size={14} className="mr-2" />
-                      View Details
+                      <Eye size={14} className="mr-2" /> View Details
                     </Button>
                   </Link>
+
                   {request.status === "negotiating" && (
                     <Button size="sm">Continue Negotiation</Button>
                   )}
+
                   {request.status === "approved" && (
                     <Button size="sm">Proceed to Order</Button>
                   )}
@@ -337,19 +387,39 @@ const MyRequests = () => {
         )}
       </div>
 
-      {/* Pagination */}
-      <div className="flex justify-center mt-8">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" disabled>
-            Previous
-          </Button>
-          <Button size="sm">1</Button>
-          <Button variant="outline" size="sm">2</Button>
-          <Button variant="outline" size="sm">
-            Next
-          </Button>
+      {/* Pagination (only if data exists) */}
+      {itemsToShow.length > 0 && (
+        <div className="flex justify-center mt-8">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+            >
+              Previous
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                size="sm"
+                variant={currentPage === page ? "default" : "outline"}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

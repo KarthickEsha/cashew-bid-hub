@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
+import {
   Calendar,
   MapPin,
   DollarSign,
@@ -21,7 +21,11 @@ import { Link } from "react-router-dom";
 
 const MyRequirements = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [gradeFilter, setGradeFilter] = useState("all");
+  const [filteredRequirements, setFilteredRequirements] = useState<any[]>([]);
+
   const requirements = [
     {
       id: 1,
@@ -87,36 +91,84 @@ const MyRequirements = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return <CheckCircle size={16} className="text-green-500" />;
-      case 'draft': return <Edit size={16} className="text-gray-500" />;
-      case 'expired': return <Clock size={16} className="text-red-500" />;
-      case 'closed': return <AlertTriangle size={16} className="text-orange-500" />;
-      default: return <Clock size={16} className="text-gray-500" />;
+      case "active":
+        return <CheckCircle size={16} className="text-green-500" />;
+      case "draft":
+        return <Edit size={16} className="text-gray-500" />;
+      case "expired":
+        return <Clock size={16} className="text-red-500" />;
+      case "closed":
+        return <AlertTriangle size={16} className="text-orange-500" />;
+      default:
+        return <Clock size={16} className="text-gray-500" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'draft': return 'bg-gray-100 text-gray-800';
-      case 'expired': return 'bg-red-100 text-red-800';
-      case 'closed': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "draft":
+        return "bg-gray-100 text-gray-800";
+      case "expired":
+        return "bg-red-100 text-red-800";
+      case "closed":
+        return "bg-orange-100 text-orange-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
+  // Apply filter function
+  const applyFilters = () => {
+    let temp = [...requirements];
+
+    if (searchTerm) {
+      temp = temp.filter((req) =>
+        req.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== "all") {
+      temp = temp.filter((req) => req.status === statusFilter);
+    }
+
+    if (gradeFilter !== "all") {
+      temp = temp.filter((req) => req.grade === gradeFilter);
+    }
+
+    setFilteredRequirements(temp);
+    setCurrentPage(1); // reset to first page
+  };
+
+  // Run filters on mount so default data shows up
+  useEffect(() => {
+    setFilteredRequirements(requirements);
+  }, []);
+
+  // Determine which list to show
+  const itemsToShow = filteredRequirements;
+
+  // Pagination logic
   const itemsPerPage = 6;
-  const totalPages = Math.ceil(requirements.length / itemsPerPage);
+  const totalPages = Math.ceil(itemsToShow.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentRequirements = requirements.slice(startIndex, startIndex + itemsPerPage);
+  const currentRequirements = itemsToShow.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">My Requirements</h1>
-          <p className="text-muted-foreground">Manage your posted requirements and track responses</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            My Requirements
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your posted requirements and track responses
+          </p>
         </div>
         <Link to="/post-requirement">
           <Button size="lg">
@@ -129,10 +181,26 @@ const MyRequirements = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Requirements", value: "15", color: "text-blue-600" },
-          { label: "Active", value: "4", color: "text-green-600" },
-          { label: "Draft", value: "2", color: "text-gray-600" },
-          { label: "Total Responses", value: "47", color: "text-orange-600" }
+          {
+            label: "Total Requirements",
+            value: requirements.length,
+            color: "text-blue-600"
+          },
+          {
+            label: "Active",
+            value: requirements.filter((r) => r.status === "active").length,
+            color: "text-green-600"
+          },
+          {
+            label: "Draft",
+            value: requirements.filter((r) => r.status === "draft").length,
+            color: "text-gray-600"
+          },
+          {
+            label: "Total Responses",
+            value: requirements.reduce((acc, r) => acc + r.responsesCount, 0),
+            color: "text-orange-600"
+          }
         ].map((stat, index) => (
           <Card key={index}>
             <CardContent className="p-4">
@@ -151,10 +219,19 @@ const MyRequirements = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search requirements..." className="pl-10" />
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                placeholder="Search requirements..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <Select>
+
+            <Select onValueChange={(value) => setStatusFilter(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -166,7 +243,8 @@ const MyRequirements = () => {
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
-            <Select>
+
+            <Select onValueChange={(value) => setGradeFilter(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Grade" />
               </SelectTrigger>
@@ -178,134 +256,167 @@ const MyRequirements = () => {
                 <SelectItem value="SW240">SW240</SelectItem>
               </SelectContent>
             </Select>
-            <Button>Apply Filters</Button>
+
+            <Button onClick={applyFilters}>Apply Filters</Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Requirements Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {currentRequirements.map((requirement) => (
-          <Card key={requirement.id} className="hover:shadow-warm transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <CardTitle className="text-lg">{requirement.title}</CardTitle>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(requirement.status)}
-                      <Badge className={getStatusColor(requirement.status)}>
-                        {requirement.status.charAt(0).toUpperCase() + requirement.status.slice(1)}
-                      </Badge>
+      {itemsToShow.length === 0 ? (
+        <div className="text-center text-muted-foreground py-10 text-lg font-medium">
+          No data found for the selected filters.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {currentRequirements.map((requirement) => (
+            <Card
+              key={requirement.id}
+              className="hover:shadow-warm transition-shadow"
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <CardTitle className="text-lg">
+                        {requirement.title}
+                      </CardTitle>
+                      <div className="flex items-center space-x-1">
+                        {getStatusIcon(requirement.status)}
+                        <Badge className={getStatusColor(requirement.status)}>
+                          {requirement.status.charAt(0).toUpperCase() +
+                            requirement.status.slice(1)}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Grade:</span>
-                  <div className="font-semibold">{requirement.grade}</div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Grade:</span>
+                    <div className="font-semibold">{requirement.grade}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Quantity:</span>
+                    <div className="font-semibold">{requirement.quantity}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Origin:</span>
+                    <div className="font-semibold">
+                      {requirement.preferredOrigin}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Responses:</span>
+                    <div className="font-semibold text-primary">
+                      {requirement.responsesCount}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Quantity:</span>
-                  <div className="font-semibold">{requirement.quantity}</div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Origin:</span>
-                  <div className="font-semibold">{requirement.preferredOrigin}</div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Responses:</span>
-                  <div className="font-semibold text-primary">{requirement.responsesCount}</div>
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center text-sm">
-                  <DollarSign size={14} className="mr-1 text-muted-foreground" />
-                  <span className="font-medium">{requirement.budgetRange}</span>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm">
+                    <DollarSign
+                      size={14}
+                      className="mr-1 text-muted-foreground"
+                    />
+                    <span className="font-medium">
+                      {requirement.budgetRange}
+                    </span>
+                  </div>
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <MapPin size={14} className="mr-1" />
+                    {requirement.deliveryLocation}
+                  </div>
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Calendar size={14} className="mr-1" />
+                    Delivery:{" "}
+                    {new Date(requirement.deliveryDeadline).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Clock size={14} className="mr-1" />
+                    Expires:{" "}
+                    {new Date(requirement.requirementExpiry).toLocaleDateString()}
+                  </div>
                 </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <MapPin size={14} className="mr-1" />
-                  {requirement.deliveryLocation}
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar size={14} className="mr-1" />
-                  Delivery: {new Date(requirement.deliveryDeadline).toLocaleDateString()}
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Clock size={14} className="mr-1" />
-                  Expires: {new Date(requirement.requirementExpiry).toLocaleDateString()}
-                </div>
-              </div>
 
-              <div className="pt-3 border-t border-border">
-                <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
-                  <span>Created: {new Date(requirement.createdDate).toLocaleDateString()}</span>
-                  <span>Modified: {new Date(requirement.lastModified).toLocaleDateString()}</span>
-                </div>
-                
-                <div className="flex justify-end space-x-2">
-                  <Link to={`/requirement/${requirement.id}`}>
-                    <Button variant="outline" size="sm">
-                      <Eye size={14} className="mr-2" />
-                      View
-                    </Button>
-                  </Link>
-                  {(requirement.status === 'draft' || requirement.status === 'active') && (
-                    <Link to={`/edit-requirement/${requirement.id}`}>
+                <div className="pt-3 border-t border-border">
+                  <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
+                    <span>
+                      Created:{" "}
+                      {new Date(requirement.createdDate).toLocaleDateString()}
+                    </span>
+                    <span>
+                      Modified:{" "}
+                      {new Date(requirement.lastModified).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-end space-x-2">
+                    <Link to={`/requirement/${requirement.id}`}>
                       <Button variant="outline" size="sm">
-                        <Edit size={14} className="mr-2" />
-                        Edit
+                        <Eye size={14} className="mr-2" />
+                        View
                       </Button>
                     </Link>
-                  )}
-                  {requirement.status === 'draft' && (
-                    <Button variant="outline" size="sm">
-                      <Trash2 size={14} className="mr-2" />
-                      Delete
-                    </Button>
-                  )}
+                    {(requirement.status === "draft" ||
+                      requirement.status === "active") && (
+                      <Link to={`/edit-requirement/${requirement.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Edit size={14} className="mr-2" />
+                          Edit
+                        </Button>
+                      </Link>
+                    )}
+                    {requirement.status === "draft" && (
+                      <Button variant="outline" size="sm">
+                        <Trash2 size={14} className="mr-2" />
+                        Delete
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
-      <div className="flex justify-center">
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(currentPage - 1)}
-          >
-            Previous
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+      {itemsToShow.length > 0 && (
+        <div className="flex justify-center">
+          <div className="flex items-center space-x-2">
             <Button
-              key={page}
+              variant="outline"
               size="sm"
-              variant={currentPage === page ? "default" : "outline"}
-              onClick={() => setCurrentPage(page)}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
             >
-              {page}
+              Previous
             </Button>
-          ))}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage(currentPage + 1)}
-          >
-            Next
-          </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                size="sm"
+                variant={currentPage === page ? "default" : "outline"}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

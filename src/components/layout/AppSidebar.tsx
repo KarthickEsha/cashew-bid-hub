@@ -53,7 +53,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className={collapsed ? "w-16" : "w-64"}>
       <SidebarContent>
         {/* Logo */}
-        <div className="p-4 border-b border-border">
+        <div className="p-[7.5px] border-b border-border">
           {!collapsed ? (
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -112,6 +112,18 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Bottom Actions */}
+        <div className="mt-auto p-4 space-y-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
+            onClick={() => signOut()}   // 👈 sign out here
+          >
+            <LogOut size={16} />
+            {!collapsed && <span className="ml-2">Logout</span>}
+          </Button>
+        </div>
+
         {/* <div className="mt-auto p-4 space-y-2">
           <Button variant="ghost" size="sm" className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}>
             <Bell size={16} />

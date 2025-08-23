@@ -83,6 +83,14 @@ const Marketplace = () => {
   // filtered products state
   const [filteredProducts, setFilteredProducts] = useState(products);
 
+  // pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+  const itemsToShow = filteredProducts;
+  const totalPages = Math.ceil(itemsToShow.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentProducts = itemsToShow.slice(startIndex, startIndex + itemsPerPage);
+
   // apply filters
   const applyFilters = () => {
     let result = [...products];
@@ -126,6 +134,7 @@ const Marketplace = () => {
     }
 
     setFilteredProducts(result);
+    setCurrentPage(1); // reset to first page after filter
   };
 
   const clearFilters = () => {
@@ -138,6 +147,7 @@ const Marketplace = () => {
       maxPrice: ""
     });
     setFilteredProducts(products);
+    setCurrentPage(1);
   };
 
   return (
@@ -276,87 +286,129 @@ const Marketplace = () => {
       </Card>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProducts.map((product) => (
-          <Card
-            key={product.id}
-            className="hover:shadow-warm transition-all duration-200 hover:-translate-y-1"
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <CardTitle className="text-lg">{product.merchantName}</CardTitle>
-                    {product.verified && (
-                      <Badge variant="default" className="text-xs">
-                        Verified
-                      </Badge>
-                    )}
+      {currentProducts.length === 0 ? (
+        <div className="text-center text-muted-foreground py-10 text-lg font-medium">
+          No data found for the selected filters.
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {currentProducts.map((product) => (
+              <Card
+                key={product.id}
+                className="hover:shadow-warm transition-all duration-200 hover:-translate-y-1"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <CardTitle className="text-lg">{product.merchantName}</CardTitle>
+                        {product.verified && (
+                          <Badge variant="default" className="text-xs">
+                            Verified
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center text-muted-foreground text-sm">
+                        <MapPin size={14} className="mr-1" />
+                        {product.location}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Star size={14} className="text-yellow-500 fill-current" />
+                      <span className="text-sm font-medium">{product.rating}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center text-muted-foreground text-sm">
-                    <MapPin size={14} className="mr-1" />
-                    {product.location}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Star size={14} className="text-yellow-500 fill-current" />
-                  <span className="text-sm font-medium">{product.rating}</span>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">{product.description}</p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{product.description}</p>
 
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Grade:</span>
-                  <div className="font-semibold">{product.grade}</div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Quantity:</span>
-                  <div className="font-semibold">{product.quantity}</div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Price:</span>
-                  <div className="font-semibold text-primary">
-                    {product.pricePerTon}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Grade:</span>
+                      <div className="font-semibold">{product.grade}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Quantity:</span>
+                      <div className="font-semibold">{product.quantity}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Price:</span>
+                      <div className="font-semibold text-primary">
+                        {product.pricePerTon}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Type:</span>
+                      <div className="flex items-center">
+                        {product.pricingType === "bidding" && (
+                          <TrendingUp size={14} className="mr-1 text-primary" />
+                        )}
+                        <span className="font-semibold capitalize">
+                          {product.pricingType}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Type:</span>
-                  <div className="flex items-center">
-                    {product.pricingType === "bidding" && (
-                      <TrendingUp size={14} className="mr-1 text-primary" />
-                    )}
-                    <span className="font-semibold capitalize">
-                      {product.pricingType}
-                    </span>
+
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Calendar size={14} className="mr-1" />
+                    Expires: {new Date(product.expiry).toLocaleDateString()}
                   </div>
-                </div>
-              </div>
 
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar size={14} className="mr-1" />
-                Expires: {new Date(product.expiry).toLocaleDateString()}
-              </div>
+                  <div className="flex space-x-2 pt-2">
+                    <Link to={`/product/${product.id}`} className="flex-1">
+                      <Button size="sm" className="w-full">
+                        <Eye size={14} className="mr-2" />
+                        View Details
+                      </Button>
+                    </Link>
+                    <Button size="sm" variant="outline">
+                      {product.pricingType === "bidding"
+                        ? "Place Bid"
+                        : "Quick Order"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-              <div className="flex space-x-2 pt-2">
-                <Link to={`/product/${product.id}`} className="flex-1">
-                  <Button size="sm" className="w-full">
-                    <Eye size={14} className="mr-2" />
-                    View Details
+          {/* Pagination */}
+          {itemsToShow.length > 0 && (
+            <div className="flex justify-center mt-8">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                >
+                  Previous
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    size="sm"
+                    variant={currentPage === page ? "default" : "outline"}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
                   </Button>
-                </Link>
-                <Button size="sm" variant="outline">
-                  {product.pricingType === "bidding"
-                    ? "Place Bid"
-                    : "Quick Order"}
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                >
+                  Next
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

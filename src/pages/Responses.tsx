@@ -18,10 +18,24 @@ import {
   Building
 } from "lucide-react";
 import { Link } from "react-router-dom";
+// Dialog imports
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const Responses = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  
+  const [selectedResponse, setSelectedResponse] = useState<any | null>(null);
+
+  // Filter states
+  const [searchText, setSearchText] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterRequirement, setFilterRequirement] = useState("all");
+
   const responses = [
     {
       id: 1,
@@ -97,6 +111,7 @@ const Responses = () => {
     }
   ];
 
+  // Filter helpers
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new': return 'bg-blue-100 text-blue-800';
@@ -118,9 +133,24 @@ const Responses = () => {
   };
 
   const itemsPerPage = 6;
-  const totalPages = Math.ceil(responses.length / itemsPerPage);
+
+  // Apply filter
+  const filteredResponses = responses.filter((resp) => {
+    const matchesSearch = searchText
+      ? resp.requirementTitle.toLowerCase().includes(searchText.toLowerCase()) ||
+        resp.merchantName.toLowerCase().includes(searchText.toLowerCase())
+      : true;
+
+    const matchesStatus = filterStatus !== "all" ? resp.status === filterStatus : true;
+
+    const matchesRequirement = filterRequirement !== "all" ? resp.requirementId.toString() === filterRequirement : true;
+
+    return matchesSearch && matchesStatus && matchesRequirement;
+  });
+
+  const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentResponses = responses.slice(startIndex, startIndex + itemsPerPage);
+  const currentResponses = filteredResponses.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -133,10 +163,10 @@ const Responses = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Responses", value: "23", color: "text-blue-600" },
-          { label: "New", value: "7", color: "text-green-600" },
-          { label: "In Discussion", value: "4", color: "text-orange-600" },
-          { label: "Starred", value: "6", color: "text-yellow-600" }
+          { label: "Total Responses", value: filteredResponses.length.toString(), color: "text-blue-600" },
+          { label: "New", value: filteredResponses.filter(r => r.status === "new").length.toString(), color: "text-green-600" },
+          { label: "In Discussion", value: filteredResponses.filter(r => r.status === "negotiating").length.toString(), color: "text-orange-600" },
+          { label: "Starred", value: filteredResponses.filter(r => r.isStarred).length.toString(), color: "text-yellow-600" }
         ].map((stat, index) => (
           <Card key={index}>
             <CardContent className="p-4">
@@ -156,9 +186,15 @@ const Responses = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search responses..." className="pl-10" />
+              <Input 
+                placeholder="Search responses..." 
+                className="pl-10"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
             </div>
-            <Select>
+
+            <Select onValueChange={(value) => setFilterStatus(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -170,7 +206,8 @@ const Responses = () => {
                 <SelectItem value="negotiating">Negotiating</SelectItem>
               </SelectContent>
             </Select>
-            <Select>
+
+            <Select onValueChange={(value) => setFilterRequirement(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Requirement" />
               </SelectTrigger>
@@ -180,7 +217,8 @@ const Responses = () => {
                 <SelectItem value="2">Organic SW240 Cashews</SelectItem>
               </SelectContent>
             </Select>
-            <Button>Apply Filters</Button>
+
+            <Button onClick={() => setCurrentPage(1)}>Apply Filters</Button>
           </div>
         </CardContent>
       </Card>
@@ -290,7 +328,7 @@ const Responses = () => {
                   </Button>
                 </div>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => setSelectedResponse(response)}>
                     <Eye size={14} className="mr-2" />
                     View Details
                   </Button>
@@ -298,9 +336,7 @@ const Responses = () => {
                     <MessageCircle size={14} className="mr-2" />
                     Contact
                   </Button>
-                  <Button size="sm">
-                    Enquire
-                  </Button>
+                  <Button size="sm">Enquire</Button>
                 </div>
               </div>
             </CardContent>
@@ -339,6 +375,69 @@ const Responses = () => {
           </Button>
         </div>
       </div>
+
+      {/* --------- View Details Dialog --------- */}
+      <Dialog open={!!selectedResponse} onOpenChange={() => setSelectedResponse(null)}>
+        <DialogContent className="max-w-4xl">
+          {selectedResponse && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left side - Image */}
+              <div className="flex items-center justify-center bg-gray-100 rounded-lg p-4">
+                <img
+                  src="/images/nuts-warehouse.jpg"
+                  alt="Warehouse"
+                  className="w-full h-auto rounded-lg object-cover"
+                />
+              </div>
+
+              {/* Right side - Details */}
+              <div className="space-y-4">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-semibold">
+                    {selectedResponse.merchantName}
+                  </DialogTitle>
+                  <DialogDescription className="flex items-center text-sm text-muted-foreground">
+                    <MapPin size={14} className="mr-1" /> {selectedResponse.merchantLocation}
+                  </DialogDescription>
+                </DialogHeader>
+
+                {/* Offer Details */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center">
+                    <DollarSign size={16} className="mr-2" /> Offer Details
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Price:</span>
+                      <div className="font-semibold text-primary">{selectedResponse.offerPrice}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Quantity:</span>
+                      <div className="font-semibold">{selectedResponse.quantity}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Grade:</span>
+                      <div className="font-semibold">{selectedResponse.grade}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Delivery:</span>
+                      <div className="font-semibold">{selectedResponse.deliveryTime}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Min Order:</span>
+                      <div className="font-semibold">{selectedResponse.minimumOrder}</div>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-border">
+                    <span className="text-muted-foreground text-sm">Specifications:</span>
+                    <p className="text-sm mt-1">{selectedResponse.specifications}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
