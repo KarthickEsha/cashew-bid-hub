@@ -99,6 +99,53 @@ All colors MUST be HSL.
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  /* Merchant Theme */
+  .merchant-theme {
+    --background: 0 0% 100%;
+    --foreground: 270 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 270 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 84% 4.9%;
+
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 266 100% 65%;
+    --primary-dark: 258 75% 52%;
+
+    --secondary: 266 25% 96%;
+    --secondary-foreground: 262 83% 58%;
+
+    --muted: 266 15% 96%;
+    --muted-foreground: 263 30% 45%;
+
+    --accent: 266 100% 95%;
+    --accent-foreground: 262 83% 58%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 266 20% 90%;
+    --input: 266 20% 95%;
+    --ring: 262 83% 58%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-warm: linear-gradient(135deg, hsl(266 100% 95%), hsl(0 0% 100%));
+    --shadow-warm: 0 4px 20px -2px hsl(var(--primary) / 0.15);
+    --shadow-soft: 0 2px 8px -1px hsl(var(--primary) / 0.1);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 270 5.3% 26.1%;
+    --sidebar-primary: 270 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 270 4.8% 95.9%;
+    --sidebar-accent-foreground: 270 5.9% 10%;
+    --sidebar-border: 266 13% 91%;
+    --sidebar-ring: 262 83% 58%;
+  }
 }
 
 @layer base {

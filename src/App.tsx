@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ClerkProvider } from "@clerk/clerk-react";
+import { AuthProvider } from "@/hooks/useAuth";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
@@ -14,18 +14,17 @@ import MyRequirements from "./pages/MyRequirements";
 import EditRequirement from "./pages/EditRequirement";
 import Responses from "./pages/Responses";
 import NotFound from "./pages/NotFound";
+import MerchantDashboard from "./pages/merchant/MerchantDashboard";
+import MerchantProducts from "./pages/merchant/MerchantProducts";
+import MerchantAddProduct from "./pages/merchant/MerchantAddProduct";
+import MerchantEnquiries from "./pages/merchant/MerchantEnquiries";
+import MerchantOrders from "./pages/merchant/MerchantOrders";
+import MerchantRequirements from "./pages/merchant/MerchantRequirements";
 
 const queryClient = new QueryClient();
 
-// You need to provide your Clerk publishable key here
-const PUBLISHABLE_KEY = "pk_test_Y2F1c2FsLWNvbHQtMTkuY2xlcmsuYWNjb3VudHMuZGV2JA";
-
-if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Clerk Publishable Key. Please add VITE_CLERK_PUBLISHABLE_KEY to your environment variables.");
-}
-
 const App = () => (
-  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+  <AuthProvider>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
@@ -33,6 +32,7 @@ const App = () => (
         <BrowserRouter>
           <Layout>
             <Routes>
+              {/* Customer Routes */}
               <Route path="/" element={<Dashboard />} />
               <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/product/:id" element={<ProductDetail />} />
@@ -41,6 +41,15 @@ const App = () => (
               <Route path="/my-requirements" element={<MyRequirements />} />
               <Route path="/edit-requirement/:id" element={<EditRequirement />} />
               <Route path="/responses" element={<Responses />} />
+              
+              {/* Merchant Routes */}
+              <Route path="/merchant" element={<MerchantDashboard />} />
+              <Route path="/merchant/products" element={<MerchantProducts />} />
+              <Route path="/merchant/add-product" element={<MerchantAddProduct />} />
+              <Route path="/merchant/enquiries" element={<MerchantEnquiries />} />
+              <Route path="/merchant/orders" element={<MerchantOrders />} />
+              <Route path="/merchant/requirements" element={<MerchantRequirements />} />
+              
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
@@ -48,7 +57,7 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
-  </ClerkProvider>
+  </AuthProvider>
 );
 
 export default App;
