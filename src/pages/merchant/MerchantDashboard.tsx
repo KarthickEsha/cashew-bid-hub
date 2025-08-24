@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, MessageSquare, ShoppingCart, TrendingUp, DollarSign, Users, Mail } from "lucide-react";
+import { Package, MessageSquare, ShoppingCart, TrendingUp, DollarSign, Users, Mail, ToggleLeft, ToggleRight } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 
 const mockStats = {
   totalProducts: 24,
@@ -19,8 +21,38 @@ const mockRecentActivity = [
 ];
 
 const MerchantDashboard = () => {
+  const { role, setRole } = useRole();
+
   return (
     <div className="p-6 space-y-6">
+      {/* Role Switcher */}
+      <div className="flex justify-end">
+        <Card className="w-fit">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <span className={`text-sm font-medium ${role === 'buyer' ? 'text-primary' : 'text-muted-foreground'}`}>
+                Buyer
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setRole(role === 'buyer' ? 'processor' : 'buyer')}
+                className="p-1"
+              >
+                {role === 'buyer' ? (
+                  <ToggleLeft size={24} className="text-primary" />
+                ) : (
+                  <ToggleRight size={24} className="text-purple-600" />
+                )}
+              </Button>
+              <span className={`text-sm font-medium ${role === 'processor' ? 'text-purple-600' : 'text-muted-foreground'}`}>
+                Processor
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div>
         <h1 className="text-3xl font-bold text-primary">Merchant Dashboard</h1>
         <p className="text-muted-foreground mt-2">

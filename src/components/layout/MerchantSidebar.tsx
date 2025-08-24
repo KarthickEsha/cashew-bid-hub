@@ -1,11 +1,12 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   ShoppingCart,
   MessageSquare,
   Package,
   Plus,
-  ClipboardList
+  ClipboardList,
+  LogOut
 } from "lucide-react";
 import {
   Sidebar,
@@ -56,6 +57,7 @@ const navItems = [
 export function MerchantSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
@@ -108,6 +110,26 @@ export function MerchantSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Logout Section */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild
+                  onClick={() => navigate('/login')}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <button className="flex items-center w-full">
+                    <LogOut className="h-4 w-4" />
+                    {!collapsed && <span className="text-[15px]">Logout</span>}
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

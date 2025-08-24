@@ -77,20 +77,21 @@ const MerchantProducts = () => {
           <CardDescription>View and manage all your listed products</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product Name</TableHead>
-                <TableHead>Grade</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Enquiries</TableHead>
-                <TableHead>Orders</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[200px]">Product Name</TableHead>
+                  <TableHead className="min-w-[100px]">Grade</TableHead>
+                  <TableHead className="min-w-[80px]">Stock</TableHead>
+                  <TableHead className="min-w-[100px]">Price</TableHead>
+                  <TableHead className="min-w-[150px]">Location</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="min-w-[100px]">Enquiries</TableHead>
+                  <TableHead className="min-w-[80px]">Orders</TableHead>
+                  <TableHead className="min-w-[120px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {paginatedProducts.map((product) => (
                 <TableRow key={product.id}>
@@ -133,7 +134,8 @@ const MerchantProducts = () => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
