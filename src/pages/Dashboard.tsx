@@ -1,16 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  TrendingUp, 
-  Clock, 
-  FileText, 
+import {
+  TrendingUp,
+  Clock,
+  FileText,
   MessageSquare,
   ArrowRight,
   Eye,
   Calendar,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  ArrowRightLeft
 } from "lucide-react";
 import cashewHero from "@/assets/cashew-hero.jpg";
 import { Link } from "react-router-dom";
@@ -80,36 +81,25 @@ const Dashboard = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Role Switcher */}
       <div className="flex justify-end">
-        <Card className="w-fit">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <span className={`text-sm font-medium ${role === 'buyer' ? 'text-primary' : 'text-muted-foreground'}`}>
-                Buyer
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setRole(role === 'buyer' ? 'processor' : 'buyer')}
-                className="p-1"
-              >
-                {role === 'buyer' ? (
-                  <ToggleLeft size={24} className="text-primary" />
-                ) : (
-                  <ToggleRight size={24} className="text-purple-600" />
-                )}
-              </Button>
-              <span className={`text-sm font-medium ${role === 'processor' ? 'text-purple-600' : 'text-muted-foreground'}`}>
-                Processor
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-4">
+          <Badge variant="secondary" className="px-3 py-1">
+            {role === "buyer" ? "Buyer Mode" : "Merchant Mode"}
+          </Badge>
+          <Button
+            onClick={() => setRole(role === 'buyer' ? 'processor' : 'buyer')}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+            Switch to {role === "buyer" ? "Merchant" : "Buyer"}
+          </Button>
+        </div>
       </div>
 
       {/* Hero Section */}
       <div className="relative rounded-xl overflow-hidden">
-        <img 
-          src={cashewHero} 
+        <img
+          src={cashewHero}
           alt="Premium Cashew Marketplace"
           className="w-full h-48 object-cover"
         />
@@ -168,7 +158,7 @@ const Dashboard = () => {
                     <p className="text-sm font-medium">{activity.message}</p>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-muted-foreground">{activity.time}</span>
-                      <Badge 
+                      <Badge
                         variant={activity.status === 'confirmed' ? 'default' : 'secondary'}
                         className="text-xs"
                       >

@@ -5,16 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, User } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
+import Login from "@/pages/Login";
+import { SignedIn, SignedOut, useClerk } from "@clerk/clerk-react";
+
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const { signOut } = useClerk();
   const { role } = useRole();
 
   return (
-    <SidebarProvider>
+    <>
+    <SignedOut>
+        <Login />
+      </SignedOut>
+    <SignedIn>
+     <SidebarProvider>
       <div className={`min-h-screen flex w-full ${role === 'processor' ? 'merchant-theme' : ''}`}>
         {role === 'processor' ? <MerchantSidebar /> : <AppSidebar />}
         <div className="flex-1 flex flex-col">
@@ -51,6 +60,10 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </div>
     </SidebarProvider>
+    </SignedIn>
+      
+    </>
+    
   );
 };
 

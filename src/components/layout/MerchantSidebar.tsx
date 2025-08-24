@@ -20,6 +20,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useClerk } from "@clerk/clerk-react";
 
 const navItems = [
   {
@@ -58,6 +60,7 @@ export function MerchantSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
+   const { signOut } = useClerk();
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
@@ -68,9 +71,9 @@ export function MerchantSidebar() {
 
   return (
     <Sidebar collapsible="icon" className={`${collapsed ? "w-16" : "w-64"} border-purple-200`}>
-      <SidebarContent className="bg-gradient-to-b from-purple-50 to-white">
+      <SidebarContent className="bg-[#F0F0F0]">
         {/* Logo */}
-        <div className="p-4 border-b border-purple-200">
+        <div className="p-[7.5px] border-b border-purple-200">
           {!collapsed ? (
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg flex items-center justify-center">
@@ -87,7 +90,7 @@ export function MerchantSidebar() {
 
         {/* Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-purple-600">Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -115,24 +118,17 @@ export function MerchantSidebar() {
         </SidebarGroup>
 
         {/* Logout Section */}
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild
-                  onClick={() => navigate('/login')}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <button className="flex items-center w-full">
-                    <LogOut className="h-4 w-4" />
-                    {!collapsed && <span className="text-[15px]">Logout</span>}
-                  </button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          <div className="mt-auto p-4 space-y-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
+                      onClick={() => signOut()}
+                    >
+                      <LogOut size={16} />
+                      {!collapsed && <span className="ml-2">Logout</span>}
+                    </Button>
+                  </div>
       </SidebarContent>
     </Sidebar>
   );

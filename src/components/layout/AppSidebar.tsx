@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useClerk } from "@clerk/clerk-react";
 
 const mainNavItems = [
   { path: "/", label: "Dashboard", icon: Home },
@@ -41,6 +42,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const { signOut } = useClerk();
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -49,13 +51,10 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    navigate('/login');
-  };
 
   return (
     <Sidebar collapsible="icon" className={collapsed ? "w-16" : "w-64"}>
-      <SidebarContent>
+      <SidebarContent className="bg-[#F0F0F0]">
         {/* Logo */}
         <div className="p-[7.5px] border-b border-border">
           {!collapsed ? (
@@ -121,7 +120,7 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
-            onClick={handleLogout}
+            onClick={() => signOut()}
           >
             <LogOut size={16} />
             {!collapsed && <span className="ml-2">Logout</span>}
