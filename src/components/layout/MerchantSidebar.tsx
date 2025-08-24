@@ -4,7 +4,6 @@ import {
   ShoppingCart,
   MessageSquare,
   Package,
-  FileText,
   Plus,
   ClipboardList
 } from "lucide-react";
