@@ -8,10 +8,7 @@ import {
   MessageSquare,
   ArrowRight,
   Eye,
-  Calendar,
-  ToggleLeft,
-  ToggleRight,
-  ArrowRightLeft
+  Calendar
 } from "lucide-react";
 import cashewHero from "@/assets/cashew-hero.jpg";
 import { Link } from "react-router-dom";
@@ -79,23 +76,6 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Role Switcher */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-4">
-          <Badge variant="secondary" className="px-3 py-1">
-            {role === "buyer" ? "Buyer Mode" : "Merchant Mode"}
-          </Badge>
-          <Button
-            onClick={() => setRole(role === 'buyer' ? 'processor' : 'buyer')}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <ArrowRightLeft className="h-4 w-4" />
-            Switch to {role === "buyer" ? "Merchant" : "Buyer"}
-          </Button>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <div className="relative rounded-xl overflow-hidden">
         <img

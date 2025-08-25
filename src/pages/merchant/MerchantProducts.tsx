@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Edit, MessageSquare, ShoppingCart } from "lucide-react";
+import { Eye, Edit, MessageSquare, ShoppingCart, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const mockProducts = [
@@ -16,6 +16,7 @@ const mockProducts = [
     price: 8.50,
     unit: "kg",
     location: "Kerala, India",
+    expireDate: "2025-12-15",  // Added
     status: "active",
     enquiries: 3,
     orders: 2
@@ -23,12 +24,13 @@ const mockProducts = [
   {
     id: 2,
     name: "Organic Cashews W320",
-    grade: "W320", 
+    grade: "W320",
     weight: "50kg",
     stock: 200,
     price: 7.80,
     unit: "kg",
     location: "Tamil Nadu, India",
+    expireDate: "2025-10-30",  // Added
     status: "active",
     enquiries: 5,
     orders: 1
@@ -40,13 +42,15 @@ const mockProducts = [
     weight: "25kg",
     stock: 0,
     price: 6.20,
-    unit: "kg", 
+    unit: "kg",
     location: "Kerala, India",
+    expireDate: "2025-09-20",  // Added
     status: "out_of_stock",
     enquiries: 1,
     orders: 0
   }
 ];
+
 
 const MerchantProducts = () => {
   const navigate = useNavigate();
@@ -61,52 +65,65 @@ const MerchantProducts = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-primary">My Products</h1>
+          <h1 className="text-3xl font-bold text-primary">My Product Stocks</h1>
           <p className="text-muted-foreground mt-2">
             Manage your product inventory
           </p>
         </div>
-        <Button onClick={() => navigate('/merchant/add-product')}>
-          Add New Product
+        <Button
+          onClick={() => navigate('/merchant/add-product')}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Inventory
         </Button>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Product Inventory</CardTitle>
-          <CardDescription>View and manage all your listed products</CardDescription>
+          {/* <CardDescription>View and manage all your listed products</CardDescription> */}
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[200px]">Product Name</TableHead>
-                  <TableHead className="min-w-[100px]">Grade</TableHead>
-                  <TableHead className="min-w-[80px]">Stock</TableHead>
-                  <TableHead className="min-w-[100px]">Price</TableHead>
-                  <TableHead className="min-w-[150px]">Location</TableHead>
-                  <TableHead className="min-w-[100px]">Status</TableHead>
-                  <TableHead className="min-w-[100px]">Enquiries</TableHead>
-                  <TableHead className="min-w-[80px]">Orders</TableHead>
-                  <TableHead className="min-w-[120px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+          <Table className="w-full border-collapse">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product Name</TableHead>
+                <TableHead>Grade</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Origin</TableHead>
+                <TableHead>Expire Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Enquiries</TableHead>
+                <TableHead>Orders</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
               {paginatedProducts.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.grade}</TableCell>
                   <TableCell>
-                    <span className={product.stock === 0 ? "text-red-600" : "text-green-600"}>
+                    <span
+                      className={
+                        product.stock === 0 ? "text-red-600" : "text-green-600"
+                      }
+                    >
                       {product.stock} {product.unit}
                     </span>
                   </TableCell>
                   <TableCell>${product.price}/{product.unit}</TableCell>
                   <TableCell>{product.location}</TableCell>
+                  <TableCell>{product.expireDate}</TableCell>
                   <TableCell>
-                    <Badge variant={product.status === 'active' ? 'default' : 'destructive'}>
-                      {product.status === 'active' ? 'Active' : 'Out of Stock'}
+                    <Badge
+                      variant={
+                        product.status === "active" ? "default" : "destructive"
+                      }
+                    >
+                      {product.status === "active" ? "Active" : "Out of Stock"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -134,19 +151,20 @@ const MerchantProducts = () => {
                 </TableRow>
               ))}
             </TableBody>
-            </Table>
-          </div>
+          </Table>
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, mockProducts.length)} of {mockProducts.length} products
+              Showing {startIndex + 1} to{" "}
+              {Math.min(startIndex + itemsPerPage, mockProducts.length)} of{" "}
+              {mockProducts.length} products
             </div>
             <div className="flex space-x-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
               >
                 Previous
@@ -154,7 +172,7 @@ const MerchantProducts = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
               >
                 Next

@@ -3,10 +3,11 @@ import { AppSidebar } from "./AppSidebar";
 import { MerchantSidebar } from "./MerchantSidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, User } from "lucide-react";
+import { Bell, User, ArrowRightLeft } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import Login from "@/pages/Login";
 import { SignedIn, SignedOut, useClerk, useUser } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,11 +15,17 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const { signOut } = useClerk();
-  const { role } = useRole();
+  const { role, setRole } = useRole();
+  const navigate = useNavigate();
   const { user } = useUser(); // ✅ Get logged-in user info
 
   // Get display name (prefer firstName, else fall back to email)
   const displayName = user?.firstName || user?.primaryEmailAddress?.emailAddress || "User";
+    const handleSwitch = () => {
+    const newRole = role === "buyer" ? "processor" : "buyer";
+    setRole(newRole);
+    navigate(""); // redirect to dashboard after switching
+  };
 
   return (
     <>
@@ -29,13 +36,13 @@ const Layout = ({ children }: LayoutProps) => {
       <SignedIn>
         <SidebarProvider>
           <div
-            className={`min-h-screen flex w-full ${
-              role === "processor" ? "merchant-theme" : ""
-            }`}
+            className={`min-h-screen flex w-full ${role === "processor" ? "merchant-theme" : ""}`}
           >
             {role === "processor" ? <MerchantSidebar /> : <AppSidebar />}
+
             <div className="flex-1 flex flex-col">
-              <header className="h-12 flex items-center justify-between border-b bg-background px-4">
+              {/* Fixed Header */}
+              <header className="h-12 flex items-center justify-between border-b bg-background px-4 sticky top-0 z-50">
                 {/* Left side */}
                 <div className="flex items-center">
                   <SidebarTrigger />
@@ -46,6 +53,21 @@ const Layout = ({ children }: LayoutProps) => {
 
                 {/* Right side icons */}
                 <div className="flex items-center space-x-4">
+                  {/* Role Switcher */}
+                  <div className="flex items-center gap-4">
+                    <Badge variant="secondary" className="px-3 py-1 hidden sm:inline-flex">
+                      {role === "buyer" ? "Buyer Mode" : "Merchant Mode"}
+                    </Badge>
+                    <Button
+                      onClick={handleSwitch}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <ArrowRightLeft className="h-4 w-4" />
+                      Switch to {role === "buyer" ? "Merchant" : "Buyer"}
+                    </Button>
+                  </div>
+
                   {/* Notifications */}
                   <Button variant="ghost" size="sm" className="relative p-2">
                     <Bell size={18} />
@@ -64,11 +86,15 @@ const Layout = ({ children }: LayoutProps) => {
                 </div>
               </header>
 
-              <main className="flex-1 overflow-auto pb-6">{children}</main>
+              {/* Scrollable Content */}
+              <main className="flex-1 overflow-y-auto pb-6 px-4">
+                {children}
+              </main>
             </div>
           </div>
         </SidebarProvider>
       </SignedIn>
+
     </>
   );
 };

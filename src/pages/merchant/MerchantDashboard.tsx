@@ -1,14 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, MessageSquare, ShoppingCart, TrendingUp, DollarSign, Users, Mail, ToggleLeft, ToggleRight, ArrowRightLeft } from "lucide-react";
+import { Package, MessageSquare, Users, FileText } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
+import { Link } from "react-router-dom";
 
 const mockStats = {
   totalProducts: 24,
   activeProducts: 18,
   pendingOrders: 7,
   totalEnquiries: 12,
+  quotesSubmitted: 9,
   monthlyRevenue: 45000,
   newCustomers: 8
 };
@@ -25,25 +26,6 @@ const MerchantDashboard = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Role Switcher */}
-      <div className="flex justify-end">
-       <div className="flex justify-end">
-        <div className="flex items-center gap-4">
-          <Badge variant="secondary" className="px-3 py-1">
-            {role === "buyer" ? "Buyer Mode" : "Merchant Mode"}
-          </Badge>
-          <Button
-            onClick={() => setRole(role === 'buyer' ? 'processor' : 'buyer')}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <ArrowRightLeft className="h-4 w-4" />
-            Switch to {role === "buyer" ? "Merchant" : "Buyer"}
-          </Button>
-        </div>
-      </div>
-      </div>
-     
       <div>
         <h1 className="text-3xl font-bold text-primary">Merchant Dashboard</h1>
         <p className="text-muted-foreground mt-2">
@@ -52,33 +34,8 @@ const MerchantDashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">{mockStats.activeProducts}</span> active products
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.pendingOrders}</div>
-            <p className="text-xs text-muted-foreground">
-              Awaiting processing
-            </p>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Card 1 - New Enquiry */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">New Enquiries</CardTitle>
@@ -86,51 +43,51 @@ const MerchantDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockStats.totalEnquiries}</div>
-            <p className="text-xs text-muted-foreground">
-              Requiring response
-            </p>
+            <p className="text-xs text-muted-foreground">Requiring response</p>
           </CardContent>
         </Card>
 
+        {/* Card 2 - Quote Submitted */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Quote Submitted</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${mockStats.monthlyRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+12%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">{mockStats.quotesSubmitted}</div>
+            <p className="text-xs text-muted-foreground">Awaiting approval</p>
           </CardContent>
         </Card>
 
+        {/* Card 3 - My Product */}
+        <Link to="/merchant/products">
+          <Card className="cursor-pointer hover:shadow-md transition">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">My Products</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockStats.totalProducts}</div>
+              <p className="text-xs text-muted-foreground">
+                <span className="text-green-600">{mockStats.activeProducts}</span> active products
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Card 4 - New Customer */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">New Customer</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockStats.newCustomers}</div>
-            <p className="text-xs text-muted-foreground">
-              This month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+24%</div>
-            <p className="text-xs text-muted-foreground">
-              Quarter over quarter
-            </p>
+            <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
       </div>
+
 
       {/* Recent Activity */}
       <Card>

@@ -44,7 +44,7 @@ const MerchantAddProduct = () => {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-primary">Add New Product</h1>
+        <h1 className="text-3xl font-bold text-primary">Add New Inventory</h1>
         <p className="text-muted-foreground mt-2">
           List a new cashew product for sale
         </p>
