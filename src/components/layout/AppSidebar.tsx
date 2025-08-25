@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { useClerk } from "@clerk/clerk-react";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 const mainNavItems = [
   { path: "/", label: "Dashboard", icon: Home },
@@ -42,14 +42,17 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
-  const { signOut } = useClerk();
+  const navigate = useNavigate();
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-primary/10 text-primary font-medium" : "hover:bg-accent/50";
 
   const collapsed = state === "collapsed";
-  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate('/login');
+  };
 
 
   return (
@@ -116,11 +119,12 @@ export function AppSidebar() {
 
         {/* Bottom Actions */}
         <div className="mt-auto p-4 space-y-2">
+          <RoleSwitcher />
           <Button
             variant="ghost"
             size="sm"
             className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
-            onClick={() => signOut()}
+            onClick={handleLogout}
           >
             <LogOut size={16} />
             {!collapsed && <span className="ml-2">Logout</span>}

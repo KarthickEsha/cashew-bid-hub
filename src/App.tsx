@@ -21,6 +21,8 @@ import MerchantOrders from "./pages/merchant/MerchantOrders";
 import MerchantRequirements from "./pages/merchant/MerchantRequirements";
 import { useRole } from "./hooks/useRole";
 import MerchantDashboard from "./pages/merchant/MerchantDashboard";
+import ProfileSetup from "./pages/ProfileSetup";
+import { useProfile } from "./hooks/useProfile";
 import { ReactNode } from "react";
 
 interface LayoutProps {
@@ -40,6 +42,25 @@ if (!PUBLISHABLE_KEY) {
 
 const App = () => {
   const { role } = useRole();
+  const { profile } = useProfile();
+  
+  // Show profile setup if profile is not complete
+  if (!profile?.isProfileComplete) {
+    return (
+      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <ProfileSetup />
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ClerkProvider>
+    );
+  }
+
   return (
    
   <ClerkProvider publishableKey={PUBLISHABLE_KEY}>

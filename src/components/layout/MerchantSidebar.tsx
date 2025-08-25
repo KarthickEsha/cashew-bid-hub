@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useClerk } from "@clerk/clerk-react";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 const navItems = [
   {
@@ -60,7 +60,6 @@ export function MerchantSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
-   const { signOut } = useClerk();
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
@@ -68,6 +67,10 @@ export function MerchantSidebar() {
     isActive ? "bg-purple-100 text-purple-700 font-medium" : "hover:bg-purple-50";
 
   const collapsed = state === "collapsed";
+
+  const handleLogout = () => {
+    navigate('/login');
+  };
 
   return (
     <Sidebar collapsible="icon" className={`${collapsed ? "w-16" : "w-64"} border-purple-200`}>
@@ -117,18 +120,19 @@ export function MerchantSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Logout Section */}
-          <div className="mt-auto p-4 space-y-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
-                      onClick={() => signOut()}
-                    >
-                      <LogOut size={16} />
-                      {!collapsed && <span className="ml-2">Logout</span>}
-                    </Button>
-                  </div>
+        {/* Bottom Actions */}
+        <div className="mt-auto p-4 space-y-2">
+          <RoleSwitcher />
+          <Button
+            variant="ghost"
+            size="sm"
+            className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
+            onClick={handleLogout}
+          >
+            <LogOut size={16} />
+            {!collapsed && <span className="ml-2">Logout</span>}
+          </Button>
+        </div>
       </SidebarContent>
     </Sidebar>
   );

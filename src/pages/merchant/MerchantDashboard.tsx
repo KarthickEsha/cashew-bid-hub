@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Package, MessageSquare, Users, FileText } from "lucide-react";
-import { useRole } from "@/hooks/useRole";
 import { Link } from "react-router-dom";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 const mockStats = {
   totalProducts: 24,
@@ -22,15 +22,16 @@ const mockRecentActivity = [
 ];
 
 const MerchantDashboard = () => {
-  const { role, setRole } = useRole();
-
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-primary">Merchant Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your cashew business and track performance
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-primary">Merchant Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your cashew business and track performance
+          </p>
+        </div>
+        <RoleSwitcher />
       </div>
 
       {/* Stats Grid */}
