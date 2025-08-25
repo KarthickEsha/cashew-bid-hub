@@ -23,6 +23,7 @@ const ProfileSetup = () => {
     location: '',
     role: 'buyer' as UserRole,
     productType: 'RCN' as ProductType,
+    businessType: 'individual', // 👈 new field
     profilePicture: '',
   });
 
@@ -143,6 +144,7 @@ const ProfileSetup = () => {
                 <SelectContent>
                   <SelectItem value="buyer">Buyer</SelectItem>
                   <SelectItem value="processor">Processor</SelectItem>
+                  <SelectItem value="both">Both</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -169,6 +171,24 @@ const ProfileSetup = () => {
                 </div>
               </RadioGroup>
             </div>
+
+            {/* 👇 New Select Field */}
+            {/* <div className="space-y-3">
+              <Label>Business Type</Label>
+              <Select
+                value={formData.businessType}
+                onValueChange={(value) => setFormData({ ...formData, businessType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your business type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Individual</SelectItem>
+                  <SelectItem value="company">Company</SelectItem>
+                  <SelectItem value="both">Both</SelectItem>
+                </SelectContent>
+              </Select>
+            </div> */}
 
             <Button type="submit" className="w-full">
               Complete Profile

@@ -2,7 +2,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Package, MessageSquare, Users, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import { useInventory } from "@/hooks/useInventory";
 import { useProfile } from "@/hooks/useProfile";
 import ProductTypeToggle from "@/components/ProductTypeToggle";
@@ -58,12 +57,12 @@ const MerchantDashboard = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Merchant Dashboard</h1>
+          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             Manage your cashew business and track performance
           </p>
         </div>
-        <RoleSwitcher />
+        {/* <RoleSwitcher /> */}
       </div>
 
       {/* Product Type Toggle */}

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useClerk } from "@clerk/clerk-react";
 import RoleSwitcher from "@/components/RoleSwitcher";
 
 const navItems = [
@@ -60,6 +61,7 @@ export function MerchantSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
+  const { signOut } = useClerk();
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
@@ -127,7 +129,7 @@ export function MerchantSidebar() {
             variant="ghost"
             size="sm"
             className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
-            onClick={handleLogout}
+            onClick={() => signOut()}
           >
             <LogOut size={16} />
             {!collapsed && <span className="ml-2">Logout</span>}

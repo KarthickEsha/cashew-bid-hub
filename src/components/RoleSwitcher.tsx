@@ -8,23 +8,44 @@ import { Separator } from '@/components/ui/separator';
 import { useRole } from '@/hooks/useRole';
 import { useProfile } from '@/hooks/useProfile';
 import { UserRole, ProductType } from '@/types/user';
+import { useNavigate } from 'react-router-dom';
 
 const RoleSwitcher = () => {
   const { role, setRole } = useRole();
   const { profile, updateProfile } = useProfile();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
+  // 🔑 Handle role change and redirect
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
+
     if (profile) {
       updateProfile({ role: newRole });
     }
+
+    // Map role to correct dashboard path
+    const dashboardPath =
+      newRole === 'buyer' ? '' : '';
+
+    navigate(dashboardPath);
+    setIsOpen(false);
   };
 
+  // 🔑 Handle product type change (optional redirect with query param)
   const handleProductTypeChange = (newProductType: ProductType) => {
     if (profile) {
       updateProfile({ productType: newProductType });
     }
+
+    // Redirect to dashboard with selected product type
+    const dashboardPath =
+      role === 'buyer'
+        ? `/dashboard/buyer?productType=${newProductType}`
+        : `/dashboard/merchant?productType=${newProductType}`;
+
+    navigate(dashboardPath);
+    setIsOpen(false);
   };
 
   return (
@@ -35,33 +56,15 @@ const RoleSwitcher = () => {
           className="flex items-center gap-2 h-9 px-3"
         >
           <Settings className="w-4 h-4" />
-          <span className="capitalize">{role}</span>
+          <span className="capitalize">Product Type</span>
           <ChevronDown className="w-4 h-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      
+
       <PopoverContent className="w-80 p-4" align="end">
         <div className="space-y-4">
-          <div>
-            <h4 className="font-medium text-sm mb-3">Mode</h4>
-            <RadioGroup
-              value={role}
-              onValueChange={handleRoleChange}
-              className="space-y-2"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="buyer" id="buyer-mode" />
-                <Label htmlFor="buyer-mode" className="text-sm">Customer</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="processor" id="processor-mode" />
-                <Label htmlFor="processor-mode" className="text-sm">Merchant</Label>
-              </div>
-            </RadioGroup>
-          </div>
 
-          <Separator />
-
+          {/* Product Type Selection */}
           {profile && (
             <div>
               <h4 className="font-medium text-sm mb-3">Product Type</h4>
@@ -78,10 +81,10 @@ const RoleSwitcher = () => {
                   <RadioGroupItem value="Kernel" id="kernel-type" />
                   <Label htmlFor="kernel-type" className="text-sm">Kernel</Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                {/* <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Both" id="both-type" />
                   <Label htmlFor="both-type" className="text-sm">Both</Label>
-                </div>
+                </div> */}
               </RadioGroup>
             </div>
           )}

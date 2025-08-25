@@ -13,7 +13,6 @@ import {
 import cashewHero from "@/assets/cashew-hero.jpg";
 import { Link } from "react-router-dom";
 import { useRole } from "@/hooks/useRole";
-import RoleSwitcher from "@/components/RoleSwitcher";
 
 const Dashboard = () => {
   const { role, setRole } = useRole();
@@ -78,9 +77,9 @@ const Dashboard = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Header with Role Switcher */}
-      <div className="flex justify-end">
+      {/* <div className="flex justify-end">
         <RoleSwitcher />
-      </div>
+      </div> */}
       
       {/* Hero Section */}
       <div className="relative rounded-xl overflow-hidden">

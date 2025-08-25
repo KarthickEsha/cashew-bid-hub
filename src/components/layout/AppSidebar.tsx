@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import {
   Home,
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { useClerk } from "@clerk/clerk-react";
 import RoleSwitcher from "@/components/RoleSwitcher";
 
 const mainNavItems = [
@@ -42,13 +42,14 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
-  const navigate = useNavigate();
+    const { signOut } = useClerk();
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-primary/10 text-primary font-medium" : "hover:bg-accent/50";
 
   const collapsed = state === "collapsed";
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     navigate('/login');
@@ -124,7 +125,7 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
-            onClick={handleLogout}
+            onClick={() => signOut()}
           >
             <LogOut size={16} />
             {!collapsed && <span className="ml-2">Logout</span>}
