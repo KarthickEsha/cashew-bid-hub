@@ -5,21 +5,49 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, X } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Upload, X, CalendarIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { useProfile } from "@/hooks/useProfile";
+import { useInventory } from "@/hooks/useInventory";
+import ProductTypeToggle from "@/components/ProductTypeToggle";
+import { ProductType } from "@/types/user";
 
 const MerchantAddProduct = () => {
   const navigate = useNavigate();
+  const { profile } = useProfile();
+  const { addProduct } = useInventory();
   const [images, setImages] = useState<string[]>([]);
+  
+  // Determine initial product type based on profile
+  const getInitialProductType = (): ProductType => {
+    if (profile?.productType === 'Both') {
+      return 'RCN'; // Default to RCN when both are available
+    }
+    return profile?.productType || 'RCN';
+  };
+  
+  const [currentProductType, setCurrentProductType] = useState<ProductType>(getInitialProductType());
+  const [expireDate, setExpireDate] = useState<Date>();
+  
   const [formData, setFormData] = useState({
     name: '',
-    grade: '',
-    weight: '',
     stock: '',
     price: '',
     unit: 'kg',
     location: '',
-    description: ''
+    description: '',
+    
+    // RCN specific fields
+    yearOfCrop: '',
+    nutCount: '',
+    outTurn: '',
+    
+    // Kernel specific fields
+    grade: '',
   });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,8 +64,42 @@ const MerchantAddProduct = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock product creation logic
-    console.log('Product created:', formData, images);
+    
+    if (!expireDate) {
+      alert('Please select an expire date');
+      return;
+    }
+    
+    // Create product based on type
+    const productData = {
+      name: formData.name,
+      type: currentProductType,
+      stock: parseInt(formData.stock),
+      price: parseFloat(formData.price),
+      unit: formData.unit,
+      location: formData.location,
+      description: formData.description,
+      images,
+      expireDate: format(expireDate, 'yyyy-MM-dd'),
+      status: 'active' as const,
+      enquiries: 0,
+      orders: 0,
+    };
+    
+    // Add type-specific fields
+    if (currentProductType === 'RCN') {
+      Object.assign(productData, {
+        yearOfCrop: formData.yearOfCrop,
+        nutCount: formData.nutCount,
+        outTurn: formData.outTurn,
+      });
+    } else {
+      Object.assign(productData, {
+        grade: formData.grade,
+      });
+    }
+    
+    addProduct(productData);
     navigate('/merchant/products');
   };
 
@@ -46,9 +108,15 @@ const MerchantAddProduct = () => {
       <div>
         <h1 className="text-3xl font-bold text-primary">Add New Inventory</h1>
         <p className="text-muted-foreground mt-2">
-          List a new cashew product for sale
+          List a new {currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product for sale
         </p>
       </div>
+
+      {/* Product Type Toggle */}
+      <ProductTypeToggle 
+        currentType={currentProductType}
+        onTypeChange={setCurrentProductType}
+      />
 
       <Card>
         <CardHeader>
@@ -64,28 +132,69 @@ const MerchantAddProduct = () => {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="e.g., Premium Cashews W240"
+                  placeholder={`e.g., ${currentProductType === 'RCN' ? 'Premium Raw Cashew Nuts 2024' : 'Premium Cashews W240'}`}
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="grade">Grade *</Label>
-                <Select value={formData.grade} onValueChange={(value) => setFormData({...formData, grade: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select grade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="W180">W180</SelectItem>
-                    <SelectItem value="W240">W240</SelectItem>
-                    <SelectItem value="W320">W320</SelectItem>
-                    <SelectItem value="W450">W450</SelectItem>
-                    <SelectItem value="W500">W500</SelectItem>
-                    <SelectItem value="Broken BB">Broken BB</SelectItem>
-                    <SelectItem value="Broken LP">Broken LP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Conditional fields based on product type */}
+              {currentProductType === 'Kernel' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="grade">Grade *</Label>
+                  <Select value={formData.grade} onValueChange={(value) => setFormData({...formData, grade: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="W180">W180</SelectItem>
+                      <SelectItem value="W240">W240</SelectItem>
+                      <SelectItem value="W320">W320</SelectItem>
+                      <SelectItem value="W450">W450</SelectItem>
+                      <SelectItem value="W500">W500</SelectItem>
+                      <SelectItem value="Broken BB">Broken BB</SelectItem>
+                      <SelectItem value="Broken LP">Broken LP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="yearOfCrop">Year of Crop *</Label>
+                    <Select value={formData.yearOfCrop} onValueChange={(value) => setFormData({...formData, yearOfCrop: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2024">2024</SelectItem>
+                        <SelectItem value="2023">2023</SelectItem>
+                        <SelectItem value="2022">2022</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="nutCount">Nut Count *</Label>
+                    <Input
+                      id="nutCount"
+                      value={formData.nutCount}
+                      onChange={(e) => setFormData({...formData, nutCount: e.target.value})}
+                      placeholder="e.g., 200-220 per kg"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="outTurn">Out Turn *</Label>
+                    <Input
+                      id="outTurn"
+                      value={formData.outTurn}
+                      onChange={(e) => setFormData({...formData, outTurn: e.target.value})}
+                      placeholder="e.g., 22-24%"
+                      required
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="stock">Stock Quantity *</Label>
@@ -135,6 +244,34 @@ const MerchantAddProduct = () => {
                   placeholder="e.g., Kerala, India"
                   required
                 />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Expire Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !expireDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {expireDate ? format(expireDate, "PPP") : <span>Pick expire date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={expireDate}
+                      onSelect={setExpireDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                      disabled={(date) => date < new Date()}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 

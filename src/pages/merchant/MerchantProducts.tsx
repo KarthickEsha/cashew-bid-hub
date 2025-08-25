@@ -11,12 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
   Eye,
   Edit,
   MessageSquare,
@@ -27,54 +21,32 @@ import {
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
-
-const mockProducts = [
-  {
-    id: 1,
-    name: "Premium Cashews W240",
-    grade: "W240",
-    weight: "25kg",
-    stock: 500,
-    price: 8.5,
-    unit: "kg",
-    location: "Kerala, India",
-    expireDate: "2025-12-15",
-    status: "active",
-    enquiries: 3,
-    orders: 2,
-  },
-  {
-    id: 2,
-    name: "Organic Cashews W320",
-    grade: "W320",
-    weight: "50kg",
-    stock: 200,
-    price: 7.8,
-    unit: "kg",
-    location: "Tamil Nadu, India",
-    expireDate: "2025-10-30",
-    status: "active",
-    enquiries: 5,
-    orders: 1,
-  },
-  {
-    id: 3,
-    name: "Broken Cashews BB",
-    grade: "Broken BB",
-    weight: "25kg",
-    stock: 0,
-    price: 6.2,
-    unit: "kg",
-    location: "Kerala, India",
-    expireDate: "2025-09-20",
-    status: "out_of_stock",
-    enquiries: 1,
-    orders: 0,
-  },
-];
+import { useInventory } from "@/hooks/useInventory";
+import { useProfile } from "@/hooks/useProfile";
+import ProductTypeToggle from "@/components/ProductTypeToggle";
+import EnquiryOrderDrawer from "@/components/EnquiryOrderDrawer";
+import { ProductType } from "@/types/user";
+import React from "react";
 
 const MerchantProducts = () => {
   const navigate = useNavigate();
+  const { products } = useInventory();
+  const { profile } = useProfile();
+  
+  // Determine current product type for display
+  const getInitialProductType = (): ProductType => {
+    if (profile?.productType === 'Both') {
+      return 'RCN'; // Default to RCN when both are available
+    }
+    return profile?.productType || 'RCN';
+  };
+  
+  const [currentProductType, setCurrentProductType] = useState<ProductType>(getInitialProductType());
+  
+  // Filter products based on current type (only if user has "Both" selected)
+  const filteredProductsByType = profile?.productType === 'Both' 
+    ? products.filter(p => p.type === currentProductType)
+    : products;
 
   // filters state
   const [filters, setFilters] = useState({
@@ -86,7 +58,7 @@ const MerchantProducts = () => {
     status: "",
   });
 
-  const [filteredProducts, setFilteredProducts] = useState(mockProducts);
+  const [filteredProducts, setFilteredProducts] = useState(filteredProductsByType);
 
   // pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -105,13 +77,13 @@ const MerchantProducts = () => {
 
   // apply filters
   const applyFilters = () => {
-    let result = [...mockProducts];
+    let result = [...filteredProductsByType];
 
     if (filters.search) {
       result = result.filter(
         (p) =>
           p.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          p.grade.toLowerCase().includes(filters.search.toLowerCase())
+          (p.grade && p.grade.toLowerCase().includes(filters.search.toLowerCase()))
       );
     }
 
@@ -150,9 +122,15 @@ const MerchantProducts = () => {
       maxPrice: "",
       status: "",
     });
-    setFilteredProducts(mockProducts);
+    setFilteredProducts(filteredProductsByType);
     setCurrentPage(1);
   };
+  
+  // Update filtered products when product type changes
+  React.useEffect(() => {
+    setFilteredProducts(filteredProductsByType);
+    clearFilters();
+  }, [currentProductType, filteredProductsByType]);
 
   return (
     <div className="p-6 space-y-6">
@@ -161,7 +139,7 @@ const MerchantProducts = () => {
         <div>
           <h1 className="text-3xl font-bold text-primary">My Product Stocks</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your product inventory
+            Manage your {currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} inventory
           </p>
         </div>
         <Button
@@ -172,6 +150,12 @@ const MerchantProducts = () => {
           Add Inventory
         </Button>
       </div>
+
+      {/* Product Type Toggle */}
+      <ProductTypeToggle 
+        currentType={currentProductType}
+        onTypeChange={setCurrentProductType}
+      />
 
       {/* Filters */}
       <Card>
@@ -292,7 +276,15 @@ const MerchantProducts = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Product Name</TableHead>
-                <TableHead>Grade</TableHead>
+                {currentProductType === 'Kernel' ? (
+                  <TableHead>Grade</TableHead>
+                ) : (
+                  <>
+                    <TableHead>Year of Crop</TableHead>
+                    <TableHead>Nut Count</TableHead>
+                    <TableHead>Out Turn</TableHead>
+                  </>
+                )}
                 <TableHead>Stock</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Origin</TableHead>
@@ -308,7 +300,15 @@ const MerchantProducts = () => {
                 paginatedProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.grade}</TableCell>
+                    {currentProductType === 'Kernel' ? (
+                      <TableCell>{product.grade || '-'}</TableCell>
+                    ) : (
+                      <>
+                        <TableCell>{product.yearOfCrop || '-'}</TableCell>
+                        <TableCell>{product.nutCount || '-'}</TableCell>
+                        <TableCell>{product.outTurn || '-'}</TableCell>
+                      </>
+                    )}
                     <TableCell>
                       <span
                         className={
@@ -342,7 +342,10 @@ const MerchantProducts = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-1">
+                      <div onClick={() => {
+                        setSelectedProduct(product);
+                        setOpen(true);
+                      }} className="flex items-center space-x-1 cursor-pointer hover:text-blue-600">
                         <ShoppingCart className="h-4 w-4" />
                         <span>{product.orders}</span>
                       </div>
@@ -361,7 +364,7 @@ const MerchantProducts = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-6">
+                  <TableCell colSpan={currentProductType === 'Kernel' ? 10 : 12} className="text-center py-6">
                     No products found for selected filters.
                   </TableCell>
                 </TableRow>
@@ -404,31 +407,13 @@ const MerchantProducts = () => {
         </CardContent>
       </Card>
 
-      {/* Right side sheet for enquiries */}
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-[400px] sm:w-[500px]">
-          <SheetHeader>
-            <SheetTitle>
-              Enquiries for {selectedProduct?.name}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 space-y-3">
-            {selectedProduct?.enquiriesList?.length ? (
-              selectedProduct.enquiriesList.map((enq, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 border rounded-lg shadow-sm hover:bg-muted"
-                >
-                  <p className="text-sm font-medium">{enq.customer}</p>
-                  <p className="text-xs text-muted-foreground">{enq.message}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No enquiries yet</p>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Enquiry/Order Drawer */}
+      <EnquiryOrderDrawer
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        productName={selectedProduct?.name || ''}
+        productId={selectedProduct?.id || ''}
+      />
 
     </div>
   );

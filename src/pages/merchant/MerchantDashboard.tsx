@@ -3,25 +3,57 @@ import { Badge } from "@/components/ui/badge";
 import { Package, MessageSquare, Users, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import RoleSwitcher from "@/components/RoleSwitcher";
-
-const mockStats = {
-  totalProducts: 24,
-  activeProducts: 18,
-  pendingOrders: 7,
-  totalEnquiries: 12,
-  quotesSubmitted: 9,
-  monthlyRevenue: 45000,
-  newCustomers: 8
-};
-
-const mockRecentActivity = [
-  { id: 1, type: "order", message: "New order received for Premium Cashews W240", time: "2 hours ago" },
-  { id: 2, type: "enquiry", message: "Customer enquiry about W320 grade pricing", time: "4 hours ago" },
-  { id: 3, type: "product", message: "Low stock alert for W180 Cashews", time: "6 hours ago" },
-  { id: 4, type: "order", message: "Order #ORD-123 marked as shipped", time: "1 day ago" },
-];
+import { useInventory } from "@/hooks/useInventory";
+import { useProfile } from "@/hooks/useProfile";
+import ProductTypeToggle from "@/components/ProductTypeToggle";
+import { useState } from "react";
+import { ProductType } from "@/types/user";
 
 const MerchantDashboard = () => {
+  const { getProductStats } = useInventory();
+  const { profile } = useProfile();
+  const stats = getProductStats();
+  
+  // State for product type toggle (only for "Both" users)
+  const getInitialProductType = (): ProductType => {
+    if (profile?.productType === 'Both') {
+      return 'RCN';
+    }
+    return profile?.productType || 'RCN';
+  };
+  
+  const [currentProductType, setCurrentProductType] = useState<ProductType>(getInitialProductType());
+  
+  // Calculate display stats based on current type
+  const getDisplayStats = () => {
+    if (profile?.productType === 'Both') {
+      return currentProductType === 'RCN' 
+        ? { products: stats.rcnProducts, stock: stats.totalStock.rcn }
+        : { products: stats.kernelProducts, stock: stats.totalStock.kernel };
+    }
+    
+    // For single type users, show their specific type
+    if (profile?.productType === 'RCN') {
+      return { products: stats.rcnProducts, stock: stats.totalStock.rcn };
+    } else {
+      return { products: stats.kernelProducts, stock: stats.totalStock.kernel };
+    }
+  };
+  
+  const displayStats = getDisplayStats();
+
+  const mockStats = {
+    totalEnquiries: 12,
+    quotesSubmitted: 9,
+    newCustomers: 8
+  };
+
+  const mockRecentActivity = [
+    { id: 1, type: "order", message: "New order received for Premium Cashews W240", time: "2 hours ago" },
+    { id: 2, type: "enquiry", message: "Customer enquiry about W320 grade pricing", time: "4 hours ago" },
+    { id: 3, type: "product", message: "Low stock alert for W180 Cashews", time: "6 hours ago" },
+    { id: 4, type: "order", message: "Order #ORD-123 marked as shipped", time: "1 day ago" },
+  ];
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -33,6 +65,12 @@ const MerchantDashboard = () => {
         </div>
         <RoleSwitcher />
       </div>
+
+      {/* Product Type Toggle */}
+      <ProductTypeToggle 
+        currentType={currentProductType}
+        onTypeChange={setCurrentProductType}
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -64,13 +102,15 @@ const MerchantDashboard = () => {
         <Link to="/merchant/products">
           <Card className="cursor-pointer hover:shadow-md transition">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">My Products</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                My {currentProductType} Products
+              </CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockStats.totalProducts}</div>
+              <div className="text-2xl font-bold">{displayStats.products}</div>
               <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">{mockStats.activeProducts}</span> active products
+                <span className="text-green-600">{displayStats.stock}</span> total stock
               </p>
             </CardContent>
           </Card>
