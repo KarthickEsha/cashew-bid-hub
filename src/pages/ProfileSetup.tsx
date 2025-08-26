@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,29 +11,36 @@ import { Upload, User, Building2 } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 import { useRole } from '@/hooks/useRole';
 import { ProductType, UserRole } from '@/types/user';
+import { useUser } from '@clerk/clerk-react';
+import ImageCropDialog from '@/components/ImageCropDialog';
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
   const { setProfile } = useProfile();
   const { setRole } = useRole();
+  const { user } = useUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
-    name: 'John Doe', // Placeholder for OAuth data
+    name: user?.fullName || '',
     address: '',
     location: '',
     role: 'buyer' as UserRole,
     productType: 'RCN' as ProductType,
-    businessType: 'individual', // 👈 new field
+    businessType: 'individual',
     profilePicture: '',
   });
+  
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Set profile data
     setProfile({
-      id: '1',
-      email: 'user@example.com', // Placeholder for OAuth data
+      id: user?.id || '1',
+      email: user?.primaryEmailAddress?.emailAddress || '',
       name: formData.name,
       address: formData.address,
       location: formData.location,
@@ -52,8 +59,25 @@ const ProfileSetup = () => {
   };
 
   const handleImageUpload = () => {
-    // Placeholder for image upload functionality
-    setFormData({ ...formData, profilePicture: '/placeholder.svg' });
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        setSelectedImage(imageUrl);
+        setCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCropComplete = (croppedImageUrl: string) => {
+    setFormData({ ...formData, profilePicture: croppedImageUrl });
+    setCropDialogOpen(false);
   };
 
   return (
@@ -93,6 +117,13 @@ const ProfileSetup = () => {
                 <Upload className="w-4 h-4" />
                 Upload {formData.role === 'processor' ? 'Logo' : 'Photo'}
               </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
             </div>
 
             {/* Name */}
@@ -196,6 +227,13 @@ const ProfileSetup = () => {
           </form>
         </CardContent>
       </Card>
+
+      <ImageCropDialog
+        isOpen={cropDialogOpen}
+        onClose={() => setCropDialogOpen(false)}
+        imageUrl={selectedImage}
+        onCropComplete={handleCropComplete}
+      />
     </div>
   );
 };

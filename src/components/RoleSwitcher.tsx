@@ -32,19 +32,14 @@ const RoleSwitcher = () => {
     setIsOpen(false);
   };
 
-  // 🔑 Handle product type change (optional redirect with query param)
+  // 🔑 Handle product type change and redirect to dashboard
   const handleProductTypeChange = (newProductType: ProductType) => {
     if (profile) {
       updateProfile({ productType: newProductType });
     }
 
-    // Redirect to dashboard with selected product type
-    const dashboardPath =
-      role === 'buyer'
-        ? `/dashboard/buyer?productType=${newProductType}`
-        : `/dashboard/merchant?productType=${newProductType}`;
-
-    navigate(dashboardPath);
+    // Redirect to appropriate dashboard based on role
+    navigate('/');
     setIsOpen(false);
   };
 

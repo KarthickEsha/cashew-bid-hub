@@ -19,13 +19,13 @@ import {
   Filter,
   Search,
 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
 import { useInventory } from "@/hooks/useInventory";
 import { useProfile } from "@/hooks/useProfile";
 import ProductTypeToggle from "@/components/ProductTypeToggle";
 import EnquiryOrderDrawer from "@/components/EnquiryOrderDrawer";
-import { ProductType } from "@/types/user";
+import ProductListTable from "@/components/ProductListTable";
+import { ProductType, Product } from "@/types/user";
 import React from "react";
 
 const MerchantProducts = () => {
@@ -183,25 +183,27 @@ const MerchantProducts = () => {
               </div>
             </div>
 
-            {/* Grade */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Grade</label>
-              <Select
-                value={filters.grade}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, grade: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="W240">W240</SelectItem>
-                  <SelectItem value="W320">W320</SelectItem>
-                  <SelectItem value="Broken BB">Broken BB</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Grade - Only show for Kernel products */}
+            {currentProductType === 'Kernel' && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Grade</label>
+                <Select
+                  value={filters.grade}
+                  onValueChange={(value) =>
+                    setFilters({ ...filters, grade: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="W240">W240</SelectItem>
+                    <SelectItem value="W320">W320</SelectItem>
+                    <SelectItem value="Broken BB">Broken BB</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Location */}
             <div>
@@ -272,105 +274,26 @@ const MerchantProducts = () => {
           <CardTitle>Product Inventory</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table className="w-full border-collapse">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product Name</TableHead>
-                {currentProductType === 'Kernel' ? (
-                  <TableHead>Grade</TableHead>
-                ) : (
-                  <>
-                    <TableHead>Year of Crop</TableHead>
-                    <TableHead>Nut Count</TableHead>
-                    <TableHead>Out Turn</TableHead>
-                  </>
-                )}
-                <TableHead>Stock</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Origin</TableHead>
-                <TableHead>Expire Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Enquiries</TableHead>
-                <TableHead>Orders</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedProducts.length > 0 ? (
-                paginatedProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    {currentProductType === 'Kernel' ? (
-                      <TableCell>{product.grade || '-'}</TableCell>
-                    ) : (
-                      <>
-                        <TableCell>{product.yearOfCrop || '-'}</TableCell>
-                        <TableCell>{product.nutCount || '-'}</TableCell>
-                        <TableCell>{product.outTurn || '-'}</TableCell>
-                      </>
-                    )}
-                    <TableCell>
-                      <span
-                        className={
-                          product.stock === 0 ? "text-red-600" : "text-green-600"
-                        }
-                      >
-                        {product.stock} {product.unit}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      ${product.price}/{product.unit}
-                    </TableCell>
-                    <TableCell>{product.location}</TableCell>
-                    <TableCell>{product.expireDate}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          product.status === "active" ? "default" : "destructive"
-                        }
-                      >
-                        {product.status === "active" ? "Active" : "Out of Stock"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div onClick={() => {
-                        setSelectedProduct(product);
-                        setOpen(true);
-                      }} className="flex items-center space-x-1 cursor-pointer hover:text-blue-600">
-                        <MessageSquare className="h-4 w-4" />
-                        <span>{product.enquiries}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div onClick={() => {
-                        setSelectedProduct(product);
-                        setOpen(true);
-                      }} className="flex items-center space-x-1 cursor-pointer hover:text-blue-600">
-                        <ShoppingCart className="h-4 w-4" />
-                        <span>{product.orders}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={currentProductType === 'Kernel' ? 10 : 12} className="text-center py-6">
-                    No products found for selected filters.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <ProductListTable
+            products={paginatedProducts}
+            currentProductType={currentProductType}
+            onEnquiryClick={(product: Product) => {
+              setSelectedProduct(product);
+              setOpen(true);
+            }}
+            onOrderClick={(product: Product) => {
+              setSelectedProduct(product);
+              setOpen(true);
+            }}
+            onViewClick={(product: Product) => {
+              console.log('View product:', product);
+              // Add view logic here
+            }}
+            onEditClick={(product: Product) => {
+              console.log('Edit product:', product);
+              // Add edit logic here
+            }}
+          />
 
           {/* Pagination */}
           {filteredProducts.length > 0 && (

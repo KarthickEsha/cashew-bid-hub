@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, ShoppingCart, Eye, Check, X } from 'lucide-react';
-import ChatDrawer from './ChatDrawer';
+import ChatModal from './ChatModal';
 
 interface Enquiry {
   id: string;
@@ -33,7 +33,7 @@ interface EnquiryOrderDrawerProps {
 }
 
 const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: EnquiryOrderDrawerProps) => {
-  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   
   // Mock data - in real app, this would come from backend
@@ -77,7 +77,7 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
 
   const handleChatOpen = (customerName: string) => {
     setSelectedCustomer(customerName);
-    setChatDrawerOpen(true);
+    setChatModalOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -213,9 +213,9 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
         </SheetContent>
       </Sheet>
 
-      <ChatDrawer
-        isOpen={chatDrawerOpen}
-        onClose={() => setChatDrawerOpen(false)}
+      <ChatModal
+        isOpen={chatModalOpen}
+        onClose={() => setChatModalOpen(false)}
         customerName={selectedCustomer}
         productName={productName}
         userType="merchant"

@@ -21,6 +21,25 @@ export interface User {
   name: string;
 }
 
+export interface Product {
+  id: string;
+  name: string;
+  type: ProductType;
+  grade?: string;
+  yearOfCrop?: string;
+  nutCount?: string;
+  outTurn?: string;
+  stock: number;
+  price: number;
+  unit: string;
+  location: string;
+  expireDate: string;
+  status: 'active' | 'out_of_stock';
+  enquiries: number;
+  orders: number;
+  [key: string]: any;
+}
+
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
