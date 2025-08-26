@@ -3,7 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { Eye, MessageSquare, MapPin } from "lucide-react";
+import ChatModal from "@/components/ChatModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const mockRequirements = [
   {
@@ -56,11 +59,28 @@ const mockRequirements = [
 const MerchantRequirements = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [locationFilter, setLocationFilter] = useState('');
+  const [gradeFilter, setGradeFilter] = useState('');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedRequirement, setSelectedRequirement] = useState<any>(null);
   const itemsPerPage = 10;
 
   const filteredRequirements = mockRequirements.filter(req => 
-    locationFilter === '' || req.location.toLowerCase().includes(locationFilter.toLowerCase())
+    (locationFilter === '' || req.location.toLowerCase().includes(locationFilter.toLowerCase())) &&
+    (gradeFilter === '' || req.grade.toLowerCase().includes(gradeFilter.toLowerCase())) &&
+    (searchFilter === '' || req.title.toLowerCase().includes(searchFilter.toLowerCase()) || req.customer.toLowerCase().includes(searchFilter.toLowerCase()))
   );
+
+  const handleViewClick = (requirement: any) => {
+    setSelectedRequirement(requirement);
+    setViewModalOpen(true);
+  };
+
+  const handleChatClick = (requirement: any) => {
+    setSelectedRequirement(requirement);
+    setChatModalOpen(true);
+  };
 
   const totalPages = Math.ceil(filteredRequirements.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -81,15 +101,29 @@ const MerchantRequirements = () => {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Search</label>
+              <Input
+                placeholder="Search title, customer..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Filter by Grade</label>
+              <Input
+                placeholder="Enter grade..."
+                value={gradeFilter}
+                onChange={(e) => setGradeFilter(e.target.value)}
+              />
+            </div>
+            <div>
               <label className="text-sm font-medium mb-2 block">Filter by Location</label>
-              <input
-                type="text"
+              <Input
                 placeholder="Enter location..."
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-md"
               />
             </div>
           </div>
@@ -142,10 +176,10 @@ const MerchantRequirements = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(requirement)}>
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-green-600">
+                      <Button variant="ghost" size="sm" className="text-green-600" onClick={() => handleChatClick(requirement)}>
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     </div>
@@ -181,6 +215,72 @@ const MerchantRequirements = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* View Requirement Modal */}
+      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Requirement Details</DialogTitle>
+            <DialogDescription>Complete information about the customer requirement</DialogDescription>
+          </DialogHeader>
+          {selectedRequirement && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Customer</h4>
+                  <p className="font-medium">{selectedRequirement.customer}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Title</h4>
+                  <p className="font-medium">{selectedRequirement.title}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Grade</h4>
+                  <Badge variant="outline">{selectedRequirement.grade}</Badge>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Quantity</h4>
+                  <p className="font-medium">{selectedRequirement.quantity}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Budget Range</h4>
+                  <p className="font-medium">${selectedRequirement.minBudget} - ${selectedRequirement.maxBudget}/{selectedRequirement.unit}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Origin</h4>
+                  <p className="font-medium">{selectedRequirement.origin}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Delivery Location</h4>
+                  <p className="font-medium">{selectedRequirement.location}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Delivery Deadline</h4>
+                  <p className="font-medium">{new Date(selectedRequirement.deliveryDeadline).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => handleChatClick(selectedRequirement)} className="flex-1">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Send Message
+                </Button>
+                <Button variant="outline" onClick={() => setViewModalOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={chatModalOpen}
+        onClose={() => setChatModalOpen(false)}
+        customerName={selectedRequirement?.customer || ''}
+        productName={selectedRequirement?.title || ''}
+        userType="merchant"
+      />
     </div>
   );
 };

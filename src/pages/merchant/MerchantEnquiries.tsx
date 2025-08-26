@@ -3,7 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, MessageSquare } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Eye, MessageSquare, Search } from "lucide-react";
+import ChatModal from "@/components/ChatModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const mockEnquiries = [
   {
@@ -37,11 +40,33 @@ const mockEnquiries = [
 
 const MerchantEnquiries = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchFilter, setSearchFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedEnquiry, setSelectedEnquiry] = useState<any>(null);
   const itemsPerPage = 10;
 
-  const totalPages = Math.ceil(mockEnquiries.length / itemsPerPage);
+  const filteredEnquiries = mockEnquiries.filter(enquiry => 
+    (searchFilter === '' || 
+     enquiry.customerName.toLowerCase().includes(searchFilter.toLowerCase()) || 
+     enquiry.productName.toLowerCase().includes(searchFilter.toLowerCase())) &&
+    (statusFilter === '' || enquiry.status === statusFilter)
+  );
+
+  const handleViewClick = (enquiry: any) => {
+    setSelectedEnquiry(enquiry);
+    setViewModalOpen(true);
+  };
+
+  const handleChatClick = (enquiry: any) => {
+    setSelectedEnquiry(enquiry);
+    setChatModalOpen(true);
+  };
+
+  const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedEnquiries = mockEnquiries.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedEnquiries = filteredEnquiries.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="p-6 space-y-6">
@@ -51,6 +76,41 @@ const MerchantEnquiries = () => {
           Manage enquiries from customers about your products
         </p>
       </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search customer, product..."
+                  className="pl-8"
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Filter by Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-md"
+              >
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="responded">Responded</option>
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -83,10 +143,10 @@ const MerchantEnquiries = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(enquiry)}>
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleChatClick(enquiry)}>
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     </div>
@@ -99,7 +159,7 @@ const MerchantEnquiries = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, mockEnquiries.length)} of {mockEnquiries.length} enquiries
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEnquiries.length)} of {filteredEnquiries.length} enquiries
             </div>
             <div className="flex space-x-2">
               <Button
@@ -122,6 +182,66 @@ const MerchantEnquiries = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* View Enquiry Modal */}
+      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Enquiry Details</DialogTitle>
+            <DialogDescription>Complete information about the customer enquiry</DialogDescription>
+          </DialogHeader>
+          {selectedEnquiry && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Customer</h4>
+                  <p className="font-medium">{selectedEnquiry.customerName}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Product</h4>
+                  <p className="font-medium">{selectedEnquiry.productName}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Quantity</h4>
+                  <p className="font-medium">{selectedEnquiry.quantity}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Date</h4>
+                  <p className="font-medium">{new Date(selectedEnquiry.date).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Status</h4>
+                  <Badge variant={selectedEnquiry.status === 'pending' ? 'destructive' : 'default'}>
+                    {selectedEnquiry.status === 'pending' ? 'Pending' : 'Responded'}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground mb-2">Message</h4>
+                <p className="p-3 bg-muted rounded-md">{selectedEnquiry.message}</p>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => handleChatClick(selectedEnquiry)} className="flex-1">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Reply to Enquiry
+                </Button>
+                <Button variant="outline" onClick={() => setViewModalOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={chatModalOpen}
+        onClose={() => setChatModalOpen(false)}
+        customerName={selectedEnquiry?.customerName || ''}
+        productName={selectedEnquiry?.productName || ''}
+        userType="merchant"
+      />
     </div>
   );
 };

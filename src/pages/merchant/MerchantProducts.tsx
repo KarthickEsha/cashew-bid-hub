@@ -286,12 +286,10 @@ const MerchantProducts = () => {
               setOpen(true);
             }}
             onViewClick={(product: Product) => {
-              console.log('View product:', product);
-              // Add view logic here
+              navigate(`/product/${product.id}`);
             }}
             onEditClick={(product: Product) => {
-              console.log('Edit product:', product);
-              // Add edit logic here
+              navigate(`/merchant/edit-product/${product.id}`);
             }}
           />
 
