@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  MapPin, 
-  Calendar, 
-  Star, 
-  Phone, 
-  Mail, 
+import {
+  MapPin,
+  Calendar,
+  Star,
+  Phone,
+  Mail,
   Globe,
   ArrowLeft,
   TrendingUp,
@@ -18,6 +18,7 @@ import {
   Shield,
   Clock
 } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -49,7 +50,7 @@ const ProductDetail = () => {
     merchant: {
       name: "Premium Cashews Ltd",
       establishedYear: "2010",
-      location: "Mumbai, India", 
+      location: "Mumbai, India",
       phone: "+91-98765-43210",
       email: "sales@premiumcashews.com",
       website: "www.premiumcashews.com",
@@ -65,13 +66,15 @@ const ProductDetail = () => {
     // Handle bid placement logic here
     console.log("Bid placed:", { quantity: bidQuantity, price: bidPrice, message: bidMessage });
   };
+  const { role, setRole } = useRole();
+  const backLink = role === "processor" ? "/merchant/products" : "/marketplace";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Back Navigation */}
-      <Link to="/marketplace" className="inline-flex items-center text-muted-foreground hover:text-primary mb-6">
+      <Link to={backLink} className="inline-flex items-center text-muted-foreground hover:text-primary mb-6">
         <ArrowLeft size={16} className="mr-2" />
-        Back to Marketplace
+        {role === "processor" ? "Back to My Product Stocks" : "Back to Marketplace"}
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -123,7 +126,7 @@ const ProductDetail = () => {
                   </div>
                 </div>
               </div>
-              
+
               {product.pricingType === 'bidding' && (
                 <div className="flex items-center space-x-2 p-3 bg-accent/50 rounded-lg">
                   <TrendingUp size={20} className="text-primary" />
@@ -161,7 +164,7 @@ const ProductDetail = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Quantity (tons)</label>
-                  <Input 
+                  <Input
                     placeholder="Enter quantity needed"
                     value={bidQuantity}
                     onChange={(e) => setBidQuantity(e.target.value)}
@@ -170,7 +173,7 @@ const ProductDetail = () => {
                 {product.pricingType === 'bidding' && (
                   <div>
                     <label className="text-sm font-medium mb-2 block">Your Price ($/ton)</label>
-                    <Input 
+                    <Input
                       placeholder="Enter your bid price"
                       value={bidPrice}
                       onChange={(e) => setBidPrice(e.target.value)}
@@ -180,7 +183,7 @@ const ProductDetail = () => {
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Message (Optional)</label>
-                <Textarea 
+                <Textarea
                   placeholder="Add any special requirements or messages"
                   value={bidMessage}
                   onChange={(e) => setBidMessage(e.target.value)}
@@ -216,7 +219,7 @@ const ProductDetail = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">{product.merchant.description}</p>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
                   <MapPin size={16} className="text-muted-foreground" />
