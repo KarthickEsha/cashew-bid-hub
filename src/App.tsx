@@ -11,8 +11,13 @@ import ProductDetail from "./pages/ProductDetail";
 import MyRequests from "./pages/MyRequests";
 import PostRequirement from "./pages/PostRequirement";
 import MyRequirements from "./pages/MyRequirements";
+import MyBids from "./pages/MyBids";
+import MyOrders from "./pages/MyOrders";
 import EditRequirement from "./pages/EditRequirement";
 import Responses from "./pages/Responses";
+import RequestDetails from "./pages/RequestDetails";
+import RequirementDetails from "./pages/RequirementDetails";
+import ProductDetailsView from "./pages/ProductDetailsView";
 import NotFound from "./pages/NotFound";
 import MerchantProducts from "./pages/merchant/MerchantProducts";
 import MerchantAddProduct from "./pages/merchant/MerchantAddProduct";
@@ -63,10 +68,15 @@ const AppContent = () => {
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/my-requests" element={<MyRequests />} />
+        <Route path="/my-bids" element={<MyBids />} />
+        <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/post-requirement" element={<PostRequirement />} />
         <Route path="/my-requirements" element={<MyRequirements />} />
         <Route path="/edit-requirement/:id" element={<EditRequirement />} />
         <Route path="/responses" element={<Responses />} />
+        <Route path="/request/:id" element={<RequestDetails />} />
+        <Route path="/requirement/:id" element={<RequirementDetails />} />
+        <Route path="/merchant/:merchantName/products" element={<ProductDetailsView />} />
       
         {/* Merchant Routes */}
         <Route path="/merchant/products" element={<MerchantProducts />} />

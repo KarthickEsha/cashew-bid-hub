@@ -81,8 +81,8 @@ const ProfileSetup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl shadow-warm">
+    <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4 overflow-y-auto">
+      <Card className="w-full max-w-2xl shadow-warm my-8">
         <CardHeader className="text-center space-y-2">
           <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8 text-primary-foreground" />

@@ -8,6 +8,8 @@ import { useRole } from "@/hooks/useRole";
 import Login from "@/pages/Login";
 import { SignedIn, SignedOut, useClerk, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
+import NotificationPanel from "@/components/NotificationPanel"; 
+import ProfilePanel from "@/components/ProfilePanel";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -69,20 +71,24 @@ const Layout = ({ children }: LayoutProps) => {
                   </div>
 
                   {/* Notifications */}
-                  <Button variant="ghost" size="sm" className="relative p-2">
-                    <Bell size={18} />
-                    <Badge
-                      variant="destructive"
-                      className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 text-xs"
-                    >
-                      3
-                    </Badge>
-                  </Button>
+                  <NotificationPanel>
+                    <Button variant="ghost" size="sm" className="relative p-2">
+                      <Bell size={18} />
+                      <Badge
+                        variant="destructive"
+                        className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 text-xs"
+                      >
+                        3
+                      </Badge>
+                    </Button>
+                  </NotificationPanel>
 
                   {/* Profile */}
-                  <Button variant="ghost" size="sm" className="p-2">
-                    <User size={18} />
-                  </Button>
+                  <ProfilePanel>
+                    <Button variant="ghost" size="sm" className="p-2">
+                      <User size={18} />
+                    </Button>
+                  </ProfilePanel>
                 </div>
               </header>
 

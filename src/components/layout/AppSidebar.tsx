@@ -36,6 +36,8 @@ const myActivityItems = [
   { path: "/my-requests", label: "My Requests", icon: MessageSquare },
   { path: "/my-requirements", label: "My Requirements", icon: FileText },
   { path: "/responses", label: "Responses", icon: Mail },
+  { path: "/my-bids", label: "My Bids", icon: FileText },
+  { path: "/my-orders", label: "My Orders", icon: Mail },
 ];
 
 export function AppSidebar() {
