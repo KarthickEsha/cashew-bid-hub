@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Calendar,
   MapPin,
-  DollarSign,
   Search,
   Eye,
   Clock,
@@ -19,8 +19,19 @@ import {
 
 const MyBids = () => {
   const [currentPage, setCurrentPage] = useState(1);
+
+  // temporary states for UI inputs
+  const [tempSearchTerm, setTempSearchTerm] = useState("");
+  const [tempStatusFilter, setTempStatusFilter] = useState("all");
+  const [tempLocationFilter, setTempLocationFilter] = useState("all");
+
+  // applied filters (used for actual filtering)
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
+
+  // dialog state
+  const [selectedBid, setSelectedBid] = useState<any>(null);
 
   const bids = [
     {
@@ -61,6 +72,9 @@ const MyBids = () => {
     }
   ];
 
+  // get unique locations for filter dropdown
+  const uniqueLocations = ["all", ...Array.from(new Set(bids.map((b) => b.location)))];
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
@@ -87,19 +101,40 @@ const MyBids = () => {
     }
   };
 
+  // apply filters
   const filteredBids = bids.filter((bid) => {
     const matchesSearch = searchTerm
       ? bid.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bid.merchantName.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
     const matchesStatus = statusFilter !== "all" ? bid.status === statusFilter : true;
-    return matchesSearch && matchesStatus;
+    const matchesLocation = locationFilter !== "all" ? bid.location === locationFilter : true;
+    return matchesSearch && matchesStatus && matchesLocation;
   });
 
   const itemsPerPage = 6;
   const totalPages = Math.ceil(filteredBids.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentBids = filteredBids.slice(startIndex, startIndex + itemsPerPage);
+
+  // handle Apply Filters
+  const handleApplyFilters = () => {
+    setSearchTerm(tempSearchTerm);
+    setStatusFilter(tempStatusFilter);
+    setLocationFilter(tempLocationFilter);
+    setCurrentPage(1);
+  };
+
+  // handle Clear Filters
+  const handleClearFilters = () => {
+    setTempSearchTerm("");
+    setTempStatusFilter("all");
+    setTempLocationFilter("all");
+    setSearchTerm("");
+    setStatusFilter("all");
+    setLocationFilter("all");
+    setCurrentPage(1);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -134,7 +169,8 @@ const MyBids = () => {
           <CardTitle>Filter Bids</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Search */}
             <div className="relative">
               <Search
                 size={16}
@@ -143,12 +179,13 @@ const MyBids = () => {
               <Input
                 placeholder="Search bids..."
                 className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={tempSearchTerm}
+                onChange={(e) => setTempSearchTerm(e.target.value)}
               />
             </div>
 
-            <Select onValueChange={(value) => setStatusFilter(value)}>
+            {/* Status */}
+            <Select value={tempStatusFilter} onValueChange={(value) => setTempStatusFilter(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -160,7 +197,27 @@ const MyBids = () => {
               </SelectContent>
             </Select>
 
-            <Button onClick={() => setCurrentPage(1)}>Apply Filters</Button>
+            {/* Location */}
+            <Select value={tempLocationFilter} onValueChange={(value) => setTempLocationFilter(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Location" />
+              </SelectTrigger>
+              <SelectContent>
+                {uniqueLocations.map((loc) => (
+                  <SelectItem key={loc} value={loc}>
+                    {loc === "all" ? "All Locations" : loc}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Buttons */}
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+              <Button onClick={handleApplyFilters}>Apply Filters</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -234,7 +291,11 @@ const MyBids = () => {
               </div>
 
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedBid(bid)}
+                >
                   <Eye size={14} className="mr-2" /> View Details
                 </Button>
 
@@ -280,6 +341,55 @@ const MyBids = () => {
           </div>
         </div>
       )}
+
+      {/* View Details Dialog */}
+      <Dialog open={!!selectedBid} onOpenChange={() => setSelectedBid(null)}>
+        <DialogContent className="max-w-lg">
+          {selectedBid && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedBid.productName}</DialogTitle>
+                <DialogDescription>
+                  Details of your bid with {selectedBid.merchantName}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 mt-4">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Merchant:</span>
+                  <span className="font-medium">{selectedBid.merchantName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Location:</span>
+                  <span className="font-medium">{selectedBid.location}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Quantity:</span>
+                  <span className="font-medium">{selectedBid.quantity}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Bid Amount:</span>
+                  <span className="font-medium">{selectedBid.bidAmount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Value:</span>
+                  <span className="font-medium">{selectedBid.totalValue}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status:</span>
+                  <span className="font-medium capitalize">{selectedBid.status}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <Button variant="outline" onClick={() => setSelectedBid(null)}>
+                  Close
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

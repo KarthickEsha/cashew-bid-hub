@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ import {
 import { useRole } from "@/hooks/useRole";
 
 const ProductDetail = () => {
-  const { id } = useParams();
+  const navigate = useNavigate();
   const [bidQuantity, setBidQuantity] = useState("");
   const [bidPrice, setBidPrice] = useState("");
   const [bidMessage, setBidMessage] = useState("");
@@ -62,20 +62,31 @@ const ProductDetail = () => {
     }
   };
 
+   const handleBack = () => {
+    if (role === "processor") {
+      navigate("/merchant/products");
+    } else {
+      navigate("/marketplace");
+    }
+  };
+
   const handlePlaceBid = () => {
     // Handle bid placement logic here
     console.log("Bid placed:", { quantity: bidQuantity, price: bidPrice, message: bidMessage });
   };
-  const { role, setRole } = useRole();
-  const backLink = role === "processor" ? "/merchant/products" : "/marketplace";
+  const { role } = useRole();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Back Navigation */}
-      <Link to={backLink} className="inline-flex items-center text-muted-foreground hover:text-primary mb-6">
-        <ArrowLeft size={16} className="mr-2" />
-        {role === "processor" ? "Back to My Product Stocks" : "Back to Marketplace"}
-      </Link>
+      <Button
+      variant="ghost"
+      className="inline-flex items-center text-muted-foreground hover:text-primary mb-6"
+      onClick={handleBack}
+    >
+      <ArrowLeft size={16} className="mr-2" />
+      {role === "processor" ? "Back to My Product Stocks" : "Back to Marketplace"}
+    </Button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Product Details */}

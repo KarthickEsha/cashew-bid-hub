@@ -10,7 +10,7 @@ interface NotificationPanelProps {
 
 const NotificationPanel = ({ children }: NotificationPanelProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const notifications = [
     {
       id: 1,
@@ -29,7 +29,7 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
       read: false
     },
     {
-      id: 3,  
+      id: 3,
       type: 'warning',
       title: 'Price Alert',
       message: 'Cashew prices have increased by 5%',
@@ -58,20 +58,19 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Notifications
-            <Badge variant="destructive" className="ml-auto">
+            <span>Notifications</span>
+            <Badge variant="destructive">
               {notifications.filter(n => !n.read).length}
             </Badge>
           </SheetTitle>
         </SheetHeader>
-        
+
         <div className="mt-6 space-y-4">
           {notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`p-4 rounded-lg border ${
-                notification.read ? 'bg-background' : 'bg-accent/50'
-              }`}
+              className={`p-4 rounded-lg border ${notification.read ? 'bg-background' : 'bg-accent/50'
+                }`}
             >
               <div className="flex items-start gap-3">
                 {getIcon(notification.type)}

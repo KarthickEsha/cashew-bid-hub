@@ -3,24 +3,52 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Calendar,
   MapPin,
-  DollarSign,
   Search,
   Eye,
   Truck,
   Package,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  DollarSign,
+  User,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const MyOrders = () => {
   const [currentPage, setCurrentPage] = useState(1);
+
+  // filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
+
+  // applied filters
+  const [appliedFilters, setAppliedFilters] = useState({
+    searchTerm: "",
+    statusFilter: "all",
+    locationFilter: "all",
+  });
+
+  // dialog states
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [trackingOpen, setTrackingOpen] = useState(false);
 
   const orders = [
     {
@@ -32,9 +60,17 @@ const MyOrders = () => {
       totalAmount: "$205,000",
       status: "confirmed",
       orderDate: "2024-08-20",
+      shippingDate: "2024-08-22",
       deliveryDate: "2024-09-05",
       location: "Mumbai, India",
-      trackingNumber: "TRK123456789"
+      trackingNumber: "TRK123456789",
+      steps: [
+        { label: "Order Placed", date: "2024-08-20", done: true },
+        { label: "Confirmed", date: "2024-08-21", done: true },
+        { label: "Shipped", date: "2024-08-22", done: true },
+        { label: "In Transit", date: "2024-08-28", done: false },
+        { label: "Delivered", date: "2024-09-05", done: false },
+      ],
     },
     {
       id: "ORD-002",
@@ -45,10 +81,17 @@ const MyOrders = () => {
       totalAmount: "$142,500",
       status: "shipped",
       orderDate: "2024-08-18",
-      shippedDate: "2024-08-22",
+      shippingDate: "2024-08-22",
       deliveryDate: "2024-09-01",
       location: "Ho Chi Minh, Vietnam",
-      trackingNumber: "TRK987654321"
+      trackingNumber: "TRK987654321",
+      steps: [
+        { label: "Order Placed", date: "2024-08-18", done: true },
+        { label: "Confirmed", date: "2024-08-19", done: true },
+        { label: "Shipped", date: "2024-08-22", done: true },
+        { label: "In Transit", date: "2024-08-26", done: false },
+        { label: "Delivered", date: "2024-09-01", done: false },
+      ],
     },
     {
       id: "ORD-003",
@@ -59,9 +102,17 @@ const MyOrders = () => {
       totalAmount: "$234,000",
       status: "delivered",
       orderDate: "2024-08-10",
-      deliveredDate: "2024-08-25",
+      shippingDate: "2024-08-15",
+      deliveryDate: "2024-08-25",
       location: "Accra, Ghana",
-      trackingNumber: "TRK555666777"
+      trackingNumber: "TRK555666777",
+      steps: [
+        { label: "Order Placed", date: "2024-08-10", done: true },
+        { label: "Confirmed", date: "2024-08-12", done: true },
+        { label: "Shipped", date: "2024-08-15", done: true },
+        { label: "In Transit", date: "2024-08-20", done: true },
+        { label: "Delivered", date: "2024-08-25", done: true },
+      ],
     },
     {
       id: "ORD-004",
@@ -73,8 +124,8 @@ const MyOrders = () => {
       status: "processing",
       orderDate: "2024-08-22",
       expectedShipping: "2024-08-28",
-      location: "Kerala, India"
-    }
+      location: "Kerala, India",
+    },
   ];
 
   const getStatusIcon = (status: string) => {
@@ -107,14 +158,25 @@ const MyOrders = () => {
     }
   };
 
+  // filtering
   const filteredOrders = orders.filter((order) => {
-    const matchesSearch = searchTerm
-      ? order.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.merchantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.id.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = appliedFilters.searchTerm
+      ? order.productName.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase()) ||
+        order.merchantName.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase()) ||
+        order.id.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase())
       : true;
-    const matchesStatus = statusFilter !== "all" ? order.status === statusFilter : true;
-    return matchesSearch && matchesStatus;
+
+    const matchesStatus =
+      appliedFilters.statusFilter !== "all"
+        ? order.status === appliedFilters.statusFilter
+        : true;
+
+    const matchesLocation =
+      appliedFilters.locationFilter !== "all"
+        ? order.location === appliedFilters.locationFilter
+        : true;
+
+    return matchesSearch && matchesStatus && matchesLocation;
   });
 
   const itemsPerPage = 6;
@@ -122,32 +184,32 @@ const MyOrders = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
+  const uniqueLocations = Array.from(new Set(orders.map((o) => o.location)));
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      searchTerm,
+      statusFilter,
+      locationFilter,
+    });
+    setCurrentPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setLocationFilter("all");
+    setAppliedFilters({
+      searchTerm: "",
+      statusFilter: "all",
+      locationFilter: "all",
+    });
+    setCurrentPage(1);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">My Orders</h1>
-        <p className="text-muted-foreground">
-          Track your orders and delivery status
-        </p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {[
-          { label: "Total Orders", value: orders.length.toString(), color: "text-blue-600" },
-          { label: "Processing", value: orders.filter(o => o.status === "processing").length.toString(), color: "text-yellow-600" },
-          { label: "Shipped", value: orders.filter(o => o.status === "shipped").length.toString(), color: "text-orange-600" },
-          { label: "Delivered", value: orders.filter(o => o.status === "delivered").length.toString(), color: "text-green-600" }
-        ].map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <div className={`text-sm ${stat.color}`}>{stat.label}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <h1 className="text-3xl font-bold mb-4">My Orders</h1>
 
       {/* Filters */}
       <Card className="mb-6">
@@ -155,7 +217,8 @@ const MyOrders = () => {
           <CardTitle>Filter Orders</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Search */}
             <div className="relative">
               <Search
                 size={16}
@@ -169,7 +232,8 @@ const MyOrders = () => {
               />
             </div>
 
-            <Select onValueChange={(value) => setStatusFilter(value)}>
+            {/* Status */}
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -182,102 +246,80 @@ const MyOrders = () => {
               </SelectContent>
             </Select>
 
-            <Button onClick={() => setCurrentPage(1)}>Apply Filters</Button>
+            {/* Location */}
+            <Select value={locationFilter} onValueChange={(value) => setLocationFilter(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Locations</SelectItem>
+                {uniqueLocations.map((loc, i) => (
+                  <SelectItem key={i} value={loc}>
+                    {loc}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Buttons */}
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+              <Button onClick={handleApplyFilters}>Apply Filters</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Orders List */}
-      <div className="space-y-4 mb-8">
+      {/* Orders */}
+      <div className="space-y-4">
         {currentOrders.map((order) => (
-          <Card key={order.id} className="hover:shadow-warm transition-shadow">
+          <Card key={order.id}>
             <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex justify-between items-start">
                 <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="text-lg font-semibold">Order #{order.id}</h3>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(order.status)}
-                      <Badge className={getStatusColor(order.status)}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </Badge>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-semibold">Order #{order.id}</h3>
+                    {getStatusIcon(order.status)}
+                    <Badge className={getStatusColor(order.status)}>
+                      {order.status}
+                    </Badge>
                   </div>
                   <p className="font-medium">{order.productName}</p>
-                  <p className="text-muted-foreground">{order.merchantName}</p>
+                  <p className="text-sm text-muted-foreground">{order.merchantName}</p>
                   <div className="flex items-center text-sm text-muted-foreground mt-1">
-                    <MapPin size={14} className="mr-1" />
-                    {order.location}
+                    <MapPin size={14} className="mr-1" /> {order.location}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-primary">{order.totalAmount}</div>
-                  <div className="text-sm text-muted-foreground">Total Amount</div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div className="flex items-center space-x-2">
-                  <Package size={16} className="text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">Quantity</div>
-                    <div className="font-medium">{order.quantity}</div>
-                  </div>
-                </div>
-
                 <div>
-                  <div className="text-sm text-muted-foreground">Unit Price</div>
-                  <div className="font-medium">{order.unitPrice}</div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Calendar size={16} className="text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">Order Date</div>
-                    <div className="font-medium">
-                      {new Date(order.orderDate).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Truck size={16} className="text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      {order.status === "delivered" ? "Delivered" : 
-                       order.status === "shipped" ? "Expected Delivery" : 
-                       order.status === "confirmed" ? "Expected Delivery" : "Expected Shipping"}
-                    </div>
-                    <div className="font-medium">
-                      {order.status === "delivered" ? new Date(order.deliveredDate).toLocaleDateString() :
-                       order.status === "shipped" ? new Date(order.deliveryDate).toLocaleDateString() :
-                       order.status === "confirmed" ? new Date(order.deliveryDate).toLocaleDateString() :
-                       new Date(order.expectedShipping).toLocaleDateString()}
-                    </div>
-                  </div>
+                  <div className="text-lg font-bold">{order.totalAmount}</div>
                 </div>
               </div>
 
-              {order.trackingNumber && (
-                <div className="bg-accent/50 p-3 rounded-lg mb-4">
-                  <div className="text-sm text-muted-foreground mb-1">Tracking Number</div>
-                  <p className="font-mono text-sm font-medium">{order.trackingNumber}</p>
-                </div>
-              )}
-
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" size="sm">
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedOrder(order);
+                    setDetailsOpen(true);
+                  }}
+                >
                   <Eye size={14} className="mr-2" /> View Details
                 </Button>
 
                 {order.trackingNumber && (
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setTrackingOpen(true);
+                    }}
+                  >
                     <Truck size={14} className="mr-2" /> Track Order
                   </Button>
-                )}
-
-                {order.status === "delivered" && (
-                  <Button size="sm">Rate & Review</Button>
                 )}
               </div>
             </CardContent>
@@ -285,39 +327,99 @@ const MyOrders = () => {
         ))}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center">
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-            >
-              Previous
-            </Button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                size="sm"
-                variant={currentPage === page ? "default" : "outline"}
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </Button>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* View Details Popup */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <Card>
+              <CardContent className="space-y-4 p-6">
+                {/* Order Info */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-2 flex items-center">
+                    <Package className="mr-2 h-5 w-5 text-blue-500" /> Order Information
+                  </h3>
+                  <p><strong>Order ID:</strong> {selectedOrder.id}</p>
+                  <p><strong>Status:</strong> {selectedOrder.status}</p>
+                  <p className="flex items-center text-sm text-muted-foreground">
+                    <Calendar size={14} className="mr-1" /> Ordered on: {selectedOrder.orderDate}
+                  </p>
+                  {selectedOrder.shippingDate && (
+                    <p className="flex items-center text-sm text-muted-foreground">
+                      <Truck size={14} className="mr-1" /> Shipped: {selectedOrder.shippingDate}
+                    </p>
+                  )}
+                  {selectedOrder.deliveryDate && (
+                    <p className="flex items-center text-sm text-muted-foreground">
+                      <CheckCircle size={14} className="mr-1" /> Delivery: {selectedOrder.deliveryDate}
+                    </p>
+                  )}
+                </div>
+
+                {/* Product Info */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-2 flex items-center">
+                    <Package className="mr-2 h-5 w-5 text-green-500" /> Product Information
+                  </h3>
+                  <p><strong>Product:</strong> {selectedOrder.productName}</p>
+                  <p><strong>Quantity:</strong> {selectedOrder.quantity}</p>
+                  <p><strong>Unit Price:</strong> {selectedOrder.unitPrice}</p>
+                  <p className="font-bold text-lg flex items-center">
+                    <DollarSign size={16} className="mr-1 text-primary" /> {selectedOrder.totalAmount}
+                  </p>
+                </div>
+
+                {/* Merchant & Location */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-2 flex items-center">
+                    <User className="mr-2 h-5 w-5 text-purple-500" /> Merchant & Location
+                  </h3>
+                  <p><strong>Merchant:</strong> {selectedOrder.merchantName}</p>
+                  <p className="flex items-center text-sm text-muted-foreground">
+                    <MapPin size={14} className="mr-1" /> {selectedOrder.location}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Track Order Popup */}
+      <Dialog open={trackingOpen} onOpenChange={setTrackingOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Track Order</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              <p><strong>Tracking Number:</strong> {selectedOrder.trackingNumber}</p>
+              <p><strong>Shipping Date:</strong> {selectedOrder.shippingDate}</p>
+              <p><strong>Estimated Arrival:</strong> {selectedOrder.deliveryDate}</p>
+
+              <div className="mt-4 border-l-2 border-gray-300 pl-4 space-y-3">
+                {selectedOrder.steps?.map((step: any, idx: number) => (
+                  <div key={idx} className="flex items-start space-x-2">
+                    {step.done ? (
+                      <CheckCircle className="text-green-500 h-5 w-5" />
+                    ) : idx === selectedOrder.steps.findIndex((s: any) => !s.done) ? (
+                      <Clock className="text-yellow-500 h-5 w-5" />
+                    ) : (
+                      <Package className="text-gray-400 h-5 w-5" />
+                    )}
+                    <div>
+                      <p className="font-medium">{step.label}</p>
+                      <p className="text-sm text-gray-500">{step.date}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -264,6 +264,7 @@ const MerchantProducts = () => {
                 <label className="text-sm font-medium mb-2 block">Price Range</label>
                 <div className="flex space-x-2">
                   <Input
+                    className="w-[13.5rem]" // 👈 custom width (13rem = 208px)
                     placeholder="Min"
                     value={filters.minPrice}
                     onChange={(e) =>
@@ -271,6 +272,7 @@ const MerchantProducts = () => {
                     }
                   />
                   <Input
+                    className="w-[13.5rem]"
                     placeholder="Max"
                     value={filters.maxPrice}
                     onChange={(e) =>

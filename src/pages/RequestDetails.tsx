@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft,
   Calendar,
@@ -21,7 +20,7 @@ const RequestDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Mock data - in real app this would come from API based on ID
+  // Mock data
   const request = {
     id: 1,
     productName: "Premium W320 Cashews",
@@ -83,21 +82,22 @@ const RequestDetails = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="w-full min-h-screen px-6 py-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-4">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft size={16} className="mr-2" />
-          Back
+          Back to My Requests
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Request Details</h1>
+          <h1 className="text-3xl font-bold text-foreground">Request Details</h1>
           <p className="text-muted-foreground">Request #{request.id}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
+      {/* Main grid layout full width */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+        {/* Left section (Main Content) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Request Overview */}
           <Card>
@@ -213,7 +213,7 @@ const RequestDetails = () => {
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Right Sidebar */}
         <div className="space-y-6">
           {/* Merchant Info */}
           <Card>
@@ -225,8 +225,8 @@ const RequestDetails = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center space-x-3 mb-4">
-                <img 
-                  src={request.merchantImage} 
+                <img
+                  src={request.merchantImage}
                   alt={request.merchantName}
                   className="w-12 h-12 rounded-full bg-gray-200"
                 />
@@ -254,11 +254,15 @@ const RequestDetails = () => {
               <div className="space-y-3">
                 {request.timeline.map((item, index) => (
                   <div key={index} className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      item.status === 'completed' ? 'bg-green-500' :
-                      item.status === 'pending' ? 'bg-yellow-500' :
-                      'bg-gray-300'
-                    }`} />
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        item.status === 'completed'
+                          ? 'bg-green-500'
+                          : item.status === 'pending'
+                          ? 'bg-yellow-500'
+                          : 'bg-gray-300'
+                      }`}
+                    />
                     <div className="flex-1">
                       <div className="text-sm font-medium">{item.event}</div>
                       <div className="text-xs text-muted-foreground">

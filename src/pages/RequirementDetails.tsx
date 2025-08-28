@@ -102,7 +102,7 @@ const RequirementDetails = () => {
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft size={16} className="mr-2" />
-          Back
+          Back to My Requirements
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Requirement Details</h1>
@@ -308,14 +308,14 @@ const RequirementDetails = () => {
                   Edit Requirement
                 </Button>
               )}
-              <Button variant="outline" className="w-full">
+              {/* <Button variant="outline" className="w-full">
                 <Eye size={16} className="mr-2" />
                 View All Responses
               </Button>
               <Button variant="outline" className="w-full">
                 <MessageSquare size={16} className="mr-2" />
                 Promote Requirement
-              </Button>
+              </Button> */}
               <Button variant="outline" className="w-full">
                 Download Summary
               </Button>

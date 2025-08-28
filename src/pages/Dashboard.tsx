@@ -11,39 +11,45 @@ import {
   Calendar
 } from "lucide-react";
 import cashewHero from "@/assets/cashew-hero.jpg";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // ✅ import navigate
 import { useRole } from "@/hooks/useRole";
 
 const Dashboard = () => {
   const { role, setRole } = useRole();
+  const navigate = useNavigate(); // ✅ initialize navigate
+
   const stats = [
     {
       title: "Active Bids",
       value: "12",
       icon: TrendingUp,
       color: "text-primary",
-      trend: "+3 from last week"
+      trend: "+3 from last week",
+      path: "/my-bids" // ✅ define navigation path
     },
     {
       title: "Pending Requests",
       value: "8",
       icon: Clock,
       color: "text-orange-500",
-      trend: "2 new today"
+      trend: "2 new today",
+      path: "/my-requests"
     },
     {
       title: "My Requirements",
       value: "5",
       icon: FileText,
       color: "text-blue-500",
-      trend: "1 expiring soon"
+      trend: "1 expiring soon",
+      path: "/my-requirements"
     },
     {
       title: "Total Orders",
       value: "47",
       icon: MessageSquare,
       color: "text-green-500",
-      trend: "+12% this month"
+      trend: "+12% this month",
+      path: "/my-orders"
     }
   ];
 
@@ -76,11 +82,6 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Header with Role Switcher */}
-      {/* <div className="flex justify-end">
-        <RoleSwitcher />
-      </div> */}
-      
       {/* Hero Section */}
       <div className="relative rounded-xl overflow-hidden">
         <img
@@ -107,7 +108,11 @@ const Dashboard = () => {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index} className="hover:shadow-warm transition-shadow">
+            <Card
+              key={index}
+              className="hover:shadow-warm transition-shadow cursor-pointer"
+              onClick={() => navigate(stat.path)} // ✅ navigate on click
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-muted-foreground">

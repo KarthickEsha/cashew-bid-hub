@@ -3,7 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Calendar,
   MapPin,
@@ -15,9 +21,17 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  Plus
+  Plus,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const MyRequirements = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,8 +39,7 @@ const MyRequirements = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [filteredRequirements, setFilteredRequirements] = useState<any[]>([]);
-
-  const requirements = [
+  const [requirements, setRequirements] = useState<any[]>([
     {
       id: 1,
       title: "Premium W320 Cashews for Export",
@@ -40,7 +53,7 @@ const MyRequirements = () => {
       status: "active",
       responsesCount: 5,
       createdDate: "2024-08-15",
-      lastModified: "2024-08-20"
+      lastModified: "2024-08-20",
     },
     {
       id: 2,
@@ -55,7 +68,7 @@ const MyRequirements = () => {
       status: "draft",
       responsesCount: 0,
       createdDate: "2024-08-18",
-      lastModified: "2024-08-18"
+      lastModified: "2024-08-18",
     },
     {
       id: 3,
@@ -70,7 +83,7 @@ const MyRequirements = () => {
       status: "expired",
       responsesCount: 8,
       createdDate: "2024-07-20",
-      lastModified: "2024-07-25"
+      lastModified: "2024-07-25",
     },
     {
       id: 4,
@@ -85,9 +98,13 @@ const MyRequirements = () => {
       status: "closed",
       responsesCount: 12,
       createdDate: "2024-08-01",
-      lastModified: "2024-08-10"
-    }
-  ];
+      lastModified: "2024-08-10",
+    },
+  ]);
+
+  // Delete popup state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -122,41 +139,43 @@ const MyRequirements = () => {
   // Apply filter function
   const applyFilters = () => {
     let temp = [...requirements];
-
     if (searchTerm) {
       temp = temp.filter((req) =>
         req.title.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
     if (statusFilter !== "all") {
       temp = temp.filter((req) => req.status === statusFilter);
     }
-
     if (gradeFilter !== "all") {
       temp = temp.filter((req) => req.grade === gradeFilter);
     }
-
     setFilteredRequirements(temp);
     setCurrentPage(1); // reset to first page
   };
 
-  // Run filters on mount so default data shows up
+  // Run filters on mount
   useEffect(() => {
     setFilteredRequirements(requirements);
-  }, []);
+  }, [requirements]);
 
-  // Determine which list to show
-  const itemsToShow = filteredRequirements;
-
-  // Pagination logic
+  // Pagination
   const itemsPerPage = 6;
-  const totalPages = Math.ceil(itemsToShow.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredRequirements.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentRequirements = itemsToShow.slice(
+  const currentRequirements = filteredRequirements.slice(
     startIndex,
     startIndex + itemsPerPage
   );
+
+  // Handle delete confirm
+  const handleDelete = () => {
+    if (deleteId !== null) {
+      setRequirements(requirements.filter((req) => req.id !== deleteId));
+      setDeleteId(null);
+      setDeleteOpen(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -172,8 +191,7 @@ const MyRequirements = () => {
         </div>
         <Link to="/post-requirement">
           <Button size="lg">
-            <Plus size={16} className="mr-2" />
-            Post New Requirement
+            <Plus size={16} className="mr-2" /> Post New Requirement
           </Button>
         </Link>
       </div>
@@ -184,23 +202,23 @@ const MyRequirements = () => {
           {
             label: "Total Requirements",
             value: requirements.length,
-            color: "text-blue-600"
+            color: "text-blue-600",
           },
           {
             label: "Active",
             value: requirements.filter((r) => r.status === "active").length,
-            color: "text-green-600"
+            color: "text-green-600",
           },
           {
             label: "Draft",
             value: requirements.filter((r) => r.status === "draft").length,
-            color: "text-gray-600"
+            color: "text-gray-600",
           },
           {
             label: "Total Responses",
             value: requirements.reduce((acc, r) => acc + r.responsesCount, 0),
-            color: "text-orange-600"
-          }
+            color: "text-orange-600",
+          },
         ].map((stat, index) => (
           <Card key={index}>
             <CardContent className="p-4">
@@ -230,7 +248,6 @@ const MyRequirements = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-
             <Select onValueChange={(value) => setStatusFilter(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
@@ -243,7 +260,6 @@ const MyRequirements = () => {
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
-
             <Select onValueChange={(value) => setGradeFilter(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Grade" />
@@ -256,14 +272,13 @@ const MyRequirements = () => {
                 <SelectItem value="SW240">SW240</SelectItem>
               </SelectContent>
             </Select>
-
             <Button onClick={applyFilters}>Apply Filters</Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Requirements Grid */}
-      {itemsToShow.length === 0 ? (
+      {filteredRequirements.length === 0 ? (
         <div className="text-center text-muted-foreground py-10 text-lg font-medium">
           No data found for the selected filters.
         </div>
@@ -315,7 +330,6 @@ const MyRequirements = () => {
                     </div>
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <div className="flex items-center text-sm">
                     <DollarSign
@@ -338,10 +352,11 @@ const MyRequirements = () => {
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Clock size={14} className="mr-1" />
                     Expires:{" "}
-                    {new Date(requirement.requirementExpiry).toLocaleDateString()}
+                    {new Date(
+                      requirement.requirementExpiry
+                    ).toLocaleDateString()}
                   </div>
                 </div>
-
                 <div className="pt-3 border-t border-border">
                   <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
                     <span>
@@ -353,27 +368,30 @@ const MyRequirements = () => {
                       {new Date(requirement.lastModified).toLocaleDateString()}
                     </span>
                   </div>
-
                   <div className="flex justify-end space-x-2">
                     <Link to={`/requirement/${requirement.id}`}>
                       <Button variant="outline" size="sm">
-                        <Eye size={14} className="mr-2" />
-                        View
+                        <Eye size={14} className="mr-2" /> View
                       </Button>
                     </Link>
                     {(requirement.status === "draft" ||
                       requirement.status === "active") && (
                       <Link to={`/edit-requirement/${requirement.id}`}>
                         <Button variant="outline" size="sm">
-                          <Edit size={14} className="mr-2" />
-                          Edit
+                          <Edit size={14} className="mr-2" /> Edit
                         </Button>
                       </Link>
                     )}
                     {requirement.status === "draft" && (
-                      <Button variant="outline" size="sm">
-                        <Trash2 size={14} className="mr-2" />
-                        Delete
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setDeleteId(requirement.id);
+                          setDeleteOpen(true);
+                        }}
+                      >
+                        <Trash2 size={14} className="mr-2" /> Delete
                       </Button>
                     )}
                   </div>
@@ -385,7 +403,7 @@ const MyRequirements = () => {
       )}
 
       {/* Pagination */}
-      {itemsToShow.length > 0 && (
+      {filteredRequirements.length > 0 && (
         <div className="flex justify-center">
           <div className="flex items-center space-x-2">
             <Button
@@ -417,6 +435,27 @@ const MyRequirements = () => {
           </div>
         </div>
       )}
+
+      {/* Delete confirmation popup */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Requirement</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this requirement? This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

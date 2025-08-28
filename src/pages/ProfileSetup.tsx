@@ -1,241 +1,108 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Upload, User, Building2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { User, Mail, MapPin, Building2, Edit, Settings } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
 import { useProfile } from '@/hooks/useProfile';
 import { useRole } from '@/hooks/useRole';
-import { ProductType, UserRole } from '@/types/user';
-import { useUser } from '@clerk/clerk-react';
-import ImageCropDialog from '@/components/ImageCropDialog';
+import { useNavigate } from 'react-router-dom';
 
-const ProfileSetup = () => {
-  const navigate = useNavigate();
-  const { setProfile } = useProfile();
-  const { setRole } = useRole();
+interface ProfilePanelProps {
+  children: React.ReactNode;
+}
+
+const ProfilePanel = ({ children }: ProfilePanelProps) => {
+  const [isOpen, setIsOpen] = useState(false);
   const { user } = useUser();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [formData, setFormData] = useState({
-    name: user?.fullName || '',
-    address: '',
-    location: '',
-    role: 'buyer' as UserRole,
-    productType: 'RCN' as ProductType,
-    businessType: 'individual',
-    profilePicture: '',
-  });
-  
-  const [cropDialogOpen, setCropDialogOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const { profile } = useProfile();
+  const { role } = useRole();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Set profile data
-    setProfile({
-      id: user?.id || '1',
-      email: user?.primaryEmailAddress?.emailAddress || '',
-      name: formData.name,
-      address: formData.address,
-      location: formData.location,
-      role: formData.role,
-      profilePicture: formData.profilePicture,
-      merchantLogo: formData.role === 'processor' ? formData.profilePicture : undefined,
-      productType: formData.productType,
-      isProfileComplete: true,
-    });
-
-    // Set role for sidebar switching
-    setRole(formData.role);
-    
-    // Navigate to appropriate dashboard
-    navigate('/');
-  };
-
-  const handleImageUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        setSelectedImage(imageUrl);
-        setCropDialogOpen(true);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCropComplete = (croppedImageUrl: string) => {
-    setFormData({ ...formData, profilePicture: croppedImageUrl });
-    setCropDialogOpen(false);
+  const handleEditProfile = () => {
+    setIsOpen(false); // close panel before navigating
+    navigate('/profile-setup');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4 overflow-y-auto">
-      <Card className="w-full max-w-2xl shadow-warm my-8">
-        <CardHeader className="text-center space-y-2">
-          <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <CardTitle className="text-2xl font-bold text-primary">Complete Your Profile</CardTitle>
-          <CardDescription>
-            Help us personalize your experience by providing some basic information
-          </CardDescription>
-        </CardHeader>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        {children}
+      </SheetTrigger>
+      <SheetContent side="right" className="w-80">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Profile
+          </SheetTitle>
+        </SheetHeader>
         
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Profile Picture/Logo Upload */}
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={formData.profilePicture} />
-                <AvatarFallback className="bg-muted">
-                  {formData.role === 'processor' ? (
-                    <Building2 className="w-8 h-8 text-muted-foreground" />
-                  ) : (
-                    <User className="w-8 h-8 text-muted-foreground" />
-                  )}
-                </AvatarFallback>
-              </Avatar>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleImageUpload}
-                className="flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                Upload {formData.role === 'processor' ? 'Logo' : 'Photo'}
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
-              />
+        <div className="mt-6 space-y-6">
+          {/* Profile Header */}
+          <div className="flex flex-col items-center text-center space-y-4">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={profile?.profilePicture} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                {profile?.name?.charAt(0) || user?.firstName?.charAt(0) || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold text-lg">
+                {profile?.name || user?.fullName || 'User'}
+              </h3>
+              <Badge variant="secondary" className="mt-1">
+                {role === 'buyer' ? 'Buyer' : 'Merchant'}
+              </Badge>
             </div>
+          </div>
 
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter your full name"
-                required
-              />
+          <Separator />
+
+          {/* Profile Info */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-sm">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span>{profile?.email || user?.primaryEmailAddress?.emailAddress}</span>
             </div>
+            
+            {profile?.address && (
+              <div className="flex items-center gap-3 text-sm">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span>{profile.address}</span>
+              </div>
+            )}
+            
+            {profile?.location && (
+              <div className="flex items-center gap-3 text-sm">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span>{profile.location}</span>
+              </div>
+            )}
+          </div>
 
-            {/* Address */}
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Enter your address"
-                required
-              />
-            </div>
+          <Separator />
 
-            {/* Location */}
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="Enter your location"
-                required
-              />
-            </div>
-
-            {/* Role Selection */}
-            <div className="space-y-3">
-              <Label>I am a</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="buyer">Buyer</SelectItem>
-                  <SelectItem value="processor">Processor</SelectItem>
-                  <SelectItem value="both">Both</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Product Type Selection */}
-            <div className="space-y-3">
-              <Label>Product Type</Label>
-              <RadioGroup
-                value={formData.productType}
-                onValueChange={(value: ProductType) => setFormData({ ...formData, productType: value })}
-                className="flex flex-col space-y-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="RCN" id="rcn" />
-                  <Label htmlFor="rcn">RCN (Raw Cashew Nuts)</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Kernel" id="kernel" />
-                  <Label htmlFor="kernel">Kernel</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Both" id="both" />
-                  <Label htmlFor="both">Both</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* 👇 New Select Field */}
-            {/* <div className="space-y-3">
-              <Label>Business Type</Label>
-              <Select
-                value={formData.businessType}
-                onValueChange={(value) => setFormData({ ...formData, businessType: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your business type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">Individual</SelectItem>
-                  <SelectItem value="company">Company</SelectItem>
-                  <SelectItem value="both">Both</SelectItem>
-                </SelectContent>
-              </Select>
-            </div> */}
-
-            <Button type="submit" className="w-full">
-              Complete Profile
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={handleEditProfile}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Profile
             </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <ImageCropDialog
-        isOpen={cropDialogOpen}
-        onClose={() => setCropDialogOpen(false)}
-        imageUrl={selectedImage}
-        onCropComplete={handleCropComplete}
-      />
-    </div>
+            <Button variant="outline" className="w-full justify-start">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };
 
-export default ProfileSetup;
+export default ProfilePanel;

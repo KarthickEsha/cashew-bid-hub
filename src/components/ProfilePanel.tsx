@@ -87,10 +87,6 @@ const ProfilePanel = ({ children }: ProfilePanelProps) => {
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </Button>
-            <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
           </div>
         </div>
       </SheetContent>
