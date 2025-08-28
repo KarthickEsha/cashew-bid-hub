@@ -14,7 +14,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Package
+  Package,
+  Inbox
 } from "lucide-react";
 
 const MyBids = () => {
@@ -105,7 +106,7 @@ const MyBids = () => {
   const filteredBids = bids.filter((bid) => {
     const matchesSearch = searchTerm
       ? bid.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bid.merchantName.toLowerCase().includes(searchTerm.toLowerCase())
+      bid.merchantName.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
     const matchesStatus = statusFilter !== "all" ? bid.status === statusFilter : true;
     const matchesLocation = locationFilter !== "all" ? bid.location === locationFilter : true;
@@ -224,88 +225,101 @@ const MyBids = () => {
 
       {/* Bids List */}
       <div className="space-y-4 mb-8">
-        {currentBids.map((bid) => (
-          <Card key={bid.id} className="hover:shadow-warm transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="text-lg font-semibold">{bid.productName}</h3>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(bid.status)}
-                      <Badge className={getStatusColor(bid.status)}>
-                        {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground">{bid.merchantName}</p>
-                  <div className="flex items-center text-sm text-muted-foreground mt-1">
-                    <MapPin size={14} className="mr-1" />
-                    {bid.location}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-primary">{bid.totalValue}</div>
-                  <div className="text-sm text-muted-foreground">Total Value</div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div className="flex items-center space-x-2">
-                  <Package size={16} className="text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">Quantity</div>
-                    <div className="font-medium">{bid.quantity}</div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-sm text-muted-foreground">Bid Amount</div>
-                  <div className="font-medium">{bid.bidAmount}</div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Calendar size={16} className="text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">Bid Date</div>
-                    <div className="font-medium">
-                      {new Date(bid.bidDate).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Clock size={16} className="text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      {bid.status === "pending" ? "Expires" : 
-                       bid.status === "accepted" ? "Accepted" : "Rejected"}
-                    </div>
-                    <div className="font-medium">
-                      {bid.status === "pending" ? new Date(bid.expiryDate).toLocaleDateString() :
-                       bid.status === "accepted" ? new Date(bid.acceptedDate).toLocaleDateString() :
-                       new Date(bid.rejectedDate).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedBid(bid)}
-                >
-                  <Eye size={14} className="mr-2" /> View Details
-                </Button>
-
-                {bid.status === "accepted" && (
-                  <Button size="sm">Proceed to Order</Button>
-                )}
-              </div>
-            </CardContent>
+        {currentBids.length === 0 ? (
+          <Card className="p-10 text-center">
+            <Inbox className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <p className="text-lg font-medium">
+              No data found for the selected filters
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Try changing your search or filter options
+            </p>
           </Card>
-        ))}
+        ) : (
+          currentBids.map((bid) => (
+            <Card key={bid.id} className="hover:shadow-warm transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h3 className="text-lg font-semibold">{bid.productName}</h3>
+                      <div className="flex items-center space-x-1">
+                        {getStatusIcon(bid.status)}
+                        <Badge className={getStatusColor(bid.status)}>
+                          {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
+                        </Badge>
+                      </div>
+                    </div>
+                    <p className="text-muted-foreground">{bid.merchantName}</p>
+                    <div className="flex items-center text-sm text-muted-foreground mt-1">
+                      <MapPin size={14} className="mr-1" />
+                      {bid.location}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-primary">{bid.totalValue}</div>
+                    <div className="text-sm text-muted-foreground">Total Value</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Package size={16} className="text-muted-foreground" />
+                    <div>
+                      <div className="text-sm text-muted-foreground">Quantity</div>
+                      <div className="font-medium">{bid.quantity}</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-muted-foreground">Bid Amount</div>
+                    <div className="font-medium">{bid.bidAmount}</div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Calendar size={16} className="text-muted-foreground" />
+                    <div>
+                      <div className="text-sm text-muted-foreground">Bid Date</div>
+                      <div className="font-medium">
+                        {new Date(bid.bidDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Clock size={16} className="text-muted-foreground" />
+                    <div>
+                      <div className="text-sm text-muted-foreground">
+                        {bid.status === "pending" ? "Expires" :
+                          bid.status === "accepted" ? "Accepted" : "Rejected"}
+                      </div>
+                      <div className="font-medium">
+                        {bid.status === "pending" ? new Date(bid.expiryDate).toLocaleDateString() :
+                          bid.status === "accepted" ? new Date(bid.acceptedDate).toLocaleDateString() :
+                            new Date(bid.rejectedDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedBid(bid)}
+                  >
+                    <Eye size={14} className="mr-2" /> View Details
+                  </Button>
+
+                  {bid.status === "accepted" && (
+                    <Button size="sm">Proceed to Order</Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+
       </div>
 
       {/* Pagination */}

@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"; // Make sure you have your Select component
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog"; // Add Dialog components
 
 const mockOrders = [
   {
@@ -116,13 +117,14 @@ const mockOrders = [
   },
 ];
 
-
 const MerchantOrders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [orders, setOrders] = useState(mockOrders);
   const [filters, setFilters] = useState({ orderId: "", customer: "", product: "" });
   const [showFilterCard, setShowFilterCard] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleAcceptOrder = (orderId: string) => {
     setOrders(prev =>
@@ -171,6 +173,11 @@ const MerchantOrders = () => {
     setOrders(mockOrders);
     setCurrentPage(1);
     setShowFilterCard(false);
+  };
+
+  const handleViewDetails = (order: any) => {
+    setSelectedOrder(order);
+    setIsDialogOpen(true);
   };
 
   const totalPages = Math.ceil(orders.length / pageSize);
@@ -283,7 +290,7 @@ const MerchantOrders = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleViewDetails(order)}>
                           <Eye className="h-4 w-4" />
                         </Button>
                         {order.status === "pending" && (
@@ -310,6 +317,13 @@ const MerchantOrders = () => {
                     </TableCell>
                   </TableRow>
                 ))}
+                {paginatedOrders.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
+                      No orders found for selected filters.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -364,6 +378,77 @@ const MerchantOrders = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* View Details Popup */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+            <DialogDescription>
+              Detailed information about the selected order
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedOrder && (
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Order ID</span>
+                <span className="font-semibold">{selectedOrder.id}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Customer Name</span>
+                <span className="font-semibold">{selectedOrder.customerName}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Product</span>
+                <span className="font-semibold">{selectedOrder.productName}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Quantity</span>
+                <span className="font-semibold">{selectedOrder.quantity}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Total Amount</span>
+                <span className="font-semibold">${selectedOrder.totalAmount}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Order Date</span>
+                <span className="font-semibold">{new Date(selectedOrder.date).toLocaleDateString()}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="font-medium text-muted-foreground">Delivery Date</span>
+                <span className="font-semibold">{new Date(selectedOrder.deliveryDate).toLocaleDateString()}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-muted-foreground">Status</span>
+                <Badge variant={getStatusColor(selectedOrder.status)}>
+                  {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
+                </Badge>
+              </div>
+            </div>
+          )}
+
+          {/* <div className="mt-6 flex justify-end">
+            <DialogClose asChild>
+              <Button
+                className="bg-purple-600 text-white hover:bg-purple-700"
+                size="sm"
+              >
+                Close
+              </Button>
+            </DialogClose>
+          </div> */}
+
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 };

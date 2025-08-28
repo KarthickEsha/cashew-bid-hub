@@ -22,6 +22,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Plus,
+  Inbox,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -279,9 +280,15 @@ const MyRequirements = () => {
 
       {/* Requirements Grid */}
       {filteredRequirements.length === 0 ? (
-        <div className="text-center text-muted-foreground py-10 text-lg font-medium">
-          No data found for the selected filters.
-        </div>
+        <Card className="p-10 text-center">
+          <Inbox className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+          <p className="text-lg font-medium">
+            No data found for the selected filters
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Try changing your search or filter options
+          </p>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {currentRequirements.map((requirement) => (
@@ -376,12 +383,12 @@ const MyRequirements = () => {
                     </Link>
                     {(requirement.status === "draft" ||
                       requirement.status === "active") && (
-                      <Link to={`/edit-requirement/${requirement.id}`}>
-                        <Button variant="outline" size="sm">
-                          <Edit size={14} className="mr-2" /> Edit
-                        </Button>
-                      </Link>
-                    )}
+                        <Link to={`/edit-requirement/${requirement.id}`}>
+                          <Button variant="outline" size="sm">
+                            <Edit size={14} className="mr-2" /> Edit
+                          </Button>
+                        </Link>
+                      )}
                     {requirement.status === "draft" && (
                       <Button
                         variant="outline"

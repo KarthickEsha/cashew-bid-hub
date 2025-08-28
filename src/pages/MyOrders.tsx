@@ -22,6 +22,7 @@ import {
   AlertCircle,
   DollarSign,
   User,
+  Inbox,
 } from "lucide-react";
 import {
   Dialog,
@@ -274,7 +275,18 @@ const MyOrders = () => {
 
       {/* Orders */}
       <div className="space-y-4">
-        {currentOrders.map((order) => (
+        {currentOrders.length === 0 ? (
+          <Card className="p-10 text-center">
+            <Inbox className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <p className="text-lg font-medium">
+              No data found for the selected filters
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Try changing your search or filter options
+            </p>
+          </Card>
+        ) : (
+           currentOrders.map((order) => (
           <Card key={order.id}>
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
@@ -324,7 +336,8 @@ const MyOrders = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
+        ))
+        )}
       </div>
 
       {/* View Details Popup */}

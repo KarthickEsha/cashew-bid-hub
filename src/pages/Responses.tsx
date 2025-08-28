@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
+import {
   Calendar,
   MapPin,
   DollarSign,
@@ -15,7 +15,8 @@ import {
   Clock,
   CheckCircle,
   Star,
-  Building
+  Building,
+  Inbox
 } from "lucide-react";
 import { Link } from "react-router-dom";
 // Dialog imports
@@ -29,12 +30,17 @@ import {
 
 const Responses = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedResponse, setSelectedResponse] = useState<any | null>(null);
+  const [selectedResponse, setSelectedResponse] = useState < any | null > (null);
 
-  // Filter states
+  // Temporary filter states (UI inputs)
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterRequirement, setFilterRequirement] = useState("all");
+
+  // Applied filters (only updated on button click)
+  const [appliedSearchText, setAppliedSearchText] = useState("");
+  const [appliedStatus, setAppliedStatus] = useState("all");
+  const [appliedRequirement, setAppliedRequirement] = useState("all");
 
   const responses = [
     {
@@ -134,16 +140,16 @@ const Responses = () => {
 
   const itemsPerPage = 6;
 
-  // Apply filter
+  // Apply filter logic using "applied" values
   const filteredResponses = responses.filter((resp) => {
-    const matchesSearch = searchText
-      ? resp.requirementTitle.toLowerCase().includes(searchText.toLowerCase()) ||
-        resp.merchantName.toLowerCase().includes(searchText.toLowerCase())
+    const matchesSearch = appliedSearchText
+      ? resp.requirementTitle.toLowerCase().includes(appliedSearchText.toLowerCase()) ||
+      resp.merchantName.toLowerCase().includes(appliedSearchText.toLowerCase())
       : true;
 
-    const matchesStatus = filterStatus !== "all" ? resp.status === filterStatus : true;
+    const matchesStatus = appliedStatus !== "all" ? resp.status === appliedStatus : true;
 
-    const matchesRequirement = filterRequirement !== "all" ? resp.requirementId.toString() === filterRequirement : true;
+    const matchesRequirement = appliedRequirement !== "all" ? resp.requirementId.toString() === appliedRequirement : true;
 
     return matchesSearch && matchesStatus && matchesRequirement;
   });
@@ -151,6 +157,14 @@ const Responses = () => {
   const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentResponses = filteredResponses.slice(startIndex, startIndex + itemsPerPage);
+
+  // Handle Apply Filters
+  const handleApplyFilters = () => {
+    setAppliedSearchText(searchText);
+    setAppliedStatus(filterStatus);
+    setAppliedRequirement(filterRequirement);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -186,15 +200,15 @@ const Responses = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <Input 
-                placeholder="Search responses..." 
+              <Input
+                placeholder="Search responses..."
                 className="pl-10"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
               />
             </div>
 
-            <Select onValueChange={(value) => setFilterStatus(value)}>
+            <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -207,7 +221,7 @@ const Responses = () => {
               </SelectContent>
             </Select>
 
-            <Select onValueChange={(value) => setFilterRequirement(value)}>
+            <Select value={filterRequirement} onValueChange={(value) => setFilterRequirement(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Requirement" />
               </SelectTrigger>
@@ -218,163 +232,178 @@ const Responses = () => {
               </SelectContent>
             </Select>
 
-            <Button onClick={() => setCurrentPage(1)}>Apply Filters</Button>
+            <Button onClick={handleApplyFilters}>Apply Filters</Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Responses List */}
       <div className="space-y-4 mb-8">
-        {currentResponses.map((response) => (
-          <Card key={response.id} className="hover:shadow-warm transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h3 className="text-lg font-semibold text-primary">
-                      Response to: {response.requirementTitle}
-                    </h3>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(response.status)}
-                      <Badge className={getStatusColor(response.status)}>
-                        {response.status.charAt(0).toUpperCase() + response.status.slice(1)}
-                      </Badge>
+        {currentResponses.length === 0 ? (
+          <Card className="p-10 text-center">
+            <Inbox className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <p className="text-lg font-medium">
+              No data found for the selected filters
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Try changing your search or filter options
+            </p>
+          </Card>
+        ) : (
+          currentResponses.map((response) => (
+            <Card key={response.id} className="hover:shadow-warm transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h3 className="text-lg font-semibold text-primary">
+                        Response to: {response.requirementTitle}
+                      </h3>
+                      <div className="flex items-center space-x-1">
+                        {getStatusIcon(response.status)}
+                        <Badge className={getStatusColor(response.status)}>
+                          {response.status.charAt(0).toUpperCase() + response.status.slice(1)}
+                        </Badge>
+                      </div>
+                      {response.isStarred && (
+                        <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                      )}
                     </div>
-                    {response.isStarred && (
-                      <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Requirement ID: #{response.requirementId}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Requirement ID: #{response.requirementId}
-                  </p>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(response.responseDate).toLocaleDateString()}
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {new Date(response.responseDate).toLocaleDateString()}
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Merchant Info */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center">
-                    <Building size={16} className="mr-2" />
-                    Merchant Details
-                  </h4>
-                  <div className="bg-accent/50 rounded-lg p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <img 
-                        src={response.merchantImage} 
-                        alt={response.merchantName}
-                        className="w-10 h-10 rounded-full bg-gray-200"
-                      />
-                      <div>
-                        <div className="font-medium">{response.merchantName}</div>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <MapPin size={12} className="mr-1" />
-                          {response.merchantLocation}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Merchant Info */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold flex items-center">
+                      <Building size={16} className="mr-2" />
+                      Merchant Details
+                    </h4>
+                    <div className="bg-accent/50 rounded-lg p-4">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <img
+                          src={response.merchantImage}
+                          alt={response.merchantName}
+                          className="w-10 h-10 rounded-full bg-gray-200"
+                        />
+                        <div>
+                          <div className="font-medium">{response.merchantName}</div>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <MapPin size={12} className="mr-1" />
+                            {response.merchantLocation}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center">
+                        <Star size={14} className="text-yellow-500 fill-yellow-500 mr-1" />
+                        <span className="text-sm font-medium">{response.merchantRating}</span>
+                        <span className="text-sm text-muted-foreground ml-1">rating</span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <Star size={14} className="text-yellow-500 fill-yellow-500 mr-1" />
-                      <span className="text-sm font-medium">{response.merchantRating}</span>
-                      <span className="text-sm text-muted-foreground ml-1">rating</span>
+                  </div>
+
+                  {/* Offer Details */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold flex items-center">
+                      <DollarSign size={16} className="mr-2" />
+                      Offer Details
+                    </h4>
+                    <div className="bg-accent/50 rounded-lg p-4 space-y-2">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Price:</span>
+                          <div className="font-semibold text-primary">{response.offerPrice}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Quantity:</span>
+                          <div className="font-semibold">{response.quantity}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Grade:</span>
+                          <div className="font-semibold">{response.grade}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Delivery:</span>
+                          <div className="font-semibold">{response.deliveryTime}</div>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground">Min Order:</span>
+                          <div className="font-semibold">{response.minimumOrder}</div>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-border">
+                        <span className="text-muted-foreground text-sm">Specifications:</span>
+                        <p className="text-sm mt-1">{response.specifications}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Offer Details */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center">
-                    <DollarSign size={16} className="mr-2" />
-                    Offer Details
-                  </h4>
-                  <div className="bg-accent/50 rounded-lg p-4 space-y-2">
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Price:</span>
-                        <div className="font-semibold text-primary">{response.offerPrice}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Quantity:</span>
-                        <div className="font-semibold">{response.quantity}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Grade:</span>
-                        <div className="font-semibold">{response.grade}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Delivery:</span>
-                        <div className="font-semibold">{response.deliveryTime}</div>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-muted-foreground">Min Order:</span>
-                        <div className="font-semibold">{response.minimumOrder}</div>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t border-border">
-                      <span className="text-muted-foreground text-sm">Specifications:</span>
-                      <p className="text-sm mt-1">{response.specifications}</p>
-                    </div>
+                <div className="flex justify-between items-center mt-6 pt-4 border-t border-border">
+                  <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="sm">
+                      <Star size={14} className="mr-2" />
+                      {response.isStarred ? 'Unstar' : 'Star'}
+                    </Button>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => setSelectedResponse(response)}>
+                      <Eye size={14} className="mr-2" />
+                      View Details
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <MessageCircle size={14} className="mr-2" />
+                      Contact
+                    </Button>
+                    <Button size="sm">Enquire</Button>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex justify-between items-center mt-6 pt-4 border-t border-border">
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Star size={14} className="mr-2" />
-                    {response.isStarred ? 'Unstar' : 'Star'}
-                  </Button>
-                </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => setSelectedResponse(response)}>
-                    <Eye size={14} className="mr-2" />
-                    View Details
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <MessageCircle size={14} className="mr-2" />
-                    Contact
-                  </Button>
-                  <Button size="sm">Enquire</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        )
+        }
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-center">
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(currentPage - 1)}
-          >
-            Previous
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+      {currentResponses.length > 0 && (
+        <div className="flex justify-center">
+          <div className="flex items-center space-x-2">
             <Button
-              key={page}
+              variant="outline"
               size="sm"
-              variant={currentPage === page ? "default" : "outline"}
-              onClick={() => setCurrentPage(page)}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
             >
-              {page}
+              Previous
             </Button>
-          ))}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage(currentPage + 1)}
-          >
-            Next
-          </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                size="sm"
+                variant={currentPage === page ? "default" : "outline"}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* --------- View Details Dialog --------- */}
       <Dialog open={!!selectedResponse} onOpenChange={() => setSelectedResponse(null)}>
@@ -433,13 +462,13 @@ const Responses = () => {
                     <p className="text-sm mt-1">{selectedResponse.specifications}</p>
                   </div>
                 </div>
-              </div>
+                </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
     </div>
   );
-};
+};    
 
 export default Responses;

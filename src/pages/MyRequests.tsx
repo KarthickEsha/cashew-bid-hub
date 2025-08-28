@@ -25,6 +25,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Inbox,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -264,9 +265,15 @@ const MyRequests = () => {
       {/* Requests List */}
       <div className="space-y-4">
         {currentRequests.length === 0 ? (
-          <div className="text-center text-muted-foreground py-10">
-            No data found for the selected filters.
-          </div>
+          <Card className="p-10 text-center">
+            <Inbox className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <p className="text-lg font-medium">
+              No data found for the selected filters
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Try changing your search or filter options
+            </p>
+          </Card>
         ) : (
           currentRequests.map((request) => (
             <Card key={request.id} className="hover:shadow-warm transition-shadow">
@@ -332,15 +339,15 @@ const MyRequests = () => {
                         {request.status === "pending"
                           ? "Expected Response"
                           : request.status === "negotiating"
-                          ? "Last Activity"
-                          : "Responded"}
+                            ? "Last Activity"
+                            : "Responded"}
                       </div>
                       <div className="font-medium">
                         {request.status === "pending"
                           ? new Date(request.expectedResponse).toLocaleDateString()
                           : request.status === "negotiating"
-                          ? new Date(request.lastActivity).toLocaleDateString()
-                          : new Date(
+                            ? new Date(request.lastActivity).toLocaleDateString()
+                            : new Date(
                               request.respondedDate || request.submittedDate
                             ).toLocaleDateString()}
                       </div>

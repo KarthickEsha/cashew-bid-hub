@@ -209,11 +209,14 @@ const MerchantRequirements = () => {
     setCurrentPage(1); // reset to first page
   };
 
-  const cancelFilters = () => {
-    setTempLocation(locationFilter);
-    setTempGrade(gradeFilter);
-    setTempSearch(searchFilter);
-    setShowFilterCard(false);
+   const handleCancel = () => {
+    setLocationFilter("");
+    setGradeFilter("");
+    setSearchFilter("");
+    setTempLocation("");
+    setTempGrade("");
+    setTempSearch("");
+    setCurrentPage(1);
   };
 
   return (
@@ -250,7 +253,7 @@ const MerchantRequirements = () => {
               </div>
             </div>
             <div className="flex justify-end mt-4 space-x-2">
-              <Button variant="outline" onClick={cancelFilters}>Cancel</Button>
+              <Button variant="outline" onClick={handleCancel}>Cancel</Button>
               <Button onClick={applyFilters}>Apply</Button>
             </div>
           </CardContent>
@@ -300,6 +303,13 @@ const MerchantRequirements = () => {
                   </TableCell>
                 </TableRow>
               ))}
+              {filteredRequirements.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
+                    No requirements found for selected filters.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
 
@@ -378,11 +388,11 @@ const MerchantRequirements = () => {
                 </div>
               </div>
               <div className="flex gap-2 pt-4">
-                <Button onClick={() => handleChatClick(selectedRequirement)} className="flex-1">
+                <Button onClick={() => handleChatClick(selectedRequirement)} className="flex-1 bg-purple-600 text-white hover:bg-purple-700">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Send Message
                 </Button>
-                <Button variant="outline" onClick={() => setViewModalOpen(false)}>Close</Button>
+                <Button variant="outline" className="border-purple-600 text-black hover:text-purple-600 hover:bg-purple-50" onClick={() => setViewModalOpen(false)}>Close</Button>
               </div>
             </div>
           )}

@@ -159,7 +159,7 @@ const ProductListTable = ({
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={currentProductType === 'Kernel' ? 10 : 12} className="text-center py-6">
+            <TableCell colSpan={currentProductType === 'Kernel' ? 10 : 12} className="text-center py-6 text-muted-foreground">
               No products found for selected filters.
             </TableCell>
           </TableRow>

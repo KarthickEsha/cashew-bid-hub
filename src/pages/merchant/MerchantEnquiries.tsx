@@ -22,14 +22,21 @@ const mockEnquiries = [
 const MerchantEnquiries = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+
+  // Actual filters applied to the table
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  // Temporary filters (controlled inputs)
+  const [tempSearchFilter, setTempSearchFilter] = useState('');
+  const [tempStatusFilter, setTempStatusFilter] = useState('');
+
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState<any>(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  // Filter enquiries
+  // Filter enquiries only when Apply clicked
   const filteredEnquiries = mockEnquiries.filter(enquiry =>
     (searchFilter === '' ||
       enquiry.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -53,6 +60,18 @@ const MerchantEnquiries = () => {
   };
 
   const handleApplyFilters = () => {
+    setSearchFilter(tempSearchFilter);
+    setStatusFilter(tempStatusFilter);
+    setFilterOpen(false);
+    setCurrentPage(1);
+  };
+
+  const handleCancelFilters = () => {
+    // Clear both applied and temporary filters
+    setSearchFilter('');
+    setStatusFilter('');
+    setTempSearchFilter('');
+    setTempStatusFilter('');
     setFilterOpen(false);
     setCurrentPage(1);
   };
@@ -86,16 +105,16 @@ const MerchantEnquiries = () => {
                   <Input
                     placeholder="Search customer, product..."
                     className="pl-8"
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value)}
+                    value={tempSearchFilter}
+                    onChange={(e) => setTempSearchFilter(e.target.value)}
                   />
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Filter by Status</label>
                 <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  value={tempStatusFilter}
+                  onChange={(e) => setTempStatusFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-border rounded-md"
                 >
                   <option value="">All Status</option>
@@ -105,7 +124,7 @@ const MerchantEnquiries = () => {
               </div>
             </div>
             <div className="flex justify-end space-x-2 mt-4">
-              <Button variant="outline" onClick={() => setFilterOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={handleCancelFilters}>Cancel</Button>
               <Button onClick={handleApplyFilters}>Apply</Button>
             </div>
           </CardContent>
@@ -153,6 +172,13 @@ const MerchantEnquiries = () => {
                   </TableCell>
                 </TableRow>
               ))}
+              {filteredEnquiries.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                    No enquiries found for selected filters.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
 
@@ -222,11 +248,17 @@ const MerchantEnquiries = () => {
                 <p className="p-3 bg-muted rounded-md">{selectedEnquiry.message}</p>
               </div>
               <div className="flex gap-2 pt-4">
-                <Button onClick={() => handleChatClick(selectedEnquiry)} className="flex-1">
+                <Button onClick={() => handleChatClick(selectedEnquiry)} className="flex-1 bg-purple-600 text-white hover:bg-purple-700">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Reply to Enquiry
                 </Button>
-                <Button variant="outline" onClick={() => setViewModalOpen(false)}>Close</Button>
+                <Button
+                  variant="outline"
+                  className="border-purple-600 text-black hover:text-purple-600 hover:bg-purple-50"
+                  onClick={() => setViewModalOpen(false)}
+                >
+                  Close
+                </Button>
               </div>
             </div>
           )}
