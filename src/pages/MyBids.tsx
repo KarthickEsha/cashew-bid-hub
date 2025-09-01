@@ -15,11 +15,17 @@ import {
   XCircle,
   AlertCircle,
   Package,
-  Inbox
+  Inbox,
+  TrendingUp,
+  Plus
 } from "lucide-react";
+import { useBidding } from "@/hooks/useBidding";
+import BidModal from "@/components/BidModal";
 
 const MyBids = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [showBidModal, setShowBidModal] = useState(false);
+  const [selectedProductForBid, setSelectedProductForBid] = useState<any>(null);
 
   // temporary states for UI inputs
   const [tempSearchTerm, setTempSearchTerm] = useState("");
@@ -34,47 +40,57 @@ const MyBids = () => {
   // dialog state
   const [selectedBid, setSelectedBid] = useState<any>(null);
 
-  const bids = [
+  const { getBidsForBuyer } = useBidding();
+  const userBids = getBidsForBuyer('buyer1'); // Current user's bids
+
+  // Sample products available for bidding
+  const availableProducts = [
     {
-      id: 1,
-      productName: "Premium W320 Cashews",
-      merchantName: "Golden Cashew Co.",
-      bidAmount: "$8,200/ton",
-      quantity: "25 tons",
-      totalValue: "$205,000",
-      status: "pending",
-      bidDate: "2024-08-20",
-      expiryDate: "2024-08-25",
-      location: "Mumbai, India"
+      id: '4',
+      name: 'Premium W320 Cashews',
+      price: 8.0,
+      unit: 'ton',
+      merchant: 'Kerala Nuts Co.',
+      location: 'Kerala, India',
+      stock: 100
     },
     {
-      id: 2,
-      productName: "Organic SW240 Cashews",
-      merchantName: "Vietnam Nuts Ltd.",
-      bidAmount: "$9,500/ton",
-      quantity: "15 tons",
-      totalValue: "$142,500",
-      status: "accepted",
-      bidDate: "2024-08-18",
-      acceptedDate: "2024-08-19",
-      location: "Ho Chi Minh, Vietnam"
-    },
-    {
-      id: 3,
-      productName: "W240 Cashews",
-      merchantName: "African Cashew Co",
-      bidAmount: "$7,800/ton",
-      quantity: "30 tons",
-      totalValue: "$234,000",
-      status: "rejected",
-      bidDate: "2024-08-15",
-      rejectedDate: "2024-08-16",
-      location: "Accra, Ghana"
+      id: '5', 
+      name: 'Organic SW240 Cashews',
+      price: 9.0,
+      unit: 'ton',
+      merchant: 'Vietnam Premium Nuts',
+      location: 'Ho Chi Minh, Vietnam',
+      stock: 50
     }
   ];
 
+  // Convert userBids to display format
+  const bids = userBids.map(bid => ({
+    id: bid.id,
+    productName: bid.productName,
+    merchantName: bid.merchantName,
+    bidAmount: `$${bid.bidAmount.toLocaleString()}/ton`,
+    quantity: `${bid.quantity} tons`,
+    totalValue: `$${bid.totalValue.toLocaleString()}`,
+    status: bid.status === 'active' ? 'pending' : bid.status,
+    bidDate: bid.bidDate,
+    expiryDate: bid.expiryDate,
+    acceptedDate: bid.acceptedDate,
+    rejectedDate: bid.rejectedDate,
+    location: bid.location,
+    openingBid: bid.openingBid,
+    currentHighestBid: bid.currentHighestBid,
+    bidHistory: bid.bidHistory
+  }));
+
   // get unique locations for filter dropdown
   const uniqueLocations = ["all", ...Array.from(new Set(bids.map((b) => b.location)))];
+
+  const handlePlaceBid = (product: any) => {
+    setSelectedProductForBid(product);
+    setShowBidModal(true);
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -140,12 +156,62 @@ const MyBids = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">My Bids</h1>
-        <p className="text-muted-foreground">
-          Track your submitted bids and their status
-        </p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">My Bids</h1>
+          <p className="text-muted-foreground">
+            Track your submitted bids and their status
+          </p>
+        </div>
+        <Button onClick={() => setShowBidModal(true)} className="flex items-center space-x-2">
+          <Plus size={16} />
+          <span>Place New Bid</span>
+        </Button>
       </div>
+
+      {/* Available Products for Bidding */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <TrendingUp className="h-5 w-5" />
+            <span>Available for Bidding</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {availableProducts.map((product) => (
+              <Card key={product.id} className="border border-muted">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-semibold">{product.name}</h3>
+                      <p className="text-sm text-muted-foreground">{product.merchant}</p>
+                      <div className="flex items-center text-sm text-muted-foreground mt-1">
+                        <MapPin size={14} className="mr-1" />
+                        {product.location}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-primary">${product.price}</div>
+                      <div className="text-sm text-muted-foreground">per {product.unit}</div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <Badge variant="outline">{product.stock} tons available</Badge>
+                    <Button
+                      size="sm"
+                      onClick={() => handlePlaceBid(product)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Place Bid
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -205,8 +271,8 @@ const MyBids = () => {
               </SelectTrigger>
               <SelectContent>
                 {uniqueLocations.map((loc) => (
-                  <SelectItem key={loc} value={loc}>
-                    {loc === "all" ? "All Locations" : loc}
+                  <SelectItem key={String(loc)} value={String(loc)}>
+                    {loc === "all" ? "All Locations" : String(loc)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -358,7 +424,7 @@ const MyBids = () => {
 
       {/* View Details Dialog */}
       <Dialog open={!!selectedBid} onOpenChange={() => setSelectedBid(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           {selectedBid && (
             <>
               <DialogHeader>
@@ -368,31 +434,71 @@ const MyBids = () => {
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-3 mt-4">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Merchant:</span>
-                  <span className="font-medium">{selectedBid.merchantName}</span>
+              <div className="space-y-6 mt-4">
+                {/* Basic Details */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Merchant:</span>
+                    <span className="font-medium">{selectedBid.merchantName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Location:</span>
+                    <span className="font-medium">{selectedBid.location}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Quantity:</span>
+                    <span className="font-medium">{selectedBid.quantity}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bid Amount:</span>
+                    <span className="font-medium">{selectedBid.bidAmount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Value:</span>
+                    <span className="font-medium">{selectedBid.totalValue}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status:</span>
+                    <span className="font-medium capitalize">{selectedBid.status}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Location:</span>
-                  <span className="font-medium">{selectedBid.location}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Quantity:</span>
-                  <span className="font-medium">{selectedBid.quantity}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Bid Amount:</span>
-                  <span className="font-medium">{selectedBid.bidAmount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Value:</span>
-                  <span className="font-medium">{selectedBid.totalValue}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status:</span>
-                  <span className="font-medium capitalize">{selectedBid.status}</span>
-                </div>
+
+                {/* Bidding Info */}
+                {selectedBid.openingBid && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">Bidding Information</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Opening Bid:</span>
+                        <span className="font-medium">${selectedBid.openingBid}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Current Highest:</span>
+                        <span className="font-medium">${selectedBid.currentHighestBid}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bid History */}
+                {selectedBid.bidHistory && selectedBid.bidHistory.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">Bid History</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {selectedBid.bidHistory.map((bid: any, index: number) => (
+                        <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                          <div>
+                            <div className="font-medium">{bid.bidder}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(bid.timestamp).toLocaleString()}
+                            </div>
+                          </div>
+                          <Badge variant="outline">${bid.amount}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end mt-6">
@@ -404,6 +510,19 @@ const MyBids = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Bid Modal */}
+      <BidModal
+        isOpen={showBidModal}
+        onClose={() => {
+          setShowBidModal(false);
+          setSelectedProductForBid(null);
+        }}
+        productId={selectedProductForBid?.id || '4'}
+        productName={selectedProductForBid?.name || 'Premium W320 Cashews'}
+        currentPrice={selectedProductForBid?.price || 8.0}
+        unit={selectedProductForBid?.unit || 'ton'}
+      />
     </div>
   );
 };

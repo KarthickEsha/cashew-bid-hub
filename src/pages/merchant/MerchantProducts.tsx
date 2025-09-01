@@ -1,32 +1,35 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useInventory } from "@/hooks/useInventory";
+import { useProfile } from "@/hooks/useProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import ProductListTable from "@/components/ProductListTable";
+import ChatModal from "@/components/ChatModal";
+import EnquireModal from "@/components/EnquireModal";
+import MerchantBidManagement from "@/components/MerchantBidManagement";
+import ProductTypeToggle from "@/components/ProductTypeToggle";
+import EnquiryOrderDrawer from "@/components/EnquiryOrderDrawer";
+import { ProductType, Product } from "@/types/user";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
+  Package,
+  Search,
   Eye,
   Edit,
   MessageSquare,
-  ShoppingCart,
   Plus,
   Filter,
-  Search,
+  MoreHorizontal,
+  ShoppingCart,
+  AlertCircle,
+  TrendingUp,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useInventory } from "@/hooks/useInventory";
-import { useProfile } from "@/hooks/useProfile";
-import ProductTypeToggle from "@/components/ProductTypeToggle";
-import EnquiryOrderDrawer from "@/components/EnquiryOrderDrawer";
-import ProductListTable from "@/components/ProductListTable";
-import { ProductType, Product } from "@/types/user";
-import React from "react";
 
 const MerchantProducts = () => {
   const navigate = useNavigate();
@@ -77,6 +80,13 @@ const MerchantProducts = () => {
   // popup state
   const [open, setOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [showEnquireModal, setShowEnquireModal] = useState(false);
+  const [showBidManagement, setShowBidManagement] = useState(false);
+  const [chatProduct, setChatProduct] = useState<any>(null);
+  const [enquireProduct, setEnquireProduct] = useState<any>(null);
+  const [bidProduct, setBidProduct] = useState<any>(null);
 
   // apply filters
   const applyFilters = () => {
@@ -134,7 +144,7 @@ const MerchantProducts = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   // Update filtered products when product type changes
-  React.useEffect(() => {
+  useEffect(() => {
     setFilteredProducts(filteredProductsByType);
     clearFilters();
   }, [currentProductType, filteredProductsByType]);
@@ -321,7 +331,11 @@ const MerchantProducts = () => {
               navigate(`/product/${product.id}`);
             }}
             onEditClick={(product: Product) => {
-              navigate(`/merchant/edit-product/${product.id}`);
+              setEditingProduct({ ...product });
+            }}
+            onBidClick={(product: Product) => {
+              setBidProduct(product);
+              setShowBidManagement(true);
             }}
           />
 
@@ -389,6 +403,14 @@ const MerchantProducts = () => {
         onClose={() => setOpen(false)}
         productName={selectedProduct?.name || ""}
         productId={selectedProduct?.id || ""}
+      />
+
+      {/* Bid Management Modal */}
+      <MerchantBidManagement
+        isOpen={showBidManagement}
+        onClose={() => setShowBidManagement(false)}
+        productId={bidProduct?.id || ''}
+        productName={bidProduct?.name || ''}
       />
     </div>
   );

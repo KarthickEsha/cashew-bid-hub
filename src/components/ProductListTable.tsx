@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, MessageSquare, ShoppingCart } from 'lucide-react';
+import { Eye, Edit, MessageSquare, ShoppingCart, TrendingUp } from 'lucide-react';
 import { Product } from '@/types/user';
 
 interface ProductListTableProps {
@@ -12,6 +12,7 @@ interface ProductListTableProps {
   onOrderClick: (product: Product) => void;
   onViewClick: (product: Product) => void;
   onEditClick: (product: Product) => void;
+  onBidClick?: (product: Product) => void;
 }
 
 const ProductListTable = ({ 
@@ -20,7 +21,8 @@ const ProductListTable = ({
   onEnquiryClick, 
   onOrderClick, 
   onViewClick, 
-  onEditClick 
+  onEditClick,
+  onBidClick 
 }: ProductListTableProps) => {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
