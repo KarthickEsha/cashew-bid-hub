@@ -1,19 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  MapPin, 
-  Calendar, 
-  TrendingUp, 
+import {
+  MapPin,
+  Calendar,
+  TrendingUp,
   Filter,
   Search,
   Eye,
   Star
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const Marketplace = () => {
   const [filters, setFilters] = useState({
@@ -24,6 +25,10 @@ const Marketplace = () => {
     minPrice: "",
     maxPrice: ""
   });
+
+  const [bidAmount, setBidAmount] = useState<number | "">("");
+  const [quantity, setQuantity] = useState<number | "">("");
+  const [totalValue, setTotalValue] = useState<number>(0);
 
   const products = [
     {
@@ -44,7 +49,7 @@ const Marketplace = () => {
       merchantName: "Vietnam Cashew Export",
       location: "Ho Chi Minh City, Vietnam",
       grade: "SW240",
-      quantity: "100 tons", 
+      quantity: "100 tons",
       pricePerTon: "$9,200",
       pricingType: "bidding",
       expiry: "2024-11-30",
@@ -65,19 +70,6 @@ const Marketplace = () => {
       verified: false,
       description: "Organic W240 cashews, premium quality"
     },
-    {
-      id: 4,
-      merchantName: "African Cashew Co",
-      location: "Accra, Ghana",
-      grade: "W320",
-      quantity: "75 tons",
-      pricePerTon: "$7,900",
-      pricingType: "bidding",
-      expiry: "2024-11-15",
-      rating: 4.7,
-      verified: true,
-      description: "Fresh W320 cashews from Ghana farms"
-    }
   ];
 
   // filtered products state
@@ -90,6 +82,15 @@ const Marketplace = () => {
   const totalPages = Math.ceil(itemsToShow.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentProducts = itemsToShow.slice(startIndex, startIndex + itemsPerPage);
+
+  // Auto calculate total
+  useEffect(() => {
+    if (bidAmount && quantity) {
+      setTotalValue(Number(bidAmount) * Number(quantity));
+    } else {
+      setTotalValue(0);
+    }
+  }, [bidAmount, quantity]);
 
   // apply filters
   const applyFilters = () => {
@@ -150,6 +151,9 @@ const Marketplace = () => {
     setCurrentPage(1);
   };
 
+  // 🔹 State for Place Bid Popup
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
@@ -169,6 +173,7 @@ const Marketplace = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* --- existing filters code unchanged --- */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Search */}
             <div>
@@ -188,7 +193,6 @@ const Marketplace = () => {
                 />
               </div>
             </div>
-
             {/* Grade */}
             <div>
               <label className="text-sm font-medium mb-2 block">Grade</label>
@@ -210,7 +214,6 @@ const Marketplace = () => {
                 </SelectContent>
               </Select>
             </div>
-
             {/* Location */}
             <div>
               <label className="text-sm font-medium mb-2 block">Location</label>
@@ -231,7 +234,6 @@ const Marketplace = () => {
                 </SelectContent>
               </Select>
             </div>
-
             {/* Pricing Type */}
             <div>
               <label className="text-sm font-medium mb-2 block">Pricing Type</label>
@@ -250,7 +252,6 @@ const Marketplace = () => {
                 </SelectContent>
               </Select>
             </div>
-
             {/* Price Range */}
             <div>
               <label className="text-sm font-medium mb-2 block">
@@ -363,11 +364,19 @@ const Marketplace = () => {
                         View Details
                       </Button>
                     </Link>
-                    <Button size="sm" variant="outline">
-                      {product.pricingType === "bidding"
-                        ? "Place Bid"
-                        : "Quick Order"}
-                    </Button>
+                    {product.pricingType === "bidding" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedProduct(product)}
+                      >
+                        Place Bid
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline">
+                        Quick Order
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -409,6 +418,79 @@ const Marketplace = () => {
           )}
         </>
       )}
+
+      {/* 🔹 Place Bid Dialog */}
+      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Place Bid - {selectedProduct?.merchantName}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 text-sm">
+            <p>
+              <strong>Current highest bid:</strong> ${selectedProduct?.highestBid}/ton
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-muted-foreground">Highest Bid</p>
+                <p className="font-semibold">${selectedProduct?.highestBid}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Active Bidders</p>
+                <p className="font-semibold">{selectedProduct?.activeBidders}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Time Left</p>
+                <p className="font-semibold">{selectedProduct?.timeLeft}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Bid Amount (per ton)</label>
+              <Input
+                type="number"
+                placeholder="Enter bid amount"
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value ? Number(e.target.value) : "")}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantity (ton)</label>
+              <Input
+                type="number"
+                placeholder="Enter quantity"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value ? Number(e.target.value) : "")}
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-muted-foreground">Total Value</p>
+              <p className="font-semibold">${totalValue}</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedProduct(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                console.log({
+                  merchant: selectedProduct?.merchantName,
+                  bidAmount,
+                  quantity,
+                  totalValue,
+                });
+                setSelectedProduct(null);
+              }}
+            >
+              Place Bid
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, MapPin, Star, TrendingUp } from "lucide-react";
 import { merchants, products } from "@/data/mockdata";
 
 const ViewAllProducts = () => {
@@ -57,42 +57,89 @@ const ViewAllProducts = () => {
       {merchantProducts.length === 0 ? (
         <p className="text-muted-foreground">No products available for this company.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {merchantProducts.map((prod) => (
-            <Card key={prod.id} className="shadow-sm hover:shadow-lg transition rounded-xl">
-              <CardHeader>
-                <CardTitle className="text-lg">{prod.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="font-medium">Price: ₹{prod.pricePerTon} / ton</p>
-                <p className="text-sm text-muted-foreground">Available: {prod.quantity}</p>
-                <p className="text-sm text-muted-foreground">Grade: {prod.grade}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Expiry: {prod.expiry}
-                </p>
-
-                {/* Show specifications */}
-                <div className="mt-2 text-xs text-muted-foreground">
-                  <p>Moisture: {prod.specifications.moisture}</p>
-                  <p>Kernel Size: {prod.specifications.kernelSize}</p>
-                  <p>Broken Rate: {prod.specifications.brokenRate}</p>
-                  <p>Origin: {prod.specifications.origin}</p>
-                  <p>Packaging: {prod.specifications.packaging}</p>
-                  <p>Certification: {prod.specifications.certification}</p>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-4 w-full"
-                  onClick={() => navigate(`/product/${prod.id}`)}
-                >
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {merchantProducts.map((prod) => (
+    <Card
+      key={prod.id}
+      className="hover:shadow-warm transition-all duration-200 hover:-translate-y-1"
+    >
+      {/* Card Header */}
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center space-x-2 mb-1">
+              <CardTitle className="text-lg">{prod.name}</CardTitle>
+              {"verified" in prod && prod.verified && (
+                <Badge variant="default" className="text-xs">
+                  Verified
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center text-muted-foreground text-sm">
+              <MapPin size={14} className="mr-1" />
+              {merchant.location}
+            </div>
+          </div>
+          <div className="flex items-center space-x-1">
+            <Star size={14} className="text-yellow-500 fill-current" />
+            <span className="text-sm font-medium">{'rating' in prod ? String(prod.rating) : 'N/A'}</span>
+          </div>
         </div>
+      </CardHeader>
+
+      {/* Card Content */}
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">{prod.description}</p>
+
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span className="text-muted-foreground">Grade:</span>
+            <div className="font-semibold">{prod.grade}</div>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Quantity:</span>
+            <div className="font-semibold">{prod.quantity}</div>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Price:</span>
+            <div className="font-semibold text-primary">
+              ₹{prod.pricePerTon} / ton
+            </div>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Type:</span>
+            <div className="flex items-center">
+              {prod.pricingType === "bidding" && (
+                <TrendingUp size={14} className="mr-1 text-primary" />
+              )}
+              <span className="font-semibold capitalize">{prod.pricingType}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center text-sm text-muted-foreground">
+          <Calendar size={14} className="mr-1" />
+          Expires: {new Date(prod.expiry).toLocaleDateString()}
+        </div>
+
+        <div className="flex space-x-2 pt-2">
+          <Button
+            size="sm"
+            className="flex-1"
+            onClick={() => navigate(`/product/${prod.id}`)}
+          >
+            <Eye size={14} className="mr-2" />
+            View Details
+          </Button>
+          <Button size="sm" variant="outline">
+            {prod.pricingType === "bidding" ? "Place Bid" : "Quick Order"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  ))}
+</div>
+
       )}
     </div>
   );

@@ -24,6 +24,12 @@ const ProductDetail = () => {
   const [bidPrice, setBidPrice] = useState("");
   const [bidMessage, setBidMessage] = useState("");
 
+  // Mock Current Bids (replace with API later)
+  const currentBids = [
+    { id: 1, bidder: "Food Corp Ltd", price: "$950/ton", quantity: "20 tons" },
+    { id: 2, bidder: "SnackHub Traders", price: "$970/ton", quantity: "15 tons" },
+  ];
+
   if (!product || !merchant) {
     return <div className="p-6 text-center">Product not found</div>;
   }
@@ -154,8 +160,9 @@ const ProductDetail = () => {
           </Card>
         </div>
 
-        {/* Merchant Sidebar */}
-        <div>
+        {/* Right Sidebar */}
+        <div className="space-y-6">
+          {/* Merchant Card */}
           <Card className="sticky top-20">
             <CardHeader>
               <div className="flex justify-between">
@@ -185,6 +192,48 @@ const ProductDetail = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bid Details Card */}
+          {product.pricingType === "bidding" && (
+            <Card className="sticky top-20">
+              <CardHeader>
+                <CardTitle>Bid Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Opening Bid */}
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <h4 className="text-sm font-medium mb-1">Opening Bid</h4>
+                  <p className="text-lg font-semibold text-primary">{product.pricePerTon}</p>
+                </div>
+
+                {/* Current Bids */}
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <h4 className="text-sm font-medium mb-2">Current Bids</h4>
+                  <ul className="space-y-2 text-sm">
+                    {currentBids.map((bid) => (
+                      <li key={bid.id} className="flex justify-between border-b pb-1">
+                        <span>{bid.bidder}</span>
+                        <span className="font-medium">{bid.price} ({bid.quantity})</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Your Bid */}
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <h4 className="text-sm font-medium mb-1">Your Bid</h4>
+                  {bidPrice || bidQuantity ? (
+                    <p className="text-sm">
+                      <span className="font-medium">Qty:</span> {bidQuantity || "-"} tons |{" "}
+                      <span className="font-medium">Price:</span> {bidPrice || "-"} $/ton
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">You haven’t placed a bid yet</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

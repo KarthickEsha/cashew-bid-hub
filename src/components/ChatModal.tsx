@@ -77,7 +77,7 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType }: Cha
               key={msg.id}
               className={`flex ${msg.sender === userType ? 'justify-end' : 'justify-start'}`}
             >
-              <Card className={`max-w-[80%] ${msg.sender === userType ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+              <Card className={`max-w-[80%] ${msg.sender === userType ? 'bg-purple-500 text-white' : 'bg-muted'}`}>
                 <CardContent className="p-3">
                   <p className="text-sm">{msg.message}</p>
                   <div className={`text-xs mt-1 ${msg.sender === userType ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
@@ -99,7 +99,7 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType }: Cha
               placeholder="Type a message..."
               className="flex-1"
             />
-            <Button size="icon" onClick={handleSendMessage}>
+            <Button size="icon" className="bg-purple-500 text-white" onClick={handleSendMessage}>
               <Send className="w-4 h-4" />
             </Button>
           </div>

@@ -51,6 +51,8 @@ export const products = [
       packaging: "Vacuum packed in 25kg bags",
       certification: "FSSAI, ISO 22000",
     },
+    openingBid: 1000,   // ✅ Add this
+    currentBid: 1200   
   },
   {
     id: 2,
