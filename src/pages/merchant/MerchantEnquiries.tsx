@@ -25,24 +25,42 @@ const MerchantEnquiries = () => {
 
   // Actual filters applied to the table
   const [searchFilter, setSearchFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(''); // '' means no filter / "All"
 
   // Temporary filters (controlled inputs)
   const [tempSearchFilter, setTempSearchFilter] = useState('');
-  const [tempStatusFilter, setTempStatusFilter] = useState('');
+  const [tempStatusFilter, setTempStatusFilter] = useState(''); // keep '' so placeholder shows
 
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState<any>(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
+  // Map UI status values to the underlying enquiry statuses in your data
+  // (adjust as you add real workflow statuses)
+  const statusMap: Record<string, string[]> = {
+    all: [],            // no filter
+    '': [],             // treat empty like "all"
+    new: ['pending'],
+    viewed: ['responded'],
+    contacted: ['responded'],
+    negotiating: ['pending'],
+  };
+
   // Filter enquiries only when Apply clicked
-  const filteredEnquiries = mockEnquiries.filter(enquiry =>
-    (searchFilter === '' ||
+  const filteredEnquiries = mockEnquiries.filter(enquiry => {
+    const matchesSearch =
+      searchFilter === '' ||
       enquiry.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      enquiry.productName.toLowerCase().includes(searchFilter.toLowerCase())) &&
-    (statusFilter === '' || enquiry.status === statusFilter)
-  );
+      enquiry.productName.toLowerCase().includes(searchFilter.toLowerCase());
+
+    const normalized = statusFilter === '' ? '' : statusFilter; // '' or one of: all/new/viewed/contacted/negotiating
+    const allowedStatuses = statusMap[normalized] ?? [];
+    const matchesStatus =
+      normalized === '' || normalized === 'all' || allowedStatuses.includes(enquiry.status);
+
+    return matchesSearch && matchesStatus;
+  });
 
   const totalPages = Math.ceil(filteredEnquiries.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -110,19 +128,26 @@ const MerchantEnquiries = () => {
                   />
                 </div>
               </div>
+
+              {/* ✅ Filter by Status — shadcn/ui Select (exact structure you asked for) */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Filter by Status</label>
-                <select
+                <Select
                   value={tempStatusFilter}
-                  onChange={(e) => setTempStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  onValueChange={(value) => setTempStatusFilter(value)}
                 >
-                  <option value="">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="responded">Responded</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="new">Pending</SelectItem>
+                    <SelectItem value="viewed">Responded</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+
             <div className="flex justify-end space-x-2 mt-4">
               <Button variant="outline" onClick={handleCancelFilters}>Cancel</Button>
               <Button onClick={handleApplyFilters}>Apply</Button>

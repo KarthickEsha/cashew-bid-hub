@@ -28,6 +28,7 @@ import { useRole } from "./hooks/useRole";
 import MerchantDashboard from "./pages/merchant/MerchantDashboard";
 import ProfileSetup from "./pages/ProfileSetup";
 import { useProfile } from "./hooks/useProfile";
+import ViewAllProducts from "./pages/ViewAllProducts";
 import Login from "./pages/Login";
 import { ReactNode } from "react";
 
@@ -65,6 +66,7 @@ const AppContent = () => {
     <Layout>
       <Routes>
         <Route path="/" element={role === 'processor' ? <MerchantDashboard /> : <Dashboard />} />
+        <Route path="/merchant/:merchantId/products" element={<ViewAllProducts />} />
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/my-requests" element={<MyRequests />} />
