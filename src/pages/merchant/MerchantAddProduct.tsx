@@ -36,6 +36,8 @@ const MerchantAddProduct = () => {
   const [formData, setFormData] = useState({
     name: '',
     stock: '',
+    availableQty: '',          // NEW FIELD
+    minOrderQty: '',           // NEW FIELD
     price: '',
     unit: 'kg',
     location: '',
@@ -71,10 +73,12 @@ const MerchantAddProduct = () => {
     }
     
     // Create product based on type
-    const productData = {
+    const productData: any = {
       name: formData.name,
       type: currentProductType,
       stock: parseInt(formData.stock),
+      availableQty: parseInt(formData.availableQty),   // NEW FIELD
+      minOrderQty: parseInt(formData.minOrderQty),     // NEW FIELD
       price: parseFloat(formData.price),
       unit: formData.unit,
       location: formData.location,
@@ -106,7 +110,7 @@ const MerchantAddProduct = () => {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-primary">Add New Inventory</h1>
+        <h1 className="text-3xl font-bold text-primary">Add New Stocks</h1>
         <p className="text-muted-foreground mt-2">
           List a new {currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product for sale
         </p>
@@ -204,6 +208,32 @@ const MerchantAddProduct = () => {
                   value={formData.stock}
                   onChange={(e) => setFormData({...formData, stock: e.target.value})}
                   placeholder="e.g., 500"
+                  required
+                />
+              </div>
+
+              {/* NEW FIELD: Available Quantity */}
+              <div className="space-y-2">
+                <Label htmlFor="availableQty">Available Quantity *</Label>
+                <Input
+                  id="availableQty"
+                  type="number"
+                  value={formData.availableQty}
+                  onChange={(e) => setFormData({...formData, availableQty: e.target.value})}
+                  placeholder="e.g., 400"
+                  required
+                />
+              </div>
+
+              {/* NEW FIELD: Minimum Order Quantity */}
+              <div className="space-y-2">
+                <Label htmlFor="minOrderQty">Minimum Order Quantity *</Label>
+                <Input
+                  id="minOrderQty"
+                  type="number"
+                  value={formData.minOrderQty}
+                  onChange={(e) => setFormData({...formData, minOrderQty: e.target.value})}
+                  placeholder="e.g., 50"
                   required
                 />
               </div>

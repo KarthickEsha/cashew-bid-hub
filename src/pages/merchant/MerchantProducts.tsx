@@ -154,23 +154,23 @@ const MerchantProducts = () => {
       {/* Header with Add & Filter Buttons */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-primary">My Product Stocks</h1>
+          <h1 className="text-3xl font-bold text-primary">My Stocks</h1>
           <p className="text-muted-foreground mt-2">
             Manage your{" "}
-            {currentProductType === "RCN" ? "Raw Cashew Nut" : "Kernel"} inventory
+            {currentProductType === "RCN" ? "Raw Cashew Nut" : "Kernel"} Stocks
           </p>
         </div>
 
         {/* Buttons in same line */}
         <div className="flex items-center gap-[10px]">
           {/* Filter Button */}
-          <Button
+          {/* <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2"
           >
             <Filter className="h-4 w-4" />
-          </Button>
+          </Button> */}
 
           {/* Add Product Button */}
           <Button
@@ -178,7 +178,7 @@ const MerchantProducts = () => {
             className="flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            Add New Product
+            Add New Stocks
           </Button>
         </div>
       </div>
@@ -190,130 +190,140 @@ const MerchantProducts = () => {
       />
 
       {/* Filters */}
-      {showFilters && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filter Products
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* Search */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search products..."
-                    className="pl-8"
-                    value={filters.search}
-                    onChange={(e) =>
-                      setFilters({ ...filters, search: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
 
-              {/* Grade - Only for Kernel */}
-              {currentProductType === "Kernel" && (
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Grade</label>
-                  <Select
-                    value={filters.grade}
-                    onValueChange={(value) =>
-                      setFilters({ ...filters, grade: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select grade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="W240">W240</SelectItem>
-                      <SelectItem value="W320">W320</SelectItem>
-                      <SelectItem value="Broken BB">Broken BB</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Location */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Location</label>
-                <Input
-                  placeholder="Enter location..."
-                  value={filters.location}
-                  onChange={(e) =>
-                    setFilters({ ...filters, location: e.target.value })
-                  }
-                />
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
-                <Select
-                  value={filters.status}
-                  onValueChange={(value) =>
-                    setFilters({ ...filters, status: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Price Range */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Price Range</label>
-                <div className="flex space-x-2">
-                  <Input
-                    className="w-[6.5rem]" // 👈 custom width (13rem = 208px)
-                    placeholder="Min"
-                    value={filters.minPrice}
-                    onChange={(e) =>
-                      setFilters({ ...filters, minPrice: e.target.value })
-                    }
-                  />
-                  <Input
-                    className="w-[6.5rem]"
-                    placeholder="Max"
-                    value={filters.maxPrice}
-                    onChange={(e) =>
-                      setFilters({ ...filters, maxPrice: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex justify-end mt-4 space-x-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  clearFilters();
-                  setShowFilters(false); // also close when clearing
-                }}
-              >
-                Clear Filters
-              </Button>
-              <Button onClick={applyFilters}>Apply Filters</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Product Inventory</CardTitle>
+          <div className="flex">
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 ml-auto"
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {showFilters && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="h-5 w-5" />
+                  Filter Stocks
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {/* Search */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Search</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search products..."
+                        className="pl-8"
+                        value={filters.search}
+                        onChange={(e) =>
+                          setFilters({ ...filters, search: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Grade - Only for Kernel */}
+                  {currentProductType === "Kernel" && (
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Grade</label>
+                      <Select
+                        value={filters.grade}
+                        onValueChange={(value) =>
+                          setFilters({ ...filters, grade: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select grade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="W240">W240</SelectItem>
+                          <SelectItem value="W320">W320</SelectItem>
+                          <SelectItem value="Broken BB">Broken BB</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Location */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Location</label>
+                    <Input
+                      placeholder="Enter location..."
+                      value={filters.location}
+                      onChange={(e) =>
+                        setFilters({ ...filters, location: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Status</label>
+                    <Select
+                      value={filters.status}
+                      onValueChange={(value) =>
+                        setFilters({ ...filters, status: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Price Range */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Price Range</label>
+                    <div className="flex space-x-2">
+                      <Input
+                        className="w-[6.5rem]" // 👈 custom width (13rem = 208px)
+                        placeholder="Min"
+                        value={filters.minPrice}
+                        onChange={(e) =>
+                          setFilters({ ...filters, minPrice: e.target.value })
+                        }
+                      />
+                      <Input
+                        className="w-[6.5rem]"
+                        placeholder="Max"
+                        value={filters.maxPrice}
+                        onChange={(e) =>
+                          setFilters({ ...filters, maxPrice: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex justify-end mt-4 space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      clearFilters();
+                      setShowFilters(false); // also close when clearing
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                  <Button onClick={applyFilters}>Apply Filters</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </CardHeader>
         <CardContent>
           <ProductListTable

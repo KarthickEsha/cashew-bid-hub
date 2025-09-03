@@ -31,7 +31,7 @@ const navItems = [
     icon: Home,
   },
   {
-    title: "Products",
+    title: "My Stocks",
     url: "/merchant/products",
     icon: Package,
   },

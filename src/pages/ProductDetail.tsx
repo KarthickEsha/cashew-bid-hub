@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,8 @@ const ProductDetail = () => {
 
   // Mock Current Bids (replace with API later)
   const currentBids = [
-    { id: 1, bidder: "Food Corp Ltd", price: "$950/ton", quantity: "20 tons" },
-    { id: 2, bidder: "SnackHub Traders", price: "$970/ton", quantity: "15 tons" },
+    { id: 1, bidder: "Food Corp Ltd", price: "$950/ton", quantity: "20 tons", time: "2h ago" },
+    { id: 2, bidder: "SnackHub Traders", price: "$970/ton", quantity: "15 tons", time: "1h ago" },
   ];
 
   if (!product || !merchant) {
@@ -46,6 +46,31 @@ const ProductDetail = () => {
   const handleViewAllProducts = () => {
     navigate(`/merchant/${merchant.id}/products`);
   };
+
+  const [timeLeft, setTimeLeft] = useState("");
+
+  // Example: Auction end in 2 days from now
+  const auctionEnd = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = auctionEnd.getTime() - now;
+
+      if (distance <= 0) {
+        clearInterval(timer);
+        setTimeLeft("Auction Ended");
+      } else {
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -195,25 +220,49 @@ const ProductDetail = () => {
 
           {/* Bid Details Card */}
           {product.pricingType === "bidding" && (
-            <Card className="sticky top-20">
-              <CardHeader>
-                <CardTitle>Bid Details</CardTitle>
+            <Card className="sticky top-20 shadow-md rounded-lg border border-gray-200 max-w-sm">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-base font-semibold">Bid History</CardTitle>
+                <p className="text-xs text-muted-foreground">Live trading updates</p>
               </CardHeader>
+
               <CardContent className="space-y-4">
-                {/* Opening Bid */}
-                <div className="p-3 rounded-lg border bg-muted/30">
-                  <h4 className="text-sm font-medium mb-1">Opening Bid</h4>
-                  <p className="text-lg font-semibold text-primary">{product.pricePerTon}</p>
+                {/* Auction Timer */}
+                <div className="p-3 rounded-lg border bg-purple-50 flex justify-between items-center">
+                  <h4 className="text-xs font-medium">Auction Ends In</h4>
+                  <p className="font-semibold text-purple-600 text-sm">{timeLeft}</p>
                 </div>
 
-                {/* Current Bids */}
+                {/* Opening Bid */}
                 <div className="p-3 rounded-lg border bg-muted/30">
-                  <h4 className="text-sm font-medium mb-2">Current Bids</h4>
-                  <ul className="space-y-2 text-sm">
-                    {currentBids.map((bid) => (
-                      <li key={bid.id} className="flex justify-between border-b pb-1">
-                        <span>{bid.bidder}</span>
-                        <span className="font-medium">{bid.price} ({bid.quantity})</span>
+                  <h4 className="text-xs font-medium mb-1">Opening Bid</h4>
+                  <p className="text-base font-semibold text-primary">
+                    {product.pricePerTon} $/ton
+                  </p>
+                </div>
+
+                {/* Current Bids Timeline */}
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <h4 className="text-xs font-medium mb-2">Bid Timeline</h4>
+                  <ul className="space-y-3 text-xs relative">
+                    {currentBids.map((bid, idx) => (
+                      <li key={bid.id} className="relative flex items-start gap-2 pl-5">
+                        {/* timeline line */}
+                        {idx !== currentBids.length - 1 && (
+                          <span className="absolute left-[4px] top-2 w-[1px] h-full bg-gray-300"></span>
+                        )}
+                        {/* timeline dot */}
+                        <span className="absolute left-0 top-2 w-2.5 h-2.5 rounded-full bg-primary border-2 border-white shadow"></span>
+
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{bid.bidder}</span>
+                            <span className="text-[10px] text-muted-foreground">{bid.time}</span>
+                          </div>
+                          <div className="text-xs">
+                            {bid.price} $/ton &nbsp; | &nbsp; {bid.quantity} tons
+                          </div>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -221,18 +270,22 @@ const ProductDetail = () => {
 
                 {/* Your Bid */}
                 <div className="p-3 rounded-lg border bg-muted/30">
-                  <h4 className="text-sm font-medium mb-1">Your Bid</h4>
+                  <h4 className="text-xs font-medium mb-1">Your Bid</h4>
                   {bidPrice || bidQuantity ? (
-                    <p className="text-sm">
-                      <span className="font-medium">Qty:</span> {bidQuantity || "-"} tons |{" "}
+                    <p className="text-xs">
+                      <span className="font-medium">Qty:</span> {bidQuantity || "-"} tons
+                      &nbsp; | &nbsp;
                       <span className="font-medium">Price:</span> {bidPrice || "-"} $/ton
                     </p>
                   ) : (
-                    <p className="text-muted-foreground text-sm">You haven’t placed a bid yet</p>
+                    <p className="text-muted-foreground text-xs">
+                      You haven’t placed a bid yet
+                    </p>
                   )}
                 </div>
               </CardContent>
             </Card>
+
           )}
         </div>
       </div>

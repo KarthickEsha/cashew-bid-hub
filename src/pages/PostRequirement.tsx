@@ -73,7 +73,7 @@ const PostRequirement = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="grade">Grade *</Label>
+                <Label htmlFor="grade">Product / Grade *</Label>
                 <Select value={formData.grade} onValueChange={(value) => setFormData({ ...formData, grade: value })}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select grade" />
@@ -90,7 +90,7 @@ const PostRequirement = () => {
               </div>
 
               <div>
-                <Label htmlFor="preferredOrigin">Preferred Origin *</Label>
+                <Label htmlFor="preferredOrigin">Origin *</Label>
                 <Select value={formData.preferredOrigin} onValueChange={(value) => setFormData({ ...formData, preferredOrigin: value })}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="e.g., Vietnam, India" />
@@ -108,7 +108,7 @@ const PostRequirement = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="quantity">Quantity Needed *</Label>
+                <Label htmlFor="quantity">Required Quantity *</Label>
                 <Input
                   id="quantity"
                   placeholder="e.g., 50"
