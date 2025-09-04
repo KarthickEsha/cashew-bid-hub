@@ -36,6 +36,9 @@ const MerchantProducts = () => {
   const { products } = useInventory();
   const { profile } = useProfile();
 
+  // Keep local state for products so we can update them
+  const [allProducts, setAllProducts] = useState<Product[]>(products);
+
   // Determine current product type for display
   const getInitialProductType = (): ProductType => {
     if (profile?.productType === "Both") {
@@ -50,8 +53,8 @@ const MerchantProducts = () => {
   // Filter products based on current type (only if user has "Both" selected)
   const filteredProductsByType =
     profile?.productType === "Both"
-      ? products.filter((p) => p.type === currentProductType)
-      : products;
+      ? allProducts.filter((p) => p.type === currentProductType)
+      : allProducts;
 
   // filters state
   const [filters, setFilters] = useState({
@@ -87,6 +90,13 @@ const MerchantProducts = () => {
   const [chatProduct, setChatProduct] = useState<any>(null);
   const [enquireProduct, setEnquireProduct] = useState<any>(null);
   const [bidProduct, setBidProduct] = useState<any>(null);
+  const [showEditStockModal, setShowEditStockModal] = useState(false);
+  const [editStockData, setEditStockData] = useState<any>({
+    stock: '',
+    price: '',
+    expireDate: '',
+    location: ''
+  });
 
   // apply filters
   const applyFilters = () => {
@@ -143,11 +153,45 @@ const MerchantProducts = () => {
 
   const [showFilters, setShowFilters] = useState(false);
 
+  // Update current product type when profile changes (from RoleSwitcher)
+  useEffect(() => {
+    if (profile?.productType && profile.productType !== "Both") {
+      setCurrentProductType(profile.productType);
+    }
+  }, [profile?.productType]);
+
   // Update filtered products when product type changes
   useEffect(() => {
     setFilteredProducts(filteredProductsByType);
     clearFilters();
   }, [currentProductType, filteredProductsByType]);
+
+  // Sync allProducts with products from useInventory
+  useEffect(() => {
+    setAllProducts(products);
+  }, [products]);
+
+  const handleUpdateStock = () => {
+    if (!editingProduct) return;
+
+    const updatedProducts = allProducts.map((product) =>
+      product.id === editingProduct.id
+        ? {
+            ...product,
+            stock: Number(editStockData.stock),
+            price: Number(editStockData.price),
+            expireDate: editStockData.expireDate,
+            location: editStockData.location,
+          }
+        : product
+    );
+
+    setAllProducts(updatedProducts);
+    setShowEditStockModal(false);
+    
+    // Show success message (you can replace this with a toast notification)
+    console.log('Stock updated successfully for product:', editingProduct.name);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -342,6 +386,13 @@ const MerchantProducts = () => {
             }}
             onEditClick={(product: Product) => {
               setEditingProduct({ ...product });
+              setEditStockData({
+                stock: product.stock.toString(),
+                price: product.price.toString(),
+                expireDate: product.expireDate,
+                location: product.location
+              });
+              setShowEditStockModal(true);
             }}
             onBidClick={(product: Product) => {
               setBidProduct(product);
@@ -422,6 +473,83 @@ const MerchantProducts = () => {
         productId={bidProduct?.id || ''}
         productName={bidProduct?.name || ''}
       />
+
+      {/* Edit Stock Modal */}
+      <Dialog open={showEditStockModal} onOpenChange={setShowEditStockModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Stock</DialogTitle>
+            <DialogDescription>
+              Update stock information for {editingProduct?.name || 'product'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="stock">Available Stock</Label>
+              <Input
+                id="stock"
+                type="number"
+                placeholder="Enter stock quantity"
+                value={editStockData.stock}
+                onChange={(e) => setEditStockData({ ...editStockData, stock: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="price">Price per kg (₹)</Label>
+              <Input
+                id="price"
+                type="number"
+                placeholder="Enter price per kg"
+                value={editStockData.price}
+                onChange={(e) => setEditStockData({ ...editStockData, price: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="location">Origin/Location</Label>
+              <Input
+                id="location"
+                placeholder="Enter origin location"
+                value={editStockData.location}
+                onChange={(e) => setEditStockData({ ...editStockData, location: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="expireDate">Expire Date</Label>
+              <Input
+                id="expireDate"
+                type="date"
+                value={editStockData.expireDate}
+                onChange={(e) => setEditStockData({ ...editStockData, expireDate: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowEditStockModal(false)}
+              className="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+            >
+              Cancel
+            </Button>
+
+            <Button
+              onClick={handleUpdateStock}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              Update Stock
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

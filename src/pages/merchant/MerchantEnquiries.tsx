@@ -4,19 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Eye, MessageSquare, Search, Filter } from "lucide-react";
+import { Eye, MessageSquare, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import ChatModal from "@/components/ChatModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const mockEnquiries = [
-  { id: 1, customerName: "John Doe", productName: "Premium Cashews W240", quantity: "100kg", message: "I'm interested in bulk purchase for my restaurant chain. Can you provide pricing for 500kg monthly supply?", date: "2024-01-15", status: "pending" },
-  { id: 2, customerName: "Sarah Wilson", productName: "Organic Cashews W320", quantity: "50kg", message: "Need organic certification details and delivery timeline to New York.", date: "2024-01-14", status: "responded" },
-  { id: 3, customerName: "Mike Johnson", productName: "Broken Cashews BB", quantity: "200kg", message: "Looking for competitive pricing for broken cashews for my processing unit.", date: "2024-01-13", status: "pending" },
-  { id: 4, customerName: "Alice Brown", productName: "Cashews W180", quantity: "75kg", message: "Can you provide wholesale pricing?", date: "2024-01-12", status: "pending" },
-  { id: 5, customerName: "Bob Smith", productName: "Premium Cashews W240", quantity: "120kg", message: "Interested in monthly subscription.", date: "2024-01-11", status: "responded" },
-  { id: 6, customerName: "Carol White", productName: "Organic Cashews W320", quantity: "90kg", message: "Do you ship internationally?", date: "2024-01-10", status: "pending" },
-  { id: 7, customerName: "David Green", productName: "Broken Cashews BB", quantity: "150kg", message: "Need delivery by next week.", date: "2024-01-09", status: "pending" }
+  { id: 1, customerName: "John Doe", productName: "Premium Cashews W240", quantity: "100kg", message: "I'm interested in bulk purchase for my restaurant chain. Can you provide pricing for 500kg monthly supply?", date: "2024-01-15", status: "pending", expectedPrice: 8200, fixedPrice: 8500, origin: "India", grade: "W240" },
+  { id: 2, customerName: "Sarah Wilson", productName: "Organic Cashews W320", quantity: "50kg", message: "Need organic certification details and delivery timeline to New York.", date: "2024-01-14", status: "responded", expectedPrice: 7600, fixedPrice: 7800, origin: "Vietnam", grade: "W320" },
+  { id: 3, customerName: "Mike Johnson", productName: "Broken Cashews BB", quantity: "200kg", message: "Looking for competitive pricing for broken cashews for my processing unit.", date: "2024-01-13", status: "pending", expectedPrice: 7200, fixedPrice: 7500, origin: "Ghana", grade: "mixed" },
+  { id: 4, customerName: "Alice Brown", productName: "Cashews W180", quantity: "75kg", message: "Can you provide wholesale pricing?", date: "2024-01-12", status: "pending", expectedPrice: 8400, fixedPrice: 8500, origin: "India", grade: "W180" },
+  { id: 5, customerName: "Bob Smith", productName: "Premium Cashews W240", quantity: "120kg", message: "Interested in monthly subscription.", date: "2024-01-11", status: "responded", expectedPrice: 8100, fixedPrice: 8300, origin: "India", grade: "W240" },
+  { id: 6, customerName: "Carol White", productName: "Organic Cashews W320", quantity: "90kg", message: "Do you ship internationally?", date: "2024-01-10", status: "pending", expectedPrice: 7700, fixedPrice: 8000, origin: "Vietnam", grade: "W320" },
+  { id: 7, customerName: "David Green", productName: "Broken Cashews BB", quantity: "150kg", message: "Need delivery by next week.", date: "2024-01-09", status: "pending", expectedPrice: 7000, fixedPrice: 7300, origin: "Tanzania", grade: "mixed" }
 ];
 
 const MerchantEnquiries = () => {
@@ -35,6 +35,8 @@ const MerchantEnquiries = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState<any>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Map UI status values to the underlying enquiry statuses in your data
   // (adjust as you add real workflow statuses)
@@ -47,8 +49,35 @@ const MerchantEnquiries = () => {
     negotiating: ['pending'],
   };
 
+  // Sort enquiries
+  const sortEnquiries = (enquiries: any[]) => {
+    if (!sortField) return enquiries;
+    
+    return [...enquiries].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+      
+      // Handle different data types
+      if (sortField === 'date') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      } else if (sortField === 'quantity') {
+        // Extract numeric value from quantity string (e.g., "100kg" -> 100)
+        aValue = parseInt(aValue.replace(/[^0-9]/g, '')) || 0;
+        bValue = parseInt(bValue.replace(/[^0-9]/g, '')) || 0;
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
   // Filter enquiries only when Apply clicked
-  const filteredEnquiries = mockEnquiries.filter(enquiry => {
+  const filteredEnquiries = sortEnquiries(mockEnquiries.filter(enquiry => {
     const matchesSearch =
       searchFilter === '' ||
       enquiry.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -60,7 +89,7 @@ const MerchantEnquiries = () => {
       normalized === '' || normalized === 'all' || allowedStatuses.includes(enquiry.status);
 
     return matchesSearch && matchesStatus;
-  });
+  }));
 
   const totalPages = Math.ceil(filteredEnquiries.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -92,6 +121,27 @@ const MerchantEnquiries = () => {
     setTempStatusFilter('');
     setFilterOpen(false);
     setCurrentPage(1);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // If clicking the same field, toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If clicking a new field, set it and default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 text-muted-foreground opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 text-primary" />
+      : <ArrowDown className="h-4 w-4 text-primary" />;
   };
 
   return (
@@ -165,11 +215,51 @@ const MerchantEnquiries = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('customerName')}
+                >
+                  <div className="flex items-center justify-between">
+                    Customer
+                    {getSortIcon('customerName')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('productName')}
+                >
+                  <div className="flex items-center justify-between">
+                    Product
+                    {getSortIcon('productName')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('quantity')}
+                >
+                  <div className="flex items-center justify-between">
+                    Quantity
+                    {getSortIcon('quantity')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('date')}
+                >
+                  <div className="flex items-center justify-between">
+                    Date
+                    {getSortIcon('date')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center justify-between">
+                    Status
+                    {getSortIcon('status')}
+                  </div>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -267,6 +357,30 @@ const MerchantEnquiries = () => {
                     {selectedEnquiry.status === 'pending' ? 'Pending' : 'Responded'}
                   </Badge>
                 </div>
+              </div>
+              <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h4 className="font-semibold text-sm text-blue-700 dark:text-blue-300 mb-3">Pricing Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h5 className="font-medium text-xs text-blue-600 dark:text-blue-400">Expected Buyer Price</h5>
+                    <p className="text-lg font-bold text-blue-700 dark:text-blue-300">${selectedEnquiry.expectedPrice?.toLocaleString() || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-xs text-blue-600 dark:text-blue-400">Fixed Price ({selectedEnquiry.origin} - {selectedEnquiry.grade})</h5>
+                    <p className="text-lg font-bold text-green-600 dark:text-green-400">${selectedEnquiry.fixedPrice?.toLocaleString() || 'N/A'}</p>
+                  </div>
+                </div>
+                {selectedEnquiry.expectedPrice && selectedEnquiry.fixedPrice && (
+                  <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded border">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Price Difference:</strong> ${(selectedEnquiry.fixedPrice - selectedEnquiry.expectedPrice).toLocaleString()}
+                      {selectedEnquiry.expectedPrice <= selectedEnquiry.fixedPrice 
+                        ? <span className="text-green-600 ml-1">✓ Within limit</span>
+                        : <span className="text-red-600 ml-1">⚠ Exceeds fixed price</span>
+                      }
+                    </p>
+                  </div>
+                )}
               </div>
               <div>
                 <h4 className="font-semibold text-sm text-muted-foreground mb-2">Message</h4>

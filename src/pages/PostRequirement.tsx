@@ -16,15 +16,65 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
+// Origin countries
+const origins = [
+  { id: "india", name: "India" },
+  { id: "vietnam", name: "Vietnam" },
+  { id: "ghana", name: "Ghana" },
+  { id: "tanzania", name: "Tanzania" },
+  { id: "any", name: "Any Origin" }
+];
+
+// Product-based fixed prices by origin
+const productPrices = {
+  "W180": {
+    "india": 8500,
+    "vietnam": 8200,
+    "ghana": 7800,
+    "tanzania": 7500
+  },
+  "W240": {
+    "india": 8300,
+    "vietnam": 8000,
+    "ghana": 7600,
+    "tanzania": 7300
+  },
+  "W320": {
+    "india": 8100,
+    "vietnam": 7800,
+    "ghana": 7400,
+    "tanzania": 7100
+  },
+  "SW240": {
+    "india": 8200,
+    "vietnam": 7900,
+    "ghana": 7500,
+    "tanzania": 7200
+  },
+  "SW320": {
+    "india": 8000,
+    "vietnam": 7700,
+    "ghana": 7300,
+    "tanzania": 7000
+  },
+  "mixed": {
+    "india": 7800,
+    "vietnam": 7500,
+    "ghana": 7100,
+    "tanzania": 6800
+  }
+};
+
 const PostRequirement = () => {
   const [formData, setFormData] = useState({
     title: "",
     grade: "",
     quantity: "",
     unit: "",
-    preferredOrigin: "",
-    minBudget: "",
-    maxBudget: "",
+    origin: "",
+    targetDate: undefined as Date | undefined,
+    minSupplyQuantity: "",
+    expectedPrice: "",
     deliveryLocation: "",
     city: "",
     country: "",
@@ -32,6 +82,31 @@ const PostRequirement = () => {
     deliveryDeadline: undefined as Date | undefined,
     requirementExpiry: undefined as Date | undefined,
   });
+
+  const [priceError, setPriceError] = useState("");
+
+  // Get fixed price based on product and origin
+  const getFixedPrice = () => {
+    if (!formData.grade || !formData.origin || formData.origin === "any") {
+      return 0;
+    }
+    return productPrices[formData.grade as keyof typeof productPrices]?.[formData.origin as keyof typeof productPrices.W180] || 0;
+  };
+  
+  const fixedPrice = getFixedPrice();
+  const selectedOrigin = origins.find(o => o.id === formData.origin);
+
+  // Validate expected price
+  const validateExpectedPrice = (price: string) => {
+    const numPrice = parseFloat(price);
+    const currentFixedPrice = getFixedPrice();
+    if (price && currentFixedPrice && numPrice > currentFixedPrice) {
+      setPriceError(`Expected price cannot exceed fixed price of $${currentFixedPrice}`);
+      return false;
+    }
+    setPriceError("");
+    return true;
+  };
 
   const handleSubmit = (isDraft = false) => {
     console.log("Requirement submitted:", { ...formData, isDraft });
@@ -90,17 +165,20 @@ const PostRequirement = () => {
               </div>
 
               <div>
-                <Label htmlFor="preferredOrigin">Origin *</Label>
-                <Select value={formData.preferredOrigin} onValueChange={(value) => setFormData({ ...formData, preferredOrigin: value })}>
+                <Label htmlFor="origin">Origin *</Label>
+                <Select value={formData.origin} onValueChange={(value) => {
+                  setFormData({ ...formData, origin: value, expectedPrice: "" });
+                  setPriceError("");
+                }}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="e.g., Vietnam, India" />
+                    <SelectValue placeholder="Select origin" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="india">India</SelectItem>
-                    <SelectItem value="vietnam">Vietnam</SelectItem>
-                    <SelectItem value="ghana">Ghana</SelectItem>
-                    <SelectItem value="tanzania">Tanzania</SelectItem>
-                    <SelectItem value="any">Any Origin</SelectItem>
+                    {origins.map((origin) => (
+                      <SelectItem key={origin.id} value={origin.id}>
+                        {origin.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -132,6 +210,32 @@ const PostRequirement = () => {
                 </Select>
               </div>
             </div>
+
+            <div>
+              <Label>Target Date *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-1",
+                      !formData.targetDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.targetDate ? format(formData.targetDate, "dd/MM/yyyy") : "Select target date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.targetDate}
+                    onSelect={(date) => setFormData({ ...formData, targetDate: date })}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           {/* Budget Information */}
@@ -140,34 +244,78 @@ const PostRequirement = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="minBudget">
-                  Min Budget ($/
-                  {formData.unit ? formData.unit.slice(0, -1) || 'unit' : 'unit'}) *
+                <Label htmlFor="minSupplyQuantity">
+                  Minimum Supply Quantity ({formData.unit || 'units'}) *
                 </Label>
                 <Input
-                  id="minBudget"
-                  placeholder="e.g., 8000"
-                  value={formData.minBudget}
-                  onChange={(e) => setFormData({ ...formData, minBudget: e.target.value })}
+                  id="minSupplyQuantity"
+                  placeholder="e.g., 10"
+                  value={formData.minSupplyQuantity}
+                  onChange={(e) => setFormData({ ...formData, minSupplyQuantity: e.target.value })}
                   className="mt-1"
                 />
               </div>
 
               <div>
-                <Label htmlFor="maxBudget">
-                  Max Budget ($/
+                <Label htmlFor="expectedPrice">
+                  Expected Price ($/
                   {formData.unit ? formData.unit.slice(0, -1) || 'unit' : 'unit'}) *
                 </Label>
                 <Input
-                  id="maxBudget"
-                  placeholder="e.g., 9500"
-                  value={formData.maxBudget}
-                  onChange={(e) => setFormData({ ...formData, maxBudget: e.target.value })}
-                  className="mt-1"
+                  id="expectedPrice"
+                  placeholder="Enter expected price"
+                  value={formData.expectedPrice}
+                  onChange={(e) => {
+                    setFormData({ ...formData, expectedPrice: e.target.value });
+                    validateExpectedPrice(e.target.value);
+                  }}
+                  className={cn("mt-1", priceError && "border-red-500")}
                 />
+                {priceError && (
+                  <p className="text-sm text-red-500 mt-1">{priceError}</p>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Mode of Pricing */}
+          {formData.origin && formData.grade && formData.origin !== "any" && fixedPrice > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Mode of Pricing</h3>
+              
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Product Grade</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {formData.grade}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Origin</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {selectedOrigin?.name}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Fixed Price</Label>
+                    <p className="text-lg font-semibold text-primary mt-1">
+                      ${fixedPrice.toLocaleString()}/{formData.unit ? formData.unit.slice(0, -1) || 'unit' : 'unit'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Note:</strong> Your expected price must not exceed the fixed price of ${fixedPrice.toLocaleString()}. 
+                    This ensures competitive and fair pricing for both parties.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Delivery Information */}
           <div className="space-y-4">

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Check, X, Filter } from "lucide-react";
+import { Eye, Check, X, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -125,6 +125,8 @@ const MerchantOrders = () => {
   const [showFilterCard, setShowFilterCard] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const handleAcceptOrder = (orderId: string) => {
     setOrders(prev =>
@@ -157,22 +159,77 @@ const MerchantOrders = () => {
     }
   };
 
+  // Sort orders
+  const sortOrders = (ordersToSort: any[]) => {
+    if (!sortField) return ordersToSort;
+    
+    return [...ordersToSort].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+      
+      // Handle different data types
+      if (sortField === 'date' || sortField === 'deliveryDate') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      } else if (sortField === 'totalAmount') {
+        aValue = Number(aValue);
+        bValue = Number(bValue);
+      } else if (sortField === 'quantity') {
+        // Extract numeric value from quantity string (e.g., "100kg" -> 100)
+        aValue = parseInt(aValue.replace(/[^0-9]/g, '')) || 0;
+        bValue = parseInt(bValue.replace(/[^0-9]/g, '')) || 0;
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
   const handleApplyFilter = () => {
     const filtered = mockOrders.filter(order =>
       order.id.toLowerCase().includes(filters.orderId.toLowerCase()) &&
       order.customerName.toLowerCase().includes(filters.customer.toLowerCase()) &&
       order.productName.toLowerCase().includes(filters.product.toLowerCase())
     );
-    setOrders(filtered);
+    setOrders(sortOrders(filtered));
     setCurrentPage(1);
     setShowFilterCard(false);
   };
 
   const handleCancelFilter = () => {
     setFilters({ orderId: "", customer: "", product: "" });
-    setOrders(mockOrders);
+    setOrders(sortOrders(mockOrders));
     setCurrentPage(1);
     setShowFilterCard(false);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // If clicking the same field, toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If clicking a new field, set it and default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    
+    // Apply sorting to current orders
+    const currentFiltered = orders;
+    setOrders(sortOrders(currentFiltered));
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 text-muted-foreground opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 text-primary" />
+      : <ArrowDown className="h-4 w-4 text-primary" />;
   };
 
   const handleViewDetails = (order: any) => {
@@ -262,14 +319,78 @@ const MerchantOrders = () => {
             <Table className="min-w-[1000px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[10%]">Order ID</TableHead>
-                  <TableHead className="w-[15%]">Customer</TableHead>
-                  <TableHead className="w-[20%]">Product</TableHead>
-                  <TableHead className="w-[10%]">Quantity</TableHead>
-                  <TableHead className="w-[10%]">Amount</TableHead>
-                  <TableHead className="w-[10%]">Order Date</TableHead>
-                  <TableHead className="w-[10%]">Delivery Date</TableHead>
-                  <TableHead className="w-[7%]">Status</TableHead>
+                  <TableHead 
+                    className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('id')}
+                  >
+                    <div className="flex items-center justify-between">
+                      Order ID
+                      {getSortIcon('id')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="w-[15%] cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('customerName')}
+                  >
+                    <div className="flex items-center justify-between">
+                      Customer
+                      {getSortIcon('customerName')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="w-[20%] cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('productName')}
+                  >
+                    <div className="flex items-center justify-between">
+                      Product
+                      {getSortIcon('productName')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('quantity')}
+                  >
+                    <div className="flex items-center justify-between">
+                      Quantity
+                      {getSortIcon('quantity')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('totalAmount')}
+                  >
+                    <div className="flex items-center justify-between">
+                      Amount
+                      {getSortIcon('totalAmount')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('date')}
+                  >
+                    <div className="flex items-center justify-between">
+                      Order Date
+                      {getSortIcon('date')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('deliveryDate')}
+                  >
+                    <div className="flex items-center justify-between">
+                      Delivery Date
+                      {getSortIcon('deliveryDate')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="w-[7%] cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center justify-between">
+                      Status
+                      {getSortIcon('status')}
+                    </div>
+                  </TableHead>
                   <TableHead className="w-[8%]">Actions</TableHead>
                 </TableRow>
               </TableHeader>

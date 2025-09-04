@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, MessageSquare, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Eye, Edit, MessageSquare, ShoppingCart, TrendingUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Product } from '@/types/user';
 
 interface ProductListTableProps {
@@ -52,6 +51,15 @@ const ProductListTable = ({
     return 0;
   });
 
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 text-muted-foreground opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 text-primary" />
+      : <ArrowDown className="h-4 w-4 text-primary" />;
+  };
+
   const SortableHeader = ({ field, children }: { field: string; children: React.ReactNode }) => (
     <TableHead
       className="cursor-pointer hover:bg-muted/50 select-none"
@@ -59,11 +67,7 @@ const ProductListTable = ({
     >
       <div className="flex items-center justify-between">
         {children}
-        {sortField === field && (
-          <span className="text-xs ml-1">
-            {sortDirection === 'asc' ? '↑' : '↓'}
-          </span>
-        )}
+        {getSortIcon(field)}
       </div>
     </TableHead>
   );
@@ -73,60 +77,57 @@ const ProductListTable = ({
       <TableHeader>
         <TableRow>
           {currentProductType === "Kernel" ? (
-            <SortableHeader field="grade">Grade</SortableHeader>
+            <>
+              <SortableHeader field="grade">Grade</SortableHeader>
+              <SortableHeader field="stock">Available Stock</SortableHeader>
+              <SortableHeader field="price">Offer/kg</SortableHeader>
+              <SortableHeader field="location">Origin</SortableHeader>
+              <SortableHeader field="expireDate">Expire Date</SortableHeader>
+            </>
           ) : (
             <>
               <SortableHeader field="yearOfCrop">Year of Crop</SortableHeader>
               <SortableHeader field="nutCount">Nut Count</SortableHeader>
               <SortableHeader field="outTurn">Out Turn</SortableHeader>
+              <SortableHeader field="location">Origin</SortableHeader>
             </>
           )}
-          <SortableHeader field="stock">Stock</SortableHeader>
-          <SortableHeader field="price">Price/kg</SortableHeader>
-          <SortableHeader field="location">Origin</SortableHeader>
-          <SortableHeader field="expireDate">Expire Date</SortableHeader>
-          <SortableHeader field="status">Status</SortableHeader>
           <TableHead>Enquiries</TableHead>
           <TableHead>Orders</TableHead>
           <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
+
       <TableBody>
         {sortedProducts.length > 0 ? (
           sortedProducts.map((product) => (
             <TableRow key={product.id}>
               {currentProductType === "Kernel" ? (
-                <TableCell>{product.grade || "-"}</TableCell>
+                <>
+                  <TableCell>{product.grade || "-"}</TableCell>
+                  <TableCell>
+                    <span
+                      className={
+                        product.stock === 0 ? "text-red-600" : "text-green-600"
+                      }
+                    >
+                      {product.stock} {product.unit}
+                    </span>
+                  </TableCell>
+                  <TableCell>₹{product.price.toLocaleString("en-IN")}</TableCell>
+                  <TableCell>{product.location}</TableCell>
+                  <TableCell>{product.expireDate}</TableCell>
+                </>
               ) : (
                 <>
                   <TableCell>{product.yearOfCrop || "-"}</TableCell>
                   <TableCell>{product.nutCount || "-"}</TableCell>
                   <TableCell>{product.outTurn || "-"}</TableCell>
+                  <TableCell>{product.location}</TableCell>
                 </>
               )}
-              <TableCell>
-                <span
-                  className={
-                    product.stock === 0 ? "text-red-600" : "text-green-600"
-                  }
-                >
-                  {product.stock} {product.unit}
-                </span>
-              </TableCell>
-              <TableCell>
-                   ₹{product.price.toLocaleString("en-IN")}
-              </TableCell>
-              <TableCell>{product.location}</TableCell>
-              <TableCell>{product.expireDate}</TableCell>
-              <TableCell>
-                <Badge
-                  variant={
-                    product.status === "active" ? "default" : "destructive"
-                  }
-                >
-                  {product.status === "active" ? "Active" : "Out of Stock"}
-                </Badge>
-              </TableCell>
+
+              {/* Removed Status column */}
               <TableCell>
                 <div
                   onClick={() => onEnquiryClick(product)}
@@ -168,7 +169,7 @@ const ProductListTable = ({
         ) : (
           <TableRow>
             <TableCell
-              colSpan={currentProductType === "Kernel" ? 9 : 11}
+              colSpan={currentProductType === "Kernel" ? 8 : 7} // Kernel: 8 columns, RCN: 7 columns
               className="text-center py-6 text-muted-foreground"
             >
               No products found for selected filters.
@@ -177,6 +178,7 @@ const ProductListTable = ({
         )}
       </TableBody>
     </Table>
+
 
   );
 };

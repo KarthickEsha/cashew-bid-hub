@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Eye, MessageSquare, MapPin, Filter } from "lucide-react";
+import { Eye, MessageSquare, MapPin, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import ChatModal from "@/components/ChatModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
@@ -172,20 +172,52 @@ const MerchantRequirements = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedRequirement, setSelectedRequirement] = useState<any>(null);
   const [showFilterCard, setShowFilterCard] = useState(false);
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Temporary states for filter inputs
   const [tempLocation, setTempLocation] = useState("");
   const [tempGrade, setTempGrade] = useState("");
   const [tempSearch, setTempSearch] = useState("");
 
-  const filteredRequirements = mockRequirements.filter(
+  // Sort requirements
+  const sortRequirements = (requirementsToSort: any[]) => {
+    if (!sortField) return requirementsToSort;
+    
+    return [...requirementsToSort].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+      
+      // Handle different data types
+      if (sortField === 'posted' || sortField === 'expires' || sortField === 'deliveryDeadline') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      } else if (sortField === 'minBudget' || sortField === 'maxBudget') {
+        aValue = Number(aValue);
+        bValue = Number(bValue);
+      } else if (sortField === 'quantity') {
+        // Extract numeric value from quantity string (e.g., "100kg" -> 100)
+        aValue = parseInt(aValue.replace(/[^0-9]/g, '')) || 0;
+        bValue = parseInt(bValue.replace(/[^0-9]/g, '')) || 0;
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const filteredRequirements = sortRequirements(mockRequirements.filter(
     (req) =>
       (locationFilter === "" || req.location.toLowerCase().includes(locationFilter.toLowerCase())) &&
       (gradeFilter === "" || req.grade.toLowerCase().includes(gradeFilter.toLowerCase())) &&
       (searchFilter === "" ||
         req.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
         req.customer.toLowerCase().includes(searchFilter.toLowerCase()))
-  );
+  ));
 
   const totalPages = Math.ceil(filteredRequirements.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -209,7 +241,7 @@ const MerchantRequirements = () => {
     setCurrentPage(1); // reset to first page
   };
 
-   const handleCancel = () => {
+  const handleCancel = () => {
     setLocationFilter("");
     setGradeFilter("");
     setSearchFilter("");
@@ -217,6 +249,27 @@ const MerchantRequirements = () => {
     setTempGrade("");
     setTempSearch("");
     setCurrentPage(1);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // If clicking the same field, toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If clicking a new field, set it and default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 text-muted-foreground opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 text-primary" />
+      : <ArrowDown className="h-4 w-4 text-primary" />;
   };
 
   return (
@@ -268,14 +321,78 @@ const MerchantRequirements = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Grade</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Budget Range</TableHead>
-                <TableHead>Delivery Location</TableHead>
-                <TableHead>Deadline</TableHead>
-                <TableHead>Expires</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('title')}
+                >
+                  <div className="flex items-center justify-between">
+                    Title
+                    {getSortIcon('title')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('customer')}
+                >
+                  <div className="flex items-center justify-between">
+                    Customer
+                    {getSortIcon('customer')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('grade')}
+                >
+                  <div className="flex items-center justify-between">
+                    Grade
+                    {getSortIcon('grade')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('quantity')}
+                >
+                  <div className="flex items-center justify-between">
+                    Quantity
+                    {getSortIcon('quantity')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('minBudget')}
+                >
+                  <div className="flex items-center justify-between">
+                    Budget Range
+                    {getSortIcon('minBudget')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('location')}
+                >
+                  <div className="flex items-center justify-between">
+                    Delivery Location
+                    {getSortIcon('location')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('deliveryDeadline')}
+                >
+                  <div className="flex items-center justify-between">
+                    Deadline
+                    {getSortIcon('deliveryDeadline')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('expires')}
+                >
+                  <div className="flex items-center justify-between">
+                    Expires
+                    {getSortIcon('expires')}
+                  </div>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>

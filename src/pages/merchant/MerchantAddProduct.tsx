@@ -21,7 +21,7 @@ const MerchantAddProduct = () => {
   const { profile } = useProfile();
   const { addProduct } = useInventory();
   const [images, setImages] = useState<string[]>([]);
-  
+
   // Determine initial product type based on profile
   const getInitialProductType = (): ProductType => {
     if (profile?.productType === 'Both') {
@@ -29,10 +29,10 @@ const MerchantAddProduct = () => {
     }
     return profile?.productType || 'RCN';
   };
-  
+
   const [currentProductType, setCurrentProductType] = useState<ProductType>(getInitialProductType());
   const [expireDate, setExpireDate] = useState<Date>();
-  
+
   const [formData, setFormData] = useState({
     name: '',
     stock: '',
@@ -42,12 +42,12 @@ const MerchantAddProduct = () => {
     unit: 'kg',
     location: '',
     description: '',
-    
+
     // RCN specific fields
     yearOfCrop: '',
     nutCount: '',
     outTurn: '',
-    
+
     // Kernel specific fields
     grade: '',
   });
@@ -66,12 +66,12 @@ const MerchantAddProduct = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!expireDate) {
       alert('Please select an expire date');
       return;
     }
-    
+
     // Create product based on type
     const productData: any = {
       name: formData.name,
@@ -89,7 +89,7 @@ const MerchantAddProduct = () => {
       enquiries: 0,
       orders: 0,
     };
-    
+
     // Add type-specific fields
     if (currentProductType === 'RCN') {
       Object.assign(productData, {
@@ -102,7 +102,7 @@ const MerchantAddProduct = () => {
         grade: formData.grade,
       });
     }
-    
+
     addProduct(productData);
     navigate('/merchant/products');
   };
@@ -117,7 +117,7 @@ const MerchantAddProduct = () => {
       </div>
 
       {/* Product Type Toggle */}
-      <ProductTypeToggle 
+      <ProductTypeToggle
         currentType={currentProductType}
         onTypeChange={setCurrentProductType}
       />
@@ -130,7 +130,7 @@ const MerchantAddProduct = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="name">Product Name *</Label>
                 <Input
                   id="name"
@@ -139,13 +139,13 @@ const MerchantAddProduct = () => {
                   placeholder={`e.g., ${currentProductType === 'RCN' ? 'Premium Raw Cashew Nuts 2024' : 'Premium Cashews W240'}`}
                   required
                 />
-              </div>
+              </div> */}
 
               {/* Conditional fields based on product type */}
               {currentProductType === 'Kernel' ? (
                 <div className="space-y-2">
                   <Label htmlFor="grade">Grade *</Label>
-                  <Select value={formData.grade} onValueChange={(value) => setFormData({...formData, grade: value})}>
+                  <Select value={formData.grade} onValueChange={(value) => setFormData({ ...formData, grade: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select grade" />
                     </SelectTrigger>
@@ -164,7 +164,7 @@ const MerchantAddProduct = () => {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="yearOfCrop">Year of Crop *</Label>
-                    <Select value={formData.yearOfCrop} onValueChange={(value) => setFormData({...formData, yearOfCrop: value})}>
+                    <Select value={formData.yearOfCrop} onValueChange={(value) => setFormData({ ...formData, yearOfCrop: value })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select year" />
                       </SelectTrigger>
@@ -175,24 +175,24 @@ const MerchantAddProduct = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="nutCount">Nut Count *</Label>
                     <Input
                       id="nutCount"
                       value={formData.nutCount}
-                      onChange={(e) => setFormData({...formData, nutCount: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, nutCount: e.target.value })}
                       placeholder="e.g., 200-220 per kg"
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="outTurn">Out Turn *</Label>
                     <Input
                       id="outTurn"
                       value={formData.outTurn}
-                      onChange={(e) => setFormData({...formData, outTurn: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, outTurn: e.target.value })}
                       placeholder="e.g., 22-24%"
                       required
                     />
@@ -206,7 +206,7 @@ const MerchantAddProduct = () => {
                   id="stock"
                   type="number"
                   value={formData.stock}
-                  onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                   placeholder="e.g., 500"
                   required
                 />
@@ -219,7 +219,7 @@ const MerchantAddProduct = () => {
                   id="availableQty"
                   type="number"
                   value={formData.availableQty}
-                  onChange={(e) => setFormData({...formData, availableQty: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, availableQty: e.target.value })}
                   placeholder="e.g., 400"
                   required
                 />
@@ -232,7 +232,7 @@ const MerchantAddProduct = () => {
                   id="minOrderQty"
                   type="number"
                   value={formData.minOrderQty}
-                  onChange={(e) => setFormData({...formData, minOrderQty: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, minOrderQty: e.target.value })}
                   placeholder="e.g., 50"
                   required
                 />
@@ -240,7 +240,7 @@ const MerchantAddProduct = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="unit">Unit *</Label>
-                <Select value={formData.unit} onValueChange={(value) => setFormData({...formData, unit: value})}>
+                <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
@@ -253,29 +253,30 @@ const MerchantAddProduct = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="price">Price per Unit (USD) *</Label>
+                <Label htmlFor="price">Price per Unit (₹) *</Label>
                 <Input
                   id="price"
                   type="number"
                   step="0.01"
                   value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   placeholder="e.g., 8.50"
                   required
                 />
               </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="location">Location *</Label>
                 <Input
                   id="location"
                   value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   placeholder="e.g., Kerala, India"
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Expire Date *</Label>
                 <Popover>
@@ -310,7 +311,7 @@ const MerchantAddProduct = () => {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Describe your product, including specifications, quality, etc."
                 rows={4}
               />
@@ -365,9 +366,9 @@ const MerchantAddProduct = () => {
               <Button type="submit" className="flex-1">
                 Add Product
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 className="flex-1"
                 onClick={() => navigate('/merchant/products')}
               >
