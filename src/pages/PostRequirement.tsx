@@ -10,6 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Save, Send, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useRequirements } from "@/hooks/useRequirements";
+import { useNavigate } from "react-router-dom";
 
 // Origin countries
 const origins = [
@@ -61,6 +63,8 @@ const productPrices = {
 };
 
 const PostRequirement = () => {
+  const navigate = useNavigate();
+  const { addRequirement } = useRequirements();
   const [formData, setFormData] = useState({
     title: "",
     grade: "",
@@ -108,8 +112,44 @@ const PostRequirement = () => {
   };
 
   const handleSubmit = (isDraft = false) => {
-    console.log("Requirement submitted:", { ...formData, isDraft });
-    // Handle form submission logic here
+    // Validate required fields
+    if (!isDraft) {
+      if (!formData.grade || !formData.quantity || !formData.origin || 
+          !formData.expectedPrice || !formData.deliveryLocation || 
+          !formData.city || !formData.country || !formData.deliveryDeadline) {
+        // alert('Please fill in all required fields');
+        return;
+      }
+    }
+
+    // Prepare requirement data
+    const requirementData = {
+      grade: formData.grade,
+      quantity: formData.quantity,
+      origin: formData.origin,
+      expectedPrice: parseFloat(formData.expectedPrice) || 0,
+      minSupplyQuantity: formData.minSupplyQuantity,
+      deliveryLocation: formData.deliveryLocation,
+      city: formData.city,
+      country: formData.country,
+      deliveryDeadline: formData.deliveryDeadline ? format(formData.deliveryDeadline, 'yyyy-MM-dd') : '',
+      specifications: formData.specifications,
+      allowLowerBid: formData.allowLowerBid,
+      date: format(new Date(), 'yyyy-MM-dd'),
+      status: 'pending' as const,
+      isDraft
+    };
+
+    // Save to local storage
+    addRequirement(requirementData);
+
+    // Show success message and redirect
+    if (isDraft) {
+      alert('Requirement saved as draft successfully!');
+    } else {
+      alert('Requirement posted successfully! Merchants will be able to see your requirement.');
+      navigate('/my-requests'); // Redirect to dashboard after successful submission
+    }
   };
 
   return (

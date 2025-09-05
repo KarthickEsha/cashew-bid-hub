@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -28,11 +28,39 @@ import {
   Inbox,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useRequirements } from "@/hooks/useRequirements";
 
 const MyRequests = () => {
-  const requests = [
+  const { requirements } = useRequirements();
+  
+  // Transform requirements to match the display format
+  const transformRequirements = () => {
+    return requirements.map((req) => ({
+      id: parseInt(req.id),
+      productName: req.productName,
+      merchantName: "Awaiting Response", // Default since no merchant assigned yet
+      quantityRequested: req.quantity,
+      bidPrice: `₹${req.expectedPrice}/kg`,
+      totalValue: `₹${(req.expectedPrice * parseInt(req.quantity.replace(/[^0-9]/g, '')) || 0).toLocaleString()}`,
+      status: req.status,
+      submittedDate: req.date,
+      expectedResponse: req.deliveryDeadline,
+      respondedDate: req.status === 'responded' ? req.date : undefined,
+      lastActivity: req.date, // Use submission date as last activity for now
+      message: req.specifications || `Looking for ${req.quantity} of ${req.grade} cashews from ${req.origin}`,
+      location: `${req.city}, ${req.country}`,
+      deliveryLocation: req.deliveryLocation,
+      grade: req.grade,
+      origin: req.origin,
+      allowLowerBid: req.allowLowerBid,
+      isDraft: req.isDraft,
+      rejectionReason: undefined // Requirements don't have rejection reasons initially
+    }));
+  };
+
+  const mockRequests = [
     {
-      id: 1,
+      id: 1001,
       productName: "Premium W320 Cashews",
       merchantName: "Premium Cashews Ltd",
       quantityRequested: "25 tons",
@@ -41,55 +69,49 @@ const MyRequests = () => {
       status: "pending",
       submittedDate: "2024-08-20",
       expectedResponse: "2024-08-22",
+      respondedDate: undefined,
+      lastActivity: "2024-08-20",
       message: "Looking for high quality cashews for export to Europe",
       location: "Mumbai, India",
+      rejectionReason: undefined,
     },
     {
-      id: 2,
+      id: 1002,
       productName: "SW240 Cashews",
       merchantName: "Vietnam Cashew Export",
       quantityRequested: "50 tons",
       bidPrice: "$9,000/ton",
       totalValue: "$450,000",
-      status: "approved",
+      status: "responded",
       submittedDate: "2024-08-18",
       respondedDate: "2024-08-19",
+      lastActivity: "2024-08-19",
       message: "Bulk order for retail distribution",
       location: "Ho Chi Minh City, Vietnam",
-    },
-    {
-      id: 3,
-      productName: "Organic W240 Cashews",
-      merchantName: "Global Nuts Trading",
-      quantityRequested: "15 tons",
-      bidPrice: "$8,500/ton",
-      totalValue: "$127,500",
-      status: "rejected",
-      submittedDate: "2024-08-15",
-      respondedDate: "2024-08-16",
-      rejectionReason: "Minimum order quantity not met",
-      location: "California, USA",
-    },
-    {
-      id: 4,
-      productName: "W320 Cashews",
-      merchantName: "African Cashew Co",
-      quantityRequested: "40 tons",
-      bidPrice: "$7,800/ton",
-      totalValue: "$312,000",
-      status: "negotiating",
-      submittedDate: "2024-08-17",
-      lastActivity: "2024-08-21",
-      message: "Price negotiation in progress",
-      location: "Accra, Ghana",
-    },
+      rejectionReason: undefined,
+    }
   ];
+
+  // Combine actual requirements with mock data, filter out drafts
+  const allRequests = [
+    ...transformRequirements().filter(req => !req.isDraft),
+    ...mockRequests
+  ];
+
+  // 🔹 Stats Calculation
+  const stats = {
+    total: allRequests.length,
+    pending: allRequests.filter((r) => r.status === "pending").length,
+    approved: allRequests.filter((r) => r.status === "approved").length,
+    rejected: allRequests.filter((r) => r.status === "rejected").length,
+    responded: allRequests.filter((r) => r.status === "responded").length,
+  };
 
   // 🔹 States
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [dateRange, setDateRange] = useState("");
-  const [filteredRequests, setFilteredRequests] = useState(requests);
+  const [filteredRequests, setFilteredRequests] = useState(allRequests);
   const [currentPage, setCurrentPage] = useState(1);
 
   // 🔹 Pagination setup
@@ -104,7 +126,7 @@ const MyRequests = () => {
 
   // 🔹 Apply Filter Logic
   const applyFilters = () => {
-    let result = [...requests];
+    let result = [...allRequests];
 
     // Search filter
     if (search.trim() !== "") {
@@ -123,7 +145,7 @@ const MyRequests = () => {
 
     // 🔹 Use the "latest submittedDate" from dataset as 'now'
     const datasetLatest = new Date(
-      Math.max(...requests.map((r) => new Date(r.submittedDate).getTime()))
+      Math.max(...allRequests.map((r) => new Date(r.submittedDate).getTime()))
     );
 
     // ✅ Date range filter
@@ -199,10 +221,10 @@ const MyRequests = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Requests", value: "12", color: "text-blue-600" },
-          { label: "Pending", value: "5", color: "text-yellow-600" },
-          { label: "Approved", value: "4", color: "text-green-600" },
-          { label: "In Negotiation", value: "3", color: "text-orange-600" },
+          { label: "Total Requests", value: stats.total.toString(), color: "text-blue-600" },
+          { label: "Pending", value: stats.pending.toString(), color: "text-yellow-600" },
+          { label: "Responded", value: stats.responded.toString(), color: "text-green-600" },
+          { label: "Rejected", value: stats.rejected.toString(), color: "text-red-600" },
         ].map((stat, index) => (
           <Card key={index}>
             <CardContent className="p-4">

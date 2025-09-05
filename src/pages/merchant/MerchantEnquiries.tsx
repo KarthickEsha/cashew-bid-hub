@@ -8,6 +8,7 @@ import { Eye, MessageSquare, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown } f
 import ChatModal from "@/components/ChatModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRequirements } from "@/hooks/useRequirements";
 
 const mockEnquiries = [
   { id: 1, customerName: "John Doe", productName: "Premium Cashews W240", quantity: "100kg", message: "I'm interested in bulk purchase for my restaurant chain. Can you provide pricing for 500kg monthly supply?", date: "2024-01-15", status: "pending", expectedPrice: 8200, fixedPrice: 8500, origin: "India", grade: "W240" },
@@ -20,6 +21,7 @@ const mockEnquiries = [
 ];
 
 const MerchantEnquiries = () => {
+  const { getRequirementsAsEnquiries, updateRequirementStatus } = useRequirements();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
@@ -76,8 +78,12 @@ const MerchantEnquiries = () => {
     });
   };
 
+  // Get enquiries from local storage and combine with mock data
+  const storedEnquiries = getRequirementsAsEnquiries();
+  const allEnquiries = [...mockEnquiries, ...storedEnquiries];
+
   // Filter enquiries only when Apply clicked
-  const filteredEnquiries = sortEnquiries(mockEnquiries.filter(enquiry => {
+  const filteredEnquiries = sortEnquiries(allEnquiries.filter(enquiry => {
     const matchesSearch =
       searchFilter === '' ||
       enquiry.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -104,6 +110,11 @@ const MerchantEnquiries = () => {
   const handleChatClick = (enquiry: any) => {
     setSelectedEnquiry(enquiry);
     setChatModalOpen(true);
+    
+    // Update status to 'responded' if it was 'pending' and this is from stored requirements
+    if (enquiry.status === 'pending' && enquiry.id > 1000) { // Assuming stored enquiries have higher IDs
+      updateRequirementStatus(enquiry.id.toString(), 'responded');
+    }
   };
 
   const handleApplyFilters = () => {
