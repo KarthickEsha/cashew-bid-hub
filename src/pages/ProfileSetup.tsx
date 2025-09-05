@@ -33,10 +33,44 @@ const ProfileSetup = () => {
   });
   
   const [selectedRole, setSelectedRole] = useState<UserRole>(role);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   // Image crop functionality will be implemented when needed
+
+  const validateField = (field: string, value: string) => {
+    const newErrors = { ...errors };
+    
+    switch (field) {
+      case 'phone':
+        if (value && !/^[\+]?[1-9][\d]{0,15}$/.test(value.replace(/[\s\-\(\)]/g, ''))) {
+          newErrors.phone = 'Please enter a valid phone number';
+        } else {
+          delete newErrors.phone;
+        }
+        break;
+      case 'location':
+        if (value && value.length < 2) {
+          newErrors.location = 'Location must be at least 2 characters';
+        } else {
+          delete newErrors.location;
+        }
+        break;
+      case 'address':
+        if (value && value.length < 10) {
+          newErrors.address = 'Address must be at least 10 characters';
+        } else {
+          delete newErrors.address;
+        }
+        break;
+    }
+    
+    setErrors(newErrors);
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (['phone', 'location', 'address'].includes(field)) {
+      validateField(field, value);
+    }
   };
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,7 +99,7 @@ const ProfileSetup = () => {
     navigate('/');
   };
 
-  const isFormValid = formData.name && formData.email && formData.companyName && formData.businessType;
+  const isFormValid = formData.name && formData.email && formData.companyName && formData.businessType && Object.keys(errors).length === 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
@@ -153,7 +187,9 @@ const ProfileSetup = () => {
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="Enter your phone number"
+                  className={errors.phone ? 'border-destructive' : ''}
                 />
+                {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
               </div>
               
               <div className="space-y-2">
@@ -163,7 +199,9 @@ const ProfileSetup = () => {
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
                   placeholder="City, Country"
+                  className={errors.location ? 'border-destructive' : ''}
                 />
+                {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
               </div>
             </div>
 
@@ -175,7 +213,9 @@ const ProfileSetup = () => {
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 placeholder="Enter your complete address"
                 rows={3}
+                className={errors.address ? 'border-destructive' : ''}
               />
+              {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
             </div>
 
             {/* Business Information */}
