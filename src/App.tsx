@@ -39,9 +39,8 @@ interface LayoutProps {
 
 
 const queryClient = new QueryClient();
-
 // You need to provide your Clerk publishable key here
-const PUBLISHABLE_KEY = "pk_test_Y2F1c2FsLWNvbHQtMTkuY2xlcmsuYWNjb3VudHMuZGV2JA";
+const PUBLISHABLE_KEY = "pk_test_ZmVhc2libGUtYnVmZmFsby02NS5jbGVyay5hY2NvdW50cy5kZXYk";
 
 if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Clerk Publishable Key. Please add VITE_CLERK_PUBLISHABLE_KEY to your environment variables.");
