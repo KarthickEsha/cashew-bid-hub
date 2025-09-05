@@ -20,63 +20,60 @@ const Dashboard = () => {
 
   const stats = [
     {
-      title: "Active Bids",
-      value: "12",
-      icon: TrendingUp,
-      color: "text-primary",
-      trend: "+3 from last week",
-      path: "/my-bids" // ✅ define navigation path
-    },
-    {
-      title: "Pending Requests",
-      value: "8",
-      icon: Clock,
-      color: "text-orange-500",
-      trend: "2 new today",
-      path: "/my-requests"
-    },
-    {
       title: "My Requirements",
-      value: "5",
+      value: "4",
       icon: FileText,
       color: "text-blue-500",
-      trend: "1 expiring soon",
+      trend: "2 active, 1 expiring soon",
       path: "/my-requirements"
     },
     {
-      title: "Total Orders",
-      value: "47",
+      title: "Pending Orders",
+      value: "5",
+      icon: Clock,
+      color: "text-orange-500",
+      trend: "3 awaiting confirmation",
+    },
+    {
+      title: "Completed Orders",
+      value: "42",
       icon: MessageSquare,
       color: "text-green-500",
-      trend: "+12% this month",
-      path: "/my-orders"
+      trend: "+8 this month",
+    },
+    {
+      title: "Total Value",
+      value: "$125K",
+      icon: TrendingUp,
+      color: "text-primary",
+      trend: "+15% from last month",
     }
   ];
 
   const recentActivity = [
     {
-      type: "bid",
-      message: "Bid placed on Premium Grade W320 Cashews",
-      time: "2 hours ago",
-      status: "pending"
-    },
-    {
       type: "requirement",
-      message: "New requirement posted: Vietnam Origin Cashews",
-      time: "5 hours ago",
+      message: "New requirement posted: Premium Grade W320 Cashews - 500kg",
+      time: "2 hours ago",
       status: "active"
     },
     {
+      type: "order",
+      message: "Order placed for Vietnam Origin Cashews - 1000kg",
+      time: "5 hours ago",
+      status: "pending"
+    },
+    {
       type: "response",
-      message: "Merchant responded to your inquiry",
+      message: "Supplier responded to requirement inquiry",
       time: "1 day ago",
       status: "new"
     },
     {
       type: "order",
-      message: "Order confirmed for Grade SW240",
+      message: "Order delivered for Grade SW240 - 750kg",
       time: "2 days ago",
-      status: "confirmed"
+      status: "completed"
     }
   ];
 

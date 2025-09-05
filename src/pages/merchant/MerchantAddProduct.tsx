@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Upload, X, CalendarIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useProfile } from "@/hooks/useProfile";
@@ -18,39 +19,76 @@ import { ProductType } from "@/types/user";
 
 const MerchantAddProduct = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { profile } = useProfile();
-  const { addProduct } = useInventory();
+  const { addProduct, products, updateProduct } = useInventory();
+
+  // Check if we're in edit mode
+  const editProductId = searchParams.get('edit');
+  const isEditMode = !!editProductId;
+  const editingProduct = isEditMode ? products.find(p => p.id === editProductId) : null;
   const [images, setImages] = useState<string[]>([]);
 
   // Determine initial product type based on profile
   const getInitialProductType = (): ProductType => {
     if (profile?.productType === 'Both') {
-      return 'RCN'; // Default to RCN when both are available
+      return 'RCN';
     }
     return profile?.productType || 'RCN';
   };
 
-  const [currentProductType, setCurrentProductType] = useState<ProductType>(getInitialProductType());
-  const [expireDate, setExpireDate] = useState<Date>();
+  const [currentProductType, setCurrentProductType] = useState<ProductType>(
+    isEditMode && editingProduct ? editingProduct.type : getInitialProductType()
+  );
+  const [expireDate, setExpireDate] = useState<Date | undefined>(
+    isEditMode && editingProduct ? new Date(editingProduct.expireDate) : undefined
+  );
 
   const [formData, setFormData] = useState({
-    name: '',
-    stock: '',
-    availableQty: '',          // NEW FIELD
-    minOrderQty: '',           // NEW FIELD
-    price: '',
-    unit: 'kg',
-    location: '',
-    description: '',
+    name: isEditMode && editingProduct ? editingProduct.name : '',
+    availableQty: isEditMode && editingProduct ? (editingProduct.availableQty || '').toString() : '',
+    minOrderQty: isEditMode && editingProduct ? (editingProduct.minOrderQty || '').toString() : '',
+    price: isEditMode && editingProduct ? editingProduct.price.toString() : '',
+    unit: isEditMode && editingProduct ? editingProduct.unit : 'kg',
+    location: isEditMode && editingProduct ? editingProduct.location : '',
+    origin: isEditMode && editingProduct ? editingProduct.origin || '' : '',
+    description: isEditMode && editingProduct ? editingProduct.description || '' : '',
+    allowBuyerOffers: isEditMode && editingProduct ? editingProduct.allowBuyerOffers || false : false,
+    stockAvailable: isEditMode && editingProduct ? (editingProduct.stock || '').toString() : '',
 
     // RCN specific fields
-    yearOfCrop: '',
-    nutCount: '',
-    outTurn: '',
+    yearOfCrop: isEditMode && editingProduct ? editingProduct.yearOfCrop || '' : '',
+    nutCount: isEditMode && editingProduct ? editingProduct.nutCount || '' : '',
+    outTurn: isEditMode && editingProduct ? editingProduct.outTurn || '' : '',
 
     // Kernel specific fields
-    grade: '',
+    grade: isEditMode && editingProduct ? editingProduct.grade || '' : '',
   });
+
+  // Update form data when editing product is found
+  useEffect(() => {
+    if (isEditMode && editingProduct) {
+      setCurrentProductType(editingProduct.type);
+      setExpireDate(new Date(editingProduct.expireDate));
+      setImages(editingProduct.images || []);
+      setFormData({
+        name: editingProduct.name,
+        availableQty: (editingProduct.availableQty || '').toString(),
+        minOrderQty: (editingProduct.minOrderQty || '').toString(),
+        price: editingProduct.price.toString(),
+        unit: editingProduct.unit,
+        location: editingProduct.location,
+        origin: editingProduct.origin || '',
+        description: editingProduct.description || '',
+        allowBuyerOffers: editingProduct.allowBuyerOffers || false,
+        yearOfCrop: editingProduct.yearOfCrop || '',
+        nutCount: editingProduct.nutCount || '',
+        outTurn: editingProduct.outTurn || '',
+        grade: editingProduct.grade || '',
+        stockAvailable: (editingProduct.stock || '').toString(),
+      });
+    }
+  }, [isEditMode, editingProduct]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -72,17 +110,17 @@ const MerchantAddProduct = () => {
       return;
     }
 
-    // Create product based on type
     const productData: any = {
       name: formData.name,
       type: currentProductType,
-      stock: parseInt(formData.stock),
-      availableQty: parseInt(formData.availableQty),   // NEW FIELD
-      minOrderQty: parseInt(formData.minOrderQty),     // NEW FIELD
+      origin: formData.origin,
+      availableQty: parseInt(formData.availableQty),
+      minOrderQty: parseInt(formData.minOrderQty),
       price: parseFloat(formData.price),
       unit: formData.unit,
       location: formData.location,
       description: formData.description,
+      allowBuyerOffers: formData.allowBuyerOffers,
       images,
       expireDate: format(expireDate, 'yyyy-MM-dd'),
       status: 'active' as const,
@@ -90,7 +128,6 @@ const MerchantAddProduct = () => {
       orders: 0,
     };
 
-    // Add type-specific fields
     if (currentProductType === 'RCN') {
       Object.assign(productData, {
         yearOfCrop: formData.yearOfCrop,
@@ -103,16 +140,25 @@ const MerchantAddProduct = () => {
       });
     }
 
-    addProduct(productData);
+    if (isEditMode && editProductId) {
+      updateProduct(editProductId, productData);
+    } else {
+      addProduct(productData);
+    }
     navigate('/merchant/products');
   };
 
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-primary">Add New Stocks</h1>
+        <h1 className="text-3xl font-bold text-primary">
+          {isEditMode ? 'Edit Stock' : 'Add New Stocks'}
+        </h1>
         <p className="text-muted-foreground mt-2">
-          List a new {currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product for sale
+          {isEditMode
+            ? `Update your ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product information`
+            : `List a new ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product for sale`
+          }
         </p>
       </div>
 
@@ -124,27 +170,21 @@ const MerchantAddProduct = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Product Details</CardTitle>
-          <CardDescription>Fill in the information for your new product</CardDescription>
+          <CardTitle>{isEditMode ? 'Edit Product Details' : 'Product Details'}</CardTitle>
+          <CardDescription>
+            {isEditMode
+              ? 'Update the information for your product'
+              : 'Fill in the information for your new product'
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* <div className="space-y-2">
-                <Label htmlFor="name">Product Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder={`e.g., ${currentProductType === 'RCN' ? 'Premium Raw Cashew Nuts 2024' : 'Premium Cashews W240'}`}
-                  required
-                />
-              </div> */}
 
-              {/* Conditional fields based on product type */}
               {currentProductType === 'Kernel' ? (
                 <div className="space-y-2">
-                  <Label htmlFor="grade">Grade *</Label>
+                  <Label htmlFor="grade">Product / Grade *</Label>
                   <Select value={formData.grade} onValueChange={(value) => setFormData({ ...formData, grade: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select grade" />
@@ -200,21 +240,26 @@ const MerchantAddProduct = () => {
                 </>
               )}
 
+              {/* Replaced Stock with Origin */}
               <div className="space-y-2">
-                <Label htmlFor="stock">Stock Quantity *</Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  placeholder="e.g., 500"
-                  required
-                />
+                <Label htmlFor="origin">Origin *</Label>
+                <Select value={formData.origin} onValueChange={(value) => setFormData({ ...formData, origin: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select origin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="India">India</SelectItem>
+                    <SelectItem value="Vietnam">Vietnam</SelectItem>
+                    <SelectItem value="Nigeria">Nigeria</SelectItem>
+                    <SelectItem value="Ivory Coast">Ivory Coast</SelectItem>
+                    <SelectItem value="Ghana">Ghana</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* NEW FIELD: Available Quantity */}
               <div className="space-y-2">
-                <Label htmlFor="availableQty">Available Quantity *</Label>
+                <Label htmlFor="availableQty">Available Quantity (kg)*</Label>
                 <Input
                   id="availableQty"
                   type="number"
@@ -227,7 +272,7 @@ const MerchantAddProduct = () => {
 
               {/* NEW FIELD: Minimum Order Quantity */}
               <div className="space-y-2">
-                <Label htmlFor="minOrderQty">Minimum Order Quantity *</Label>
+                <Label htmlFor="minOrderQty">Minimum Order Quantity (kg)*</Label>
                 <Input
                   id="minOrderQty"
                   type="number"
@@ -238,7 +283,7 @@ const MerchantAddProduct = () => {
                 />
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="unit">Unit *</Label>
                 <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
                   <SelectTrigger>
@@ -250,10 +295,10 @@ const MerchantAddProduct = () => {
                     <SelectItem value="gms">Grams (gms)</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
               <div className="space-y-2">
-                <Label htmlFor="price">Price per Unit (₹) *</Label>
+                <Label htmlFor="price">Expected Selling Price (₹) *</Label>
                 <Input
                   id="price"
                   type="number"
@@ -261,6 +306,32 @@ const MerchantAddProduct = () => {
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   placeholder="e.g., 8.50"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 mt-6">
+                <Checkbox
+                  id="allowBuyerOffers"
+                  checked={formData.allowBuyerOffers}
+                  onCheckedChange={(checked) => setFormData({ ...formData, allowBuyerOffers: !!checked })}
+                />
+                <Label htmlFor="allowBuyerOffers" className="text-sm">
+                  Allow buyers to negotiate price
+                </Label>
+              </div>
+
+
+              <div className="space-y-2">
+                <Label htmlFor="stockAvailable">Stock Available *</Label>
+                <Input
+                  id="stockAvailable"
+                  type="number"
+                  value={formData.stockAvailable}
+                  onChange={(e) =>
+                    setFormData({ ...formData, stockAvailable: e.target.value })
+                  }
+                  placeholder="e.g., 1000"
                   required
                 />
               </div>
@@ -364,7 +435,7 @@ const MerchantAddProduct = () => {
 
             <div className="flex gap-4">
               <Button type="submit" className="flex-1">
-                Add Product
+                {isEditMode ? 'Update Product' : 'Add Product'}
               </Button>
               <Button
                 type="button"

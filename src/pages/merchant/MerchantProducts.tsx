@@ -385,14 +385,7 @@ const MerchantProducts = () => {
               navigate(`/product/${product.id}`);
             }}
             onEditClick={(product: Product) => {
-              setEditingProduct({ ...product });
-              setEditStockData({
-                stock: product.stock.toString(),
-                price: product.price.toString(),
-                expireDate: product.expireDate,
-                location: product.location
-              });
-              setShowEditStockModal(true);
+              navigate(`/merchant/add-product?edit=${product.id}`);
             }}
             onBidClick={(product: Product) => {
               setBidProduct(product);

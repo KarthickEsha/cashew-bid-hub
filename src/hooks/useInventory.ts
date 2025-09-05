@@ -3,15 +3,19 @@ import { persist } from 'zustand/middleware';
 import { ProductType } from '@/types/user';
 
 export interface Product {
+  origin: string;
   id: string;
   name: string;
   type: ProductType;
   stock: number;
+  availableQty?: number;
+  minOrderQty?: number;
   price: number;
   unit: string;
   location: string;
   description?: string;
   images: string[];
+  allowBuyerOffers?: boolean;
 
   // RCN specific fields
   yearOfCrop?: string;
@@ -63,6 +67,7 @@ export const useInventory = create<InventoryState>()(
           orders: 2,
           images: [],
           createdAt: '2024-01-15',
+          origin: ''
         },
         {
           id: '2',
@@ -81,6 +86,7 @@ export const useInventory = create<InventoryState>()(
           orders: 1,
           images: [],
           createdAt: '2024-02-10',
+          origin: ''
         },
         {
           id: '3',
@@ -97,6 +103,7 @@ export const useInventory = create<InventoryState>()(
           orders: 4,
           images: [],
           createdAt: '2024-03-05',
+          origin: ''
         },
         {
           id: '4',
@@ -115,6 +122,7 @@ export const useInventory = create<InventoryState>()(
           orders: 0,
           images: [],
           createdAt: '2023-12-01',
+          origin: ''
         },
         {
           id: '5',
@@ -131,6 +139,7 @@ export const useInventory = create<InventoryState>()(
           orders: 3,
           images: [],
           createdAt: '2024-04-12',
+          origin: ''
         },
         {
           id: '6',
@@ -149,6 +158,7 @@ export const useInventory = create<InventoryState>()(
           orders: 2,
           images: [],
           createdAt: '2024-06-08',
+          origin: ''
         },
         {
           id: '7',
@@ -165,6 +175,7 @@ export const useInventory = create<InventoryState>()(
           orders: 5,
           images: [],
           createdAt: '2024-05-18',
+          origin: ''
         },
         {
           id: '8',
@@ -183,6 +194,7 @@ export const useInventory = create<InventoryState>()(
           orders: 0,
           images: [],
           createdAt: '2023-11-15',
+          origin: ''
         },
         {
           id: '9',
@@ -199,6 +211,7 @@ export const useInventory = create<InventoryState>()(
           orders: 1,
           images: [],
           createdAt: '2024-07-01',
+          origin: ''
         },
         {
           id: '10',
@@ -217,6 +230,7 @@ export const useInventory = create<InventoryState>()(
           orders: 6,
           images: [],
           createdAt: '2024-08-15',
+          origin: ''
         }
       ],
 
