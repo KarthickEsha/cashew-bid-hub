@@ -56,8 +56,8 @@ const AppContent = () => {
     return <Login />;
   }
   
-  // Show profile setup if profile is not complete
-  if (!profile?.isProfileComplete) {
+  // Show profile setup if profile is null or not complete
+  if (!profile || !profile.isProfileComplete) {
     return <ProfileSetup />;
   }
 
