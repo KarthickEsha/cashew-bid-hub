@@ -30,6 +30,8 @@ const Marketplace = () => {
   const [quantity, setQuantity] = useState<number | "">("");
   const [totalValue, setTotalValue] = useState<number>(0);
 
+  const [showFilters, setShowFilters] = useState(false); // 🔹 state for filter toggle
+
   const products = [
     {
       id: 1,
@@ -72,10 +74,8 @@ const Marketplace = () => {
     },
   ];
 
-  // filtered products state
   const [filteredProducts, setFilteredProducts] = useState(products);
 
-  // pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
   const itemsToShow = filteredProducts;
@@ -83,7 +83,6 @@ const Marketplace = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentProducts = itemsToShow.slice(startIndex, startIndex + itemsPerPage);
 
-  // Auto calculate total
   useEffect(() => {
     if (bidAmount && quantity) {
       setTotalValue(Number(bidAmount) * Number(quantity));
@@ -92,7 +91,6 @@ const Marketplace = () => {
     }
   }, [bidAmount, quantity]);
 
-  // apply filters
   const applyFilters = () => {
     let result = [...products];
 
@@ -135,7 +133,7 @@ const Marketplace = () => {
     }
 
     setFilteredProducts(result);
-    setCurrentPage(1); // reset to first page after filter
+    setCurrentPage(1);
   };
 
   const clearFilters = () => {
@@ -151,140 +149,150 @@ const Marketplace = () => {
     setCurrentPage(1);
   };
 
-  // 🔹 State for Place Bid Popup
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Cashew Marketplace</h1>
-        <p className="text-muted-foreground">
-          Discover premium cashews from verified merchants worldwide
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Cashew Marketplace</h1>
+          <p className="text-muted-foreground">
+            Discover premium cashews from verified merchants worldwide
+          </p>
+        </div>
+        {/* 🔹 Filter Icon Button */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <Filter size={20} />
+        </Button>
       </div>
 
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter size={20} className="mr-2" />
-            Filter Products
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* --- existing filters code unchanged --- */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Search */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Search</label>
-              <div className="relative">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  placeholder="Search products..."
-                  className="pl-10"
-                  value={filters.search}
-                  onChange={(e) =>
-                    setFilters({ ...filters, search: e.target.value })
+      {/* Filters - show only when toggled */}
+      {showFilters && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Filter size={20} className="mr-2" />
+              Filter Products
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Search */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Search</label>
+                <div className="relative">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                  />
+                  <Input
+                    placeholder="Search products..."
+                    className="pl-10"
+                    value={filters.search}
+                    onChange={(e) =>
+                      setFilters({ ...filters, search: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              {/* Grade */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Grade</label>
+                <Select
+                  value={filters.grade}
+                  onValueChange={(value) =>
+                    setFilters({ ...filters, grade: value })
                   }
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="W180">W180</SelectItem>
+                    <SelectItem value="W240">W240</SelectItem>
+                    <SelectItem value="W320">W320</SelectItem>
+                    <SelectItem value="SW240">SW240</SelectItem>
+                    <SelectItem value="SW320">SW320</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Location */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Location</label>
+                <Select
+                  value={filters.location}
+                  onValueChange={(value) =>
+                    setFilters({ ...filters, location: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="india">India</SelectItem>
+                    <SelectItem value="vietnam">Vietnam</SelectItem>
+                    <SelectItem value="ghana">Ghana</SelectItem>
+                    <SelectItem value="usa">USA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Pricing Type */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Pricing Type</label>
+                <Select
+                  value={filters.pricingType}
+                  onValueChange={(value) =>
+                    setFilters({ ...filters, pricingType: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed">Fixed Price</SelectItem>
+                    <SelectItem value="bidding">Bidding</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Price Range */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Price Range ($/ton)
+                </label>
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="Min"
+                    value={filters.minPrice}
+                    onChange={(e) =>
+                      setFilters({ ...filters, minPrice: e.target.value })
+                    }
+                  />
+                  <Input
+                    placeholder="Max"
+                    value={filters.maxPrice}
+                    onChange={(e) =>
+                      setFilters({ ...filters, maxPrice: e.target.value })
+                    }
+                  />
+                </div>
               </div>
             </div>
-            {/* Grade */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Grade</label>
-              <Select
-                value={filters.grade}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, grade: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="W180">W180</SelectItem>
-                  <SelectItem value="W240">W240</SelectItem>
-                  <SelectItem value="W320">W320</SelectItem>
-                  <SelectItem value="SW240">SW240</SelectItem>
-                  <SelectItem value="SW320">SW320</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Location */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Location</label>
-              <Select
-                value={filters.location}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, location: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="india">India</SelectItem>
-                  <SelectItem value="vietnam">Vietnam</SelectItem>
-                  <SelectItem value="ghana">Ghana</SelectItem>
-                  <SelectItem value="usa">USA</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Pricing Type */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Pricing Type</label>
-              <Select
-                value={filters.pricingType}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, pricingType: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixed">Fixed Price</SelectItem>
-                  <SelectItem value="bidding">Bidding</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Price Range */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Price Range ($/ton)
-              </label>
-              <div className="flex space-x-2">
-                <Input
-                  placeholder="Min"
-                  value={filters.minPrice}
-                  onChange={(e) =>
-                    setFilters({ ...filters, minPrice: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Max"
-                  value={filters.maxPrice}
-                  onChange={(e) =>
-                    setFilters({ ...filters, maxPrice: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Buttons */}
-          <div className="flex justify-end mt-4 space-x-3">
-            <Button variant="outline" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-            <Button onClick={applyFilters}>Apply Filters</Button>
-          </div>
-        </CardContent>
-      </Card>
+            {/* Buttons */}
+            <div className="flex justify-end mt-4 space-x-3">
+              <Button variant="outline" onClick={clearFilters}>
+                Clear Filters
+              </Button>
+              <Button onClick={applyFilters}>Apply Filters</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Products Grid */}
       {currentProducts.length === 0 ? (

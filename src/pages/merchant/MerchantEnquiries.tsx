@@ -54,11 +54,11 @@ const MerchantEnquiries = () => {
   // Sort enquiries
   const sortEnquiries = (enquiries: any[]) => {
     if (!sortField) return enquiries;
-    
+
     return [...enquiries].sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
-      
+
       // Handle different data types
       if (sortField === 'date') {
         aValue = new Date(aValue).getTime();
@@ -71,7 +71,7 @@ const MerchantEnquiries = () => {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
       }
-      
+
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -110,7 +110,7 @@ const MerchantEnquiries = () => {
   const handleChatClick = (enquiry: any) => {
     setSelectedEnquiry(enquiry);
     setChatModalOpen(true);
-    
+
     // Update status to 'responded' if it was 'pending' and this is from stored requirements
     if (enquiry.status === 'pending' && enquiry.id > 1000) { // Assuming stored enquiries have higher IDs
       updateRequirementStatus(enquiry.id.toString(), 'responded');
@@ -150,7 +150,7 @@ const MerchantEnquiries = () => {
     if (sortField !== field) {
       return <ArrowUpDown className="h-4 w-4 text-muted-foreground opacity-50" />;
     }
-    return sortDirection === 'asc' 
+    return sortDirection === 'asc'
       ? <ArrowUp className="h-4 w-4 text-primary" />
       : <ArrowDown className="h-4 w-4 text-primary" />;
   };
@@ -226,7 +226,7 @@ const MerchantEnquiries = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('customerName')}
                 >
@@ -235,7 +235,7 @@ const MerchantEnquiries = () => {
                     {getSortIcon('customerName')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('productName')}
                 >
@@ -244,7 +244,7 @@ const MerchantEnquiries = () => {
                     {getSortIcon('productName')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('quantity')}
                 >
@@ -253,7 +253,7 @@ const MerchantEnquiries = () => {
                     {getSortIcon('quantity')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('date')}
                 >
@@ -262,7 +262,7 @@ const MerchantEnquiries = () => {
                     {getSortIcon('date')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('status')}
                 >
@@ -355,27 +355,46 @@ const MerchantEnquiries = () => {
                   <p className="font-medium">{selectedEnquiry.productName}</p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground">Quantity</h4>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Required Quantity</h4>
                   <p className="font-medium">{selectedEnquiry.quantity}</p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground">Date</h4>
+                  <h4 className="font-semibold text-sm text-muted-foreground">Expire Date</h4>
                   <p className="font-medium">{new Date(selectedEnquiry.date).toLocaleDateString()}</p>
                 </div>
-                <div>
+                {/* <div>
                   <h4 className="font-semibold text-sm text-muted-foreground">Status</h4>
                   <Badge variant={selectedEnquiry.status === 'pending' ? 'destructive' : 'default'}>
                     {selectedEnquiry.status === 'pending' ? 'Pending' : 'Responded'}
                   </Badge>
+                </div> */}
+              </div>
+              <div className="flex justify-between items-center">
+                {/* Left side - Expected Buyer Price */}
+                <div>
+                  <h5 className="font-medium text-xs text-blue-600 dark:text-blue-400">
+                    Expected Buyer Price
+                  </h5>
+                  <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                    ${selectedEnquiry.expectedPrice?.toLocaleString() || 'N/A'}
+                  </p>
+                </div>
+
+                {/* Right side - Fixed Price */}
+                <div className="text-right">
+                  <h5 className="font-medium text-xs text-blue-600 dark:text-blue-400">
+                    Fixed Price ({selectedEnquiry.origin} - {selectedEnquiry.grade})
+                  </h5>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                    ${selectedEnquiry.fixedPrice?.toLocaleString() || 'N/A'}
+                  </p>
                 </div>
               </div>
-              <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+
+              {/* <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                 <h4 className="font-semibold text-sm text-blue-700 dark:text-blue-300 mb-3">Pricing Details</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h5 className="font-medium text-xs text-blue-600 dark:text-blue-400">Expected Buyer Price</h5>
-                    <p className="text-lg font-bold text-blue-700 dark:text-blue-300">${selectedEnquiry.expectedPrice?.toLocaleString() || 'N/A'}</p>
-                  </div>
+
                   <div>
                     <h5 className="font-medium text-xs text-blue-600 dark:text-blue-400">Fixed Price ({selectedEnquiry.origin} - {selectedEnquiry.grade})</h5>
                     <p className="text-lg font-bold text-green-600 dark:text-green-400">${selectedEnquiry.fixedPrice?.toLocaleString() || 'N/A'}</p>
@@ -385,14 +404,14 @@ const MerchantEnquiries = () => {
                   <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded border">
                     <p className="text-xs text-muted-foreground">
                       <strong>Price Difference:</strong> ${(selectedEnquiry.fixedPrice - selectedEnquiry.expectedPrice).toLocaleString()}
-                      {selectedEnquiry.expectedPrice <= selectedEnquiry.fixedPrice 
+                      {selectedEnquiry.expectedPrice <= selectedEnquiry.fixedPrice
                         ? <span className="text-green-600 ml-1">✓ Within limit</span>
                         : <span className="text-red-600 ml-1">⚠ Exceeds fixed price</span>
                       }
                     </p>
                   </div>
                 )}
-              </div>
+              </div> */}
               <div>
                 <h4 className="font-semibold text-sm text-muted-foreground mb-2">Message</h4>
                 <p className="p-3 bg-muted rounded-md">{selectedEnquiry.message}</p>

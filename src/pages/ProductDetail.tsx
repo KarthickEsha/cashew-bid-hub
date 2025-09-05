@@ -168,12 +168,16 @@ const ProductDetail = () => {
                     <label className="block text-sm font-medium">Quantity (tons)</label>
                     <Input value={bidQuantity} onChange={(e) => setBidQuantity(e.target.value)} />
                   </div>
-                  {product.pricingType === "bidding" && (
+                  <div>
+                    <label className="block text-sm font-medium">Your Price ($/ton)</label>
+                    <Input value={bidPrice} onChange={(e) => setBidPrice(e.target.value)} />
+                  </div>
+                  {/* {product.pricingType === "bidding" && (
                     <div>
                       <label className="block text-sm font-medium">Your Price ($/ton)</label>
                       <Input value={bidPrice} onChange={(e) => setBidPrice(e.target.value)} />
                     </div>
-                  )}
+                  )} */}
                 </div>
                 <div>
                   <label className="block text-sm font-medium">Message</label>
@@ -221,7 +225,7 @@ const ProductDetail = () => {
           </Card>
 
           {/* Bid Details Card */}
-          {product.pricingType === "bidding" &&  role !== "processor" && (
+          {product.pricingType === "bidding" && role !== "processor" && (
             <Card className="sticky top-20 shadow-md rounded-lg border border-gray-200 max-w-sm">
               <CardHeader className="pb-1">
                 <CardTitle className="text-base font-semibold">Bid History</CardTitle>
