@@ -41,8 +41,8 @@ const ProfileSetup = () => {
     
     switch (field) {
       case 'phone':
-        if (value && !/^[\+]?[1-9][\d]{0,15}$/.test(value.replace(/[\s\-\(\)]/g, ''))) {
-          newErrors.phone = 'Please enter a valid phone number';
+        if (value && !/^[0-9]{10}$/.test(value.replace(/[\s\-\(\)]/g, ''))) {
+          newErrors.phone = 'Please enter a valid 10-digit phone number';
         } else {
           delete newErrors.phone;
         }
