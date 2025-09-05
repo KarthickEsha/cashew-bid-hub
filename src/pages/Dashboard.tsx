@@ -13,50 +13,66 @@ import {
 import cashewHero from "@/assets/cashew-hero.jpg";
 import { Link, useNavigate } from "react-router-dom"; // ✅ import navigate
 import { useRole } from "@/hooks/useRole";
+import { useRequirements } from "@/hooks/useRequirements";
 
 const Dashboard = () => {
   const { role, setRole } = useRole();
   const navigate = useNavigate(); // ✅ initialize navigate
+  const { getMyRequirements } = useRequirements();
+  
+  // Get dynamic data from requirements
+  const requirements = getMyRequirements();
+  const activeRequirements = requirements.filter(req => req.status === 'active').length;
+  const draftRequirements = requirements.filter(req => req.status === 'draft').length;
+  const totalResponses = requirements.reduce((acc, req) => acc + (req.responsesCount || 0), 0);
+  
+  // Calculate total value (mock calculation - in real app this would come from orders)
+  const totalValue = requirements.reduce((acc, req) => {
+    const price = parseFloat(req.budgetRange?.replace(/[₹,]/g, '') || '0');
+    const quantity = parseFloat(req.quantity?.replace(/[kg,]/g, '') || '0');
+    return acc + (price * quantity / 1000); // Convert to tons for calculation
+  }, 0);
 
   const stats = [
     {
       title: "My Requirements",
-      value: "4",
+      value: requirements.length.toString(),
       icon: FileText,
       color: "text-blue-500",
-      trend: "2 active, 1 expiring soon",
+      trend: `${activeRequirements} active, ${draftRequirements} draft`,
       path: "/my-requirements"
     },
     {
       title: "Pending Orders",
-      value: "5",
+      value: "5", // This would come from orders data in real app
       icon: Clock,
       color: "text-orange-500",
       trend: "3 awaiting confirmation",
     },
     {
-      title: "Completed Orders",
-      value: "42",
+      title: "Total Responses",
+      value: totalResponses.toString(),
       icon: MessageSquare,
       color: "text-green-500",
-      trend: "+8 this month",
+      trend: `From ${requirements.length} requirements`,
     },
     {
       title: "Total Value",
-      value: "$125K",
+      value: `₹${(totalValue / 100000).toFixed(1)}L`,
       icon: TrendingUp,
       color: "text-primary",
-      trend: "+15% from last month",
+      trend: "Estimated from requirements",
     }
   ];
 
+  // Generate recent activity based on requirements
   const recentActivity = [
-    {
+    ...requirements.slice(0, 2).map(req => ({
       type: "requirement",
-      message: "New requirement posted: Premium Grade W320 Cashews - 500kg",
-      time: "2 hours ago",
-      status: "active"
-    },
+      message: `New requirement posted: ${req.grade} Cashews - ${req.quantity}`,
+      time: "Recently",
+      status: req.status
+    })),
     {
       type: "order",
       message: "Order placed for Vietnam Origin Cashews - 1000kg",
@@ -68,12 +84,6 @@ const Dashboard = () => {
       message: "Supplier responded to requirement inquiry",
       time: "1 day ago",
       status: "new"
-    },
-    {
-      type: "order",
-      message: "Order delivered for Grade SW240 - 750kg",
-      time: "2 days ago",
-      status: "completed"
     }
   ];
 

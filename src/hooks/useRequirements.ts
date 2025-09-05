@@ -18,17 +18,27 @@ export interface Requirement {
   allowLowerBid: boolean;
   message: string;
   date: string;
-  status: 'pending' | 'responded';
+  status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed';
   fixedPrice: number;
   isDraft: boolean;
   createdAt: string;
+  // Additional fields for MyRequirements compatibility
+  title?: string;
+  preferredOrigin?: string;
+  budgetRange?: string;
+  requirementExpiry?: string;
+  responsesCount?: number;
+  createdDate?: string;
+  lastModified?: string;
 }
 
 interface RequirementsState {
   requirements: Requirement[];
   addRequirement: (requirement: Omit<Requirement, 'id' | 'createdAt' | 'customerName' | 'productName' | 'message' | 'fixedPrice'>) => void;
-  updateRequirementStatus: (id: string, status: 'pending' | 'responded') => void;
+  updateRequirementStatus: (id: string, status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed') => void;
   getRequirementsAsEnquiries: () => any[];
+  getMyRequirements: () => any[];
+  deleteRequirement: (id: string) => void;
 }
 
 // Product-based fixed prices by origin (₹ per kg)
@@ -89,6 +99,15 @@ export const useRequirements = create<RequirementsState>()(
 
       addRequirement: (requirement) => {
         const fixedPrice = getFixedPrice(requirement.grade, requirement.origin);
+        const now = new Date().toISOString();
+        const originNames: { [key: string]: string } = {
+          india: 'India',
+          vietnam: 'Vietnam', 
+          ghana: 'Ghana',
+          tanzania: 'Tanzania',
+          any: 'Any'
+        };
+        
         const newRequirement: Requirement = {
           ...requirement,
           id: Date.now().toString(),
@@ -96,7 +115,16 @@ export const useRequirements = create<RequirementsState>()(
           productName: `${requirement.grade} Cashews`,
           message: `Looking for ${requirement.quantity} of ${requirement.grade} cashews from ${requirement.origin}. ${requirement.specifications || 'Standard quality requirements.'}`,
           fixedPrice,
-          createdAt: new Date().toISOString(),
+          createdAt: now,
+          // Additional fields for MyRequirements compatibility
+          title: `${requirement.grade} Cashews for ${requirement.deliveryLocation}`,
+          preferredOrigin: originNames[requirement.origin] || requirement.origin,
+          budgetRange: `₹${requirement.expectedPrice}/kg`,
+          requirementExpiry: requirement.deliveryDeadline, // Use delivery deadline as expiry
+          responsesCount: 0,
+          createdDate: now.split('T')[0], // Date only
+          lastModified: now.split('T')[0], // Date only
+          status: requirement.isDraft ? 'draft' : 'active'
         };
 
         set((state) => ({
@@ -136,6 +164,31 @@ export const useRequirements = create<RequirementsState>()(
             allowLowerBid: req.allowLowerBid,
             minSupplyQuantity: req.minSupplyQuantity
           }));
+      },
+
+      getMyRequirements: () => {
+        const { requirements } = get();
+        return requirements.map(req => ({
+          id: parseInt(req.id),
+          title: req.title || `${req.grade} Cashews for ${req.deliveryLocation}`,
+          grade: req.grade,
+          quantity: `${req.quantity} kg`,
+          preferredOrigin: req.preferredOrigin || req.origin,
+          budgetRange: req.budgetRange || `₹${req.expectedPrice}/kg`,
+          deliveryLocation: req.deliveryLocation,
+          deliveryDeadline: req.deliveryDeadline,
+          requirementExpiry: req.requirementExpiry || req.deliveryDeadline,
+          status: req.status,
+          responsesCount: req.responsesCount || 0,
+          createdDate: req.createdDate || req.createdAt.split('T')[0],
+          lastModified: req.lastModified || req.createdAt.split('T')[0]
+        }));
+      },
+
+      deleteRequirement: (id) => {
+        set((state) => ({
+          requirements: state.requirements.filter(req => req.id !== id)
+        }));
       },
     }),
     {

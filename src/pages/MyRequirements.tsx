@@ -33,75 +33,18 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useRequirements } from "@/hooks/useRequirements";
 
 const MyRequirements = () => {
+  const { getMyRequirements, deleteRequirement } = useRequirements();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [filteredRequirements, setFilteredRequirements] = useState<any[]>([]);
-  const [requirements, setRequirements] = useState<any[]>([
-    {
-      id: 1,
-      title: "Premium W320 Cashews for Export",
-      grade: "W320",
-      quantity: "50 tons",
-      preferredOrigin: "India",
-      budgetRange: "$8,000 - $9,000/ton",
-      deliveryLocation: "Port of Los Angeles, USA",
-      deliveryDeadline: "2024-12-15",
-      requirementExpiry: "2024-11-30",
-      status: "active",
-      responsesCount: 5,
-      createdDate: "2024-08-15",
-      lastModified: "2024-08-20",
-    },
-    {
-      id: 2,
-      title: "Organic SW240 Cashews",
-      grade: "SW240",
-      quantity: "25 tons",
-      preferredOrigin: "Vietnam",
-      budgetRange: "$9,200 - $10,000/ton",
-      deliveryLocation: "Hamburg Port, Germany",
-      deliveryDeadline: "2024-11-20",
-      requirementExpiry: "2024-10-25",
-      status: "draft",
-      responsesCount: 0,
-      createdDate: "2024-08-18",
-      lastModified: "2024-08-18",
-    },
-    {
-      id: 3,
-      title: "Bulk W240 Cashews",
-      grade: "W240",
-      quantity: "100 tons",
-      preferredOrigin: "Any",
-      budgetRange: "$7,500 - $8,500/ton",
-      deliveryLocation: "Rotterdam, Netherlands",
-      deliveryDeadline: "2024-10-30",
-      requirementExpiry: "2024-08-25",
-      status: "expired",
-      responsesCount: 8,
-      createdDate: "2024-07-20",
-      lastModified: "2024-07-25",
-    },
-    {
-      id: 4,
-      title: "Premium Cashews for Retail",
-      grade: "W180",
-      quantity: "30 tons",
-      preferredOrigin: "Ghana",
-      budgetRange: "$9,500 - $11,000/ton",
-      deliveryLocation: "New York Port, USA",
-      deliveryDeadline: "2024-12-01",
-      requirementExpiry: "2024-11-15",
-      status: "closed",
-      responsesCount: 12,
-      createdDate: "2024-08-01",
-      lastModified: "2024-08-10",
-    },
-  ]);
+  
+  // Get requirements from the hook
+  const requirements = getMyRequirements();
 
   // Delete popup state
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -172,7 +115,7 @@ const MyRequirements = () => {
   // Handle delete confirm
   const handleDelete = () => {
     if (deleteId !== null) {
-      setRequirements(requirements.filter((req) => req.id !== deleteId));
+      deleteRequirement(deleteId.toString());
       setDeleteId(null);
       setDeleteOpen(false);
     }

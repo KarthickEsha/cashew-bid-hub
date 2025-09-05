@@ -148,7 +148,7 @@ const PostRequirement = () => {
       alert('Requirement saved as draft successfully!');
     } else {
       alert('Requirement posted successfully! Merchants will be able to see your requirement.');
-      navigate('/my-requests'); // Redirect to dashboard after successful submission
+      navigate('/my-requirements'); // Redirect to dashboard after successful submission
     }
   };
 
