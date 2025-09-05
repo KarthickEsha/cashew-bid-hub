@@ -100,7 +100,7 @@ const EditRequirement = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Basic Information</h3>
             
-            <div>
+            {/* <div>
               <Label htmlFor="title">Title *</Label>
               <Input
                 id="title"
@@ -109,7 +109,7 @@ const EditRequirement = () => {
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="mt-1"
               />
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
