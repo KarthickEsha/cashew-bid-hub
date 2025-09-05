@@ -58,7 +58,7 @@ const AppContent = () => {
   
   // Show profile setup if profile is not complete
   if (!profile?.isProfileComplete) {
-    return <ProfileSetup children={""} />;
+    return <ProfileSetup />;
   }
 
   return (
@@ -78,6 +78,7 @@ const AppContent = () => {
         <Route path="/request/:id" element={<RequestDetails />} />
         <Route path="/requirement/:id" element={<RequirementDetails />} />
         <Route path="/merchant/:merchantName/products" element={<ProductDetailsView />} />
+        <Route path="/profile-setup" element={<ProfileSetup />} />
       
         {/* Merchant Routes */}
         <Route path="/merchant/products" element={<MerchantProducts />} />

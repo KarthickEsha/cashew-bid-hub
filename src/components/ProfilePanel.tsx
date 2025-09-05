@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { User, Mail, MapPin, Building2, Edit, Settings, LogOut } from 'lucide-react';
+import { User, Mail, MapPin, Building2, Edit, Settings } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { useProfile } from '@/hooks/useProfile';
 import { useRole } from '@/hooks/useRole';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfilePanelProps {
   children: React.ReactNode;
@@ -18,6 +19,12 @@ const ProfilePanel = ({ children }: ProfilePanelProps) => {
   const { user } = useUser();
   const { profile } = useProfile();
   const { role } = useRole();
+  const navigate = useNavigate();
+
+  const handleEditProfile = () => {
+    setIsOpen(false); // close panel before navigating
+    navigate('/profile-setup');
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -79,7 +86,11 @@ const ProfilePanel = ({ children }: ProfilePanelProps) => {
 
           {/* Action Buttons */}
           <div className="space-y-2">
-            <Button variant="outline" className="w-full justify-start">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={handleEditProfile}
+            >
               <Edit className="h-4 w-4 mr-2" />
               Edit Profile
             </Button>

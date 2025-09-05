@@ -5,13 +5,19 @@ export interface UserProfile {
   id: string;
   email: string;
   name: string;
+  phone?: string;
   address?: string;
   location?: string;
   role: UserRole;
   profilePicture?: string;
   merchantLogo?: string;
+  companyName?: string;
+  businessType?: string;
   productType: ProductType;
   isProfileComplete: boolean;
+  userId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface User {
