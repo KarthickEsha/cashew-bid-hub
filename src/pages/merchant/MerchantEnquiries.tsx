@@ -438,11 +438,19 @@ const MerchantEnquiries = () => {
       <Dialog open={responseModalOpen} onOpenChange={setResponseModalOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Submit Response</DialogTitle>
-            <DialogDescription>Provide your pricing and availability details</DialogDescription>
+            <DialogTitle>View Details & Reply</DialogTitle>
+            <DialogDescription>
+              Enquiry from {selectedEnquiry?.customerName} for {selectedEnquiry?.productName}
+            </DialogDescription>
           </DialogHeader>
           {selectedEnquiry && (
             <div className="space-y-4">
+              {/* Enquiry Details */}
+              <div className="bg-muted/50 p-3 rounded-lg">
+                <h4 className="font-medium mb-2">Customer Message:</h4>
+                <p className="text-sm text-muted-foreground">{selectedEnquiry?.message || "Customer is interested in your product."}</p>
+              </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Buyer</Label>
@@ -463,6 +471,18 @@ const MerchantEnquiries = () => {
               </div>
               
               <div className="space-y-4">
+                {/* Reply Message Input */}
+                <div>
+                  <Label htmlFor="replyMessage">Reply Message</Label>
+                  <Textarea
+                    id="replyMessage"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    placeholder="Type your reply message to the customer..."
+                    rows={3}
+                  />
+                </div>
+                
                 <div>
                   <Label htmlFor="merchantPrice">Your Price (₹/kg) *</Label>
                   <Input
@@ -482,17 +502,6 @@ const MerchantEnquiries = () => {
                     placeholder="Enter available quantity"
                     value={availableQuantity}
                     onChange={(e) => setAvailableQuantity(e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="remarks">Remarks</Label>
-                  <Textarea
-                    id="remarks"
-                    placeholder="Additional information about your offer"
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    rows={3}
                   />
                 </div>
               </div>

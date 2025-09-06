@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRequirements } from '@/hooks/useRequirements';
 import { useResponses } from '@/hooks/useResponses';
@@ -32,6 +34,8 @@ const RequirementDetails = () => {
   
   // State for managing responses popup
   const [showAllResponses, setShowAllResponses] = useState(false);
+  const [showResponseDetail, setShowResponseDetail] = useState(false);
+  const [selectedResponse, setSelectedResponse] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
 
   // Get requirements and find the one with matching ID
@@ -131,6 +135,22 @@ const RequirementDetails = () => {
 
     // Close the popup
     setShowAllResponses(false);
+  };
+
+  // Handle response click to show detail popup
+  const handleResponseClick = (response: any) => {
+    setSelectedResponse(response);
+    setShowResponseDetail(true);
+  };
+
+  // Handle status update for response
+  const handleStatusUpdate = (responseId: string, status: string) => {
+    updateResponseStatus(responseId, status as any);
+    toast({
+      title: "Status Updated",
+      description: `Response status changed to ${status}`,
+    });
+    setShowResponseDetail(false);
   };
 
   return (
@@ -318,47 +338,51 @@ const RequirementDetails = () => {
                   <div className="text-center py-8 text-muted-foreground">
                     No responses yet. Merchants will see your requirement and can respond with their offers.
                   </div>
-                ) : (
-                  responses.map((response) => (
-                    <Card key={response.id} className="p-3 border">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">{response.merchantName}</div>
-                          <div className="text-sm text-muted-foreground flex items-center">
-                            <MapPin size={12} className="mr-1" />
-                            {response.merchantLocation}
-                          </div>
-                          {response.price && (
-                            <div className="text-sm text-primary font-medium">
-                              Merchant Price: {response.price}
-                            </div>
-                          )}
-                          {response.quantity && (
-                            <div className="text-sm text-muted-foreground">
-                              Available: {response.quantity}
-                            </div>
-                          )}
-                          {response.message && (
-                            <div className="text-sm text-muted-foreground mt-1">
-                              Remarks: {response.message}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <Badge 
-                            variant={response.status === "new" ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {response.status}
-                          </Badge>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {new Date(response.responseDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))
-                )}
+                 ) : (
+                   responses.map((response) => (
+                     <Card 
+                       key={response.id} 
+                       className="p-3 border cursor-pointer hover:bg-accent/50 transition-colors"
+                       onClick={() => handleResponseClick(response)}
+                     >
+                       <div className="flex items-center justify-between">
+                         <div>
+                           <div className="font-medium">{response.merchantName}</div>
+                           <div className="text-sm text-muted-foreground flex items-center">
+                             <MapPin size={12} className="mr-1" />
+                             {response.merchantLocation}
+                           </div>
+                           {response.price && (
+                             <div className="text-sm text-primary font-medium">
+                               Merchant Price: {response.price}
+                             </div>
+                           )}
+                           {response.quantity && (
+                             <div className="text-sm text-muted-foreground">
+                               Available: {response.quantity}
+                             </div>
+                           )}
+                           {response.message && (
+                             <div className="text-sm text-muted-foreground mt-1">
+                               Remarks: {response.message}
+                             </div>
+                           )}
+                         </div>
+                         <div className="text-right">
+                           <Badge 
+                             variant={response.status === "new" ? "default" : "secondary"}
+                             className="text-xs"
+                           >
+                             {response.status}
+                           </Badge>
+                           <div className="text-xs text-muted-foreground mt-1">
+                             {new Date(response.responseDate).toLocaleDateString()}
+                           </div>
+                         </div>
+                       </div>
+                     </Card>
+                   ))
+                 )}
               </div>
             </CardContent>
           </Card>
@@ -476,7 +500,139 @@ const RequirementDetails = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Response Detail Modal */}
+      <Dialog open={showResponseDetail} onOpenChange={setShowResponseDetail}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Response Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedResponse && (
+            <div className="space-y-4">
+              <div>
+                <div className="text-sm text-muted-foreground">Company Name</div>
+                <div className="font-medium">{selectedResponse.merchantName}</div>
+              </div>
+              
+              <div>
+                <div className="text-sm text-muted-foreground">Origin</div>
+                <div className="font-medium">{selectedResponse.origin}</div>
+              </div>
+              
+              <div>
+                <div className="text-sm text-muted-foreground">Merchant Price</div>
+                <div className="font-medium text-primary">{selectedResponse.price}</div>
+              </div>
+              
+              <div>
+                <div className="text-sm text-muted-foreground">Available Quantity</div>
+                <div className="font-medium">{selectedResponse.quantity}</div>
+              </div>
+              
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  defaultValue={selectedResponse.status}
+                  onValueChange={(value) => {
+                    setSelectedResponse({...selectedResponse, status: value});
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">Selected</SelectItem>
+                    <SelectItem value="accepted">Confirmation</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowResponseDetail(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => handleStatusUpdate(selectedResponse.id, selectedResponse.status)}>
+                  Submit
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+};
+
+// Response Detail Modal Component
+const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
+  isOpen: boolean;
+  onClose: () => void;
+  response: any;
+  onStatusUpdate: (responseId: string, status: string) => void;
+}) => {
+  const [selectedStatus, setSelectedStatus] = useState(response?.status || 'new');
+
+  const handleSubmit = () => {
+    onStatusUpdate(response.id, selectedStatus);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Response Details</DialogTitle>
+        </DialogHeader>
+        
+        {response && (
+          <div className="space-y-4">
+            <div>
+              <div className="text-sm text-muted-foreground">Company Name</div>
+              <div className="font-medium">{response.merchantName}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm text-muted-foreground">Origin</div>
+              <div className="font-medium">{response.origin}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm text-muted-foreground">Merchant Price</div>
+              <div className="font-medium text-primary">{response.price}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm text-muted-foreground">Available Quantity</div>
+              <div className="font-medium">{response.quantity}</div>
+            </div>
+            
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">Selected</SelectItem>
+                  <SelectItem value="accepted">Confirmation</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmit}>
+                Submit
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 

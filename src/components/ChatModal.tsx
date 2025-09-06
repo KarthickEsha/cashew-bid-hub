@@ -24,8 +24,15 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType, enqui
   const { profile } = useProfile();
   const { user } = useUser();
   
-  // Mock chat messages
+  // Mock chat messages with previous actions
   const mockMessages = [
+    {
+      id: '0',
+      sender: 'system',
+      message: `Previous Action: ${userType === 'merchant' ? 'Viewed customer enquiry' : 'Submitted enquiry for'} ${productName}`,
+      time: '10:28 AM',
+      isSystemMessage: true,
+    },
     {
       id: '1',
       sender: 'customer',
@@ -106,12 +113,30 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType, enqui
           {mockMessages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex ${msg.sender === userType ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${
+                msg.isSystemMessage 
+                  ? 'justify-center' 
+                  : msg.sender === userType 
+                    ? 'justify-end' 
+                    : 'justify-start'
+              }`}
             >
-              <Card className={`max-w-[80%] ${msg.sender === userType ? 'bg-purple-500 text-white' : 'bg-muted'}`}>
+              <Card className={`${
+                msg.isSystemMessage 
+                  ? 'bg-accent/50 text-accent-foreground max-w-[90%]' 
+                  : `max-w-[80%] ${msg.sender === userType ? 'bg-purple-500 text-white' : 'bg-muted'}`
+              }`}>
                 <CardContent className="p-3">
-                  <p className="text-sm">{msg.message}</p>
-                  <div className={`text-xs mt-1 ${msg.sender === userType ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                  <p className={`text-sm ${msg.isSystemMessage ? 'text-center font-medium' : ''}`}>
+                    {msg.message}
+                  </p>
+                  <div className={`text-xs mt-1 ${
+                    msg.isSystemMessage 
+                      ? 'text-center text-muted-foreground' 
+                      : msg.sender === userType 
+                        ? 'text-primary-foreground/70' 
+                        : 'text-muted-foreground'
+                  }`}>
                     {msg.time}
                   </div>
                 </CardContent>
