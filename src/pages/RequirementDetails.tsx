@@ -279,47 +279,7 @@ const RequirementDetails = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>
-
-          {/* Recent Responses */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <MessageSquare size={18} className="mr-2" />
-                Recent Responses ({responses.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {responses.slice(0, 2).map((response) => (
-                  <div key={response.id} className="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
-                    <div>
-                      <div className="font-medium">{response.merchantName}</div>
-                      <div className="text-sm text-muted-foreground flex items-center">
-                        <MapPin size={12} className="mr-1" />
-                        {response.merchantLocation}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium text-primary">{response.price}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(response.responseDate).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {responses.length > 2 && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => setShowAllResponses(true)}
-                  >
-                    View All Responses ({responses.length})
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          </Card>    
         </div>
 
         {/* Sidebar - Responses */}

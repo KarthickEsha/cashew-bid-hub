@@ -47,7 +47,7 @@ const MerchantEnquiries = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  
+
   // Response form state
   const [merchantPrice, setMerchantPrice] = useState('');
   const [availableQuantity, setAvailableQuantity] = useState('');
@@ -221,7 +221,7 @@ const MerchantEnquiries = () => {
     };
 
     addResponse(response);
-    
+
     toast({
       title: "Response Submitted",
       description: "Your response has been sent to the buyer",
@@ -239,9 +239,9 @@ const MerchantEnquiries = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Customer Enquiries</h1>
+          <h1 className="text-3xl font-bold text-primary">Buyer Enquiries</h1>
           <p className="text-muted-foreground mt-2">
-            Manage enquiries from customers about your products
+            Manage enquiries from buyers about your products
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
@@ -299,7 +299,7 @@ const MerchantEnquiries = () => {
       {/* Enquiries Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Product Enquiries</CardTitle>
+          {/* <CardTitle>Product Enquiries</CardTitle> */}
         </CardHeader>
         <CardContent>
           <Table>
@@ -389,7 +389,7 @@ const MerchantEnquiries = () => {
                       <Button variant="ghost" size="sm" onClick={() => handleViewClick(enquiry)} title="Submit Response">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleResponsesClick(enquiry)} title="View Responses">
+                      <Button variant="ghost" size="sm" onClick={() => handleChatClick(enquiry)} title="View Responses">
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     </div>
@@ -447,13 +447,13 @@ const MerchantEnquiries = () => {
             <div className="space-y-4">
               {/* Enquiry Details */}
               <div className="bg-muted/50 p-3 rounded-lg">
-                <h4 className="font-medium mb-2">Customer Message:</h4>
+                <h4 className="font-medium mb-2">Buyer Message:</h4>
                 <p className="text-sm text-muted-foreground">{selectedEnquiry?.message || "Customer is interested in your product."}</p>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium">Buyer</Label>
+                  <Label className="text-sm font-medium">Buyer Name</Label>
                   <p className="font-medium">{selectedEnquiry.customerName}</p>
                 </div>
                 <div>
@@ -469,20 +469,9 @@ const MerchantEnquiries = () => {
                   <p className="font-medium">₹{selectedEnquiry.expectedPrice}/kg</p>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 {/* Reply Message Input */}
-                <div>
-                  <Label htmlFor="replyMessage">Reply Message</Label>
-                  <Textarea
-                    id="replyMessage"
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    placeholder="Type your reply message to the customer..."
-                    rows={3}
-                  />
-                </div>
-                
                 <div>
                   <Label htmlFor="merchantPrice">Your Price (₹/kg) *</Label>
                   <Input
@@ -493,7 +482,7 @@ const MerchantEnquiries = () => {
                     onChange={(e) => setMerchantPrice(e.target.value)}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="availableQuantity">Available Quantity (kg) *</Label>
                   <Input
@@ -504,12 +493,28 @@ const MerchantEnquiries = () => {
                     onChange={(e) => setAvailableQuantity(e.target.value)}
                   />
                 </div>
+
+                 <div>
+                  <Label htmlFor="replyMessage">Remarks</Label>
+                  <Textarea
+                    id="replyMessage"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    placeholder="Type your reply message to the customer..."
+                    rows={3}
+                  />
+                </div>
               </div>
-              
+
               <div className="flex gap-2 pt-4">
-                <Button onClick={handleSubmitResponse} className="flex-1">
+                {/* Primary Purple Button */}
+                <Button onClick={handleSubmitResponse}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                >
                   Submit Response
                 </Button>
+
+                {/* Outline Purple Button */}
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -518,10 +523,12 @@ const MerchantEnquiries = () => {
                     setAvailableQuantity('');
                     setRemarks('');
                   }}
+                  className="border-purple-600 text-purple-600 hover:bg-purple-50"
                 >
                   Cancel
                 </Button>
               </div>
+
             </div>
           )}
         </DialogContent>
@@ -544,7 +551,7 @@ const MerchantEnquiries = () => {
                       <p className="text-sm text-muted-foreground">Origin: {response.origin}</p>
                       <p className="text-sm text-muted-foreground">Contact: {response.contact}</p>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="text-sm">
                         <span className="text-muted-foreground">Price:</span>
@@ -559,7 +566,7 @@ const MerchantEnquiries = () => {
                         <p className="text-sm mt-1">{response.message}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Select defaultValue={response.status}>
                         <SelectTrigger>

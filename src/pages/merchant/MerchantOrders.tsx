@@ -248,7 +248,7 @@ const MerchantOrders = () => {
         <div>
           <h1 className="text-3xl font-bold text-primary">Orders</h1>
           <p className="text-muted-foreground mt-2">
-            Manage customer orders and shipments
+            Manage buyer orders and shipments
           </p>
         </div>
         <Button
@@ -312,7 +312,7 @@ const MerchantOrders = () => {
       {/* Orders Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Customer Orders</CardTitle>
+          {/* <CardTitle>Customer Orders</CardTitle> */}
         </CardHeader>
         <CardContent>
           <div className="w-full overflow-x-auto">

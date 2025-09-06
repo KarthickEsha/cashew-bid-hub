@@ -100,10 +100,10 @@ const MyRequirements = () => {
     setCurrentPage(1); // reset to first page
   };
 
-  // Run filters on mount
+  // Run filters automatically when dependencies change
   useEffect(() => {
-    setFilteredRequirements(requirements);
-  }, [requirements]);
+    applyFilters();
+  }, [requirements, searchTerm, statusFilter, gradeFilter]);
 
   // Pagination
   const itemsPerPage = 6;
@@ -194,7 +194,7 @@ const MyRequirements = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select onValueChange={(value) => setStatusFilter(value)}>
+            <Select onValueChange={(value) => setStatusFilter(value)} defaultValue="all">
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -206,7 +206,7 @@ const MyRequirements = () => {
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
-            <Select onValueChange={(value) => setGradeFilter(value)}>
+            <Select onValueChange={(value) => setGradeFilter(value)} defaultValue="all">
               <SelectTrigger>
                 <SelectValue placeholder="Grade" />
               </SelectTrigger>

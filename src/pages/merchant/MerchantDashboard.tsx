@@ -93,7 +93,7 @@ const MerchantDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockStats.quotesSubmitted}</div>
-            <p className="text-xs text-muted-foreground">Awaiting approval</p>
+            <p className="text-xs text-muted-foreground">Awaiting response</p>
           </CardContent>
         </Card>
 
@@ -102,14 +102,15 @@ const MerchantDashboard = () => {
           <Card className="cursor-pointer hover:shadow-md transition">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                My {profile?.productType} Products
+                My Posting
+                {/* My {profile?.productType} Products */}
               </CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{displayStats.products}</div>
               <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">{displayStats.stock}</span> total stock
+                <span className="text-green-600">{displayStats.stock}</span> published stock
               </p>
             </CardContent>
           </Card>
@@ -118,7 +119,7 @@ const MerchantDashboard = () => {
         {/* Card 4 - New Customer */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Customer</CardTitle>
+            <CardTitle className="text-sm font-medium">New Buyer</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
