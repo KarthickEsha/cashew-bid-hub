@@ -302,70 +302,64 @@ const RequirementDetails = () => {
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar - Responses */}
         <div className="space-y-6">
-          {/* Quick Stats */}
+          {/* All Responses */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center">
-                <Users size={18} className="mr-2" />
-                Quick Stats
+                <MessageSquare size={18} className="mr-2" />
+                All Responses ({responses.length})
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Total Responses</span>
-                <span className="font-medium">{requirement.responsesCount}</span>
+            <CardContent>
+              <div className="space-y-3">
+                {responses.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No responses yet. Merchants will see your requirement and can respond with their offers.
+                  </div>
+                ) : (
+                  responses.map((response) => (
+                    <Card key={response.id} className="p-3 border">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{response.merchantName}</div>
+                          <div className="text-sm text-muted-foreground flex items-center">
+                            <MapPin size={12} className="mr-1" />
+                            {response.merchantLocation}
+                          </div>
+                          {response.price && (
+                            <div className="text-sm text-primary font-medium">
+                              Merchant Price: {response.price}
+                            </div>
+                          )}
+                          {response.quantity && (
+                            <div className="text-sm text-muted-foreground">
+                              Available: {response.quantity}
+                            </div>
+                          )}
+                          {response.message && (
+                            <div className="text-sm text-muted-foreground mt-1">
+                              Remarks: {response.message}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <Badge 
+                            variant={response.status === "new" ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {response.status}
+                          </Badge>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {new Date(response.responseDate).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Created</span>
-                <span className="font-medium">
-                  {new Date(requirement.createdDate).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Last Modified</span>
-                <span className="font-medium">
-                  {new Date(requirement.lastModified).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Expires</span>
-                <span className="font-medium">
-                  {new Date(requirement.requirementExpiry).toLocaleDateString()}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {(requirement.status === "draft" || requirement.status === "active") && (
-                <Button className="w-full">
-                  <Edit size={16} className="mr-2" />
-                  Edit Requirement
-                </Button>
-              )}
-              {/* <Button variant="outline" className="w-full">
-                <Eye size={16} className="mr-2" />
-                View All Responses
-              </Button>
-              <Button variant="outline" className="w-full">
-                <MessageSquare size={16} className="mr-2" />
-                Promote Requirement
-              </Button> */}
-              <Button variant="outline" className="w-full">
-                Download Summary
-              </Button>
-              {requirement.status === "draft" && (
-                <Button variant="destructive" className="w-full">
-                  Delete Draft
-                </Button>
-              )}
             </CardContent>
           </Card>
         </div>

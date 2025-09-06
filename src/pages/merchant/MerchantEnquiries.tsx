@@ -4,11 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Eye, MessageSquare, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import ChatModal from "@/components/ChatModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRequirements } from "@/hooks/useRequirements";
+import { useResponses } from "@/hooks/useResponses";
+import { useToast } from "@/hooks/use-toast";
 
 const mockEnquiries = [
   // { id: 1, customerName: "John Doe", productName: "Premium Cashews W240", quantity: "100kg", message: "I'm interested in bulk purchase for my restaurant chain. Can you provide pricing for 500kg monthly supply?", date: "2024-01-15", status: "pending", expectedPrice: 8200, fixedPrice: 8500, origin: "India", grade: "W240" },
@@ -22,6 +26,8 @@ const mockEnquiries = [
 
 const MerchantEnquiries = () => {
   const { getRequirementsAsEnquiries, updateRequirementStatus } = useRequirements();
+  const { addResponse, getResponsesByRequirementId } = useResponses();
+  const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
@@ -35,10 +41,17 @@ const MerchantEnquiries = () => {
 
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [responseModalOpen, setResponseModalOpen] = useState(false);
+  const [responseListModalOpen, setResponseListModalOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState<any>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  
+  // Response form state
+  const [merchantPrice, setMerchantPrice] = useState('');
+  const [availableQuantity, setAvailableQuantity] = useState('');
+  const [remarks, setRemarks] = useState('');
 
   // Map UI status values to the underlying enquiry statuses in your data
   // (adjust as you add real workflow statuses)
@@ -124,7 +137,12 @@ const MerchantEnquiries = () => {
 
   const handleViewClick = (enquiry: any) => {
     setSelectedEnquiry(enquiry);
-    setViewModalOpen(true);
+    setResponseModalOpen(true);
+  };
+
+  const handleResponsesClick = (enquiry: any) => {
+    setSelectedEnquiry(enquiry);
+    setResponseListModalOpen(true);
   };
 
   const handleChatClick = (enquiry: any) => {
@@ -173,6 +191,47 @@ const MerchantEnquiries = () => {
     return sortDirection === 'asc'
       ? <ArrowUp className="h-4 w-4 text-primary" />
       : <ArrowDown className="h-4 w-4 text-primary" />;
+  };
+
+  const handleSubmitResponse = () => {
+    if (!merchantPrice || !availableQuantity) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const response = {
+      requirementId: selectedEnquiry.id.toString(),
+      merchantId: "merchant-1", // This would come from auth context
+      merchantName: "ABC Trading Co.", // This would come from merchant profile
+      merchantLocation: "Mumbai, India",
+      price: `₹${merchantPrice}/kg`,
+      responseDate: new Date().toISOString(),
+      status: 'new' as const,
+      grade: selectedEnquiry.grade,
+      quantity: availableQuantity + " kg",
+      origin: selectedEnquiry.origin,
+      certifications: ["ISO 22000", "HACCP"],
+      deliveryTime: "15-20 days",
+      contact: "+91-9876543210",
+      message: remarks || `We can supply ${availableQuantity}kg of ${selectedEnquiry.grade} cashews at ₹${merchantPrice}/kg.`
+    };
+
+    addResponse(response);
+    
+    toast({
+      title: "Response Submitted",
+      description: "Your response has been sent to the buyer",
+    });
+
+    // Reset form and close modal
+    setMerchantPrice('');
+    setAvailableQuantity('');
+    setRemarks('');
+    setResponseModalOpen(false);
   };
 
   return (
@@ -251,7 +310,7 @@ const MerchantEnquiries = () => {
                   onClick={() => handleSort('customerName')}
                 >
                   <div className="flex items-center justify-between">
-                    Customer
+                    Buyer Name
                     {getSortIcon('customerName')}
                   </div>
                 </TableHead>
@@ -269,8 +328,17 @@ const MerchantEnquiries = () => {
                   onClick={() => handleSort('quantity')}
                 >
                   <div className="flex items-center justify-between">
-                     Required Quantity
+                    Required Qty (kg)
                     {getSortIcon('quantity')}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('expectedPrice')}
+                >
+                  <div className="flex items-center justify-between">
+                    Expected Price
+                    {getSortIcon('expectedPrice')}
                   </div>
                 </TableHead>
                 <TableHead
@@ -278,7 +346,7 @@ const MerchantEnquiries = () => {
                   onClick={() => handleSort('deliveryDeadline')}
                 >
                   <div className="flex items-center justify-between">
-                   Expire Date
+                    Expected Date
                     {getSortIcon('deliveryDeadline')}
                   </div>
                 </TableHead>
@@ -287,7 +355,7 @@ const MerchantEnquiries = () => {
                   onClick={() => handleSort('status')}
                 >
                   <div className="flex items-center justify-between">
-                    Status
+                    Buyer Status
                     {getSortIcon('status')}
                   </div>
                 </TableHead>
@@ -300,6 +368,7 @@ const MerchantEnquiries = () => {
                   <TableCell className="font-medium">{enquiry.customerName}</TableCell>
                   <TableCell>{enquiry.productName}</TableCell>
                   <TableCell>{enquiry.quantity}</TableCell>
+                  <TableCell>₹{enquiry.expectedPrice}/kg</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span>{new Date(enquiry.deliveryDeadline).toLocaleDateString()}</span>
@@ -317,10 +386,10 @@ const MerchantEnquiries = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(enquiry)}>
+                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(enquiry)} title="Submit Response">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleChatClick(enquiry)}>
+                      <Button variant="ghost" size="sm" onClick={() => handleResponsesClick(enquiry)} title="View Responses">
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     </div>
@@ -329,7 +398,7 @@ const MerchantEnquiries = () => {
               ))}
               {filteredEnquiries.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
                     No enquiries found for selected filters.
                   </TableCell>
                 </TableRow>
@@ -365,99 +434,144 @@ const MerchantEnquiries = () => {
         </CardContent>
       </Card>
 
-      {/* View Enquiry Modal */}
-      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="max-w-2xl">
+      {/* Submit Response Modal */}
+      <Dialog open={responseModalOpen} onOpenChange={setResponseModalOpen}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Enquiry Details</DialogTitle>
-            <DialogDescription>Complete information about the customer enquiry</DialogDescription>
+            <DialogTitle>Submit Response</DialogTitle>
+            <DialogDescription>Provide your pricing and availability details</DialogDescription>
           </DialogHeader>
           {selectedEnquiry && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground">Customer</h4>
+                  <Label className="text-sm font-medium">Buyer</Label>
                   <p className="font-medium">{selectedEnquiry.customerName}</p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground">Product</h4>
+                  <Label className="text-sm font-medium">Product</Label>
                   <p className="font-medium">{selectedEnquiry.productName}</p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground">Required Quantity</h4>
+                  <Label className="text-sm font-medium">Required Qty</Label>
                   <p className="font-medium">{selectedEnquiry.quantity}</p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground">Expire Date</h4>
-                  <p className="font-medium">{new Date(selectedEnquiry.deliveryDeadline).toLocaleDateString()}</p>
+                  <Label className="text-sm font-medium">Expected Price</Label>
+                  <p className="font-medium">₹{selectedEnquiry.expectedPrice}/kg</p>
                 </div>
-                {/* <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground">Status</h4>
-                  <Badge variant={selectedEnquiry.status === 'pending' ? 'destructive' : 'default'}>
-                    {selectedEnquiry.status === 'pending' ? 'Pending' : 'Responded'}
-                  </Badge>
-                </div> */}
               </div>
-              <div className="flex justify-between items-center">
-                {/* Left side - Expected Buyer Price */}
+              
+              <div className="space-y-4">
                 <div>
-                  <h5 className="font-medium text-xs text-blue-600 dark:text-blue-400">
-                    Expected Buyer Price
-                  </h5>
-                  <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                    ${selectedEnquiry.expectedPrice?.toLocaleString() || 'N/A'}
-                  </p>
+                  <Label htmlFor="merchantPrice">Your Price (₹/kg) *</Label>
+                  <Input
+                    id="merchantPrice"
+                    type="number"
+                    placeholder="Enter your price per kg"
+                    value={merchantPrice}
+                    onChange={(e) => setMerchantPrice(e.target.value)}
+                  />
                 </div>
-
-                {/* Right side - Fixed Price */}
-                <div className="text-right">
-                  <h5 className="font-medium text-xs text-blue-600 dark:text-blue-400">
-                    Fixed Price ({selectedEnquiry.origin} - {selectedEnquiry.grade})
-                  </h5>
-                  <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                    ${selectedEnquiry.fixedPrice?.toLocaleString() || 'N/A'}
-                  </p>
+                
+                <div>
+                  <Label htmlFor="availableQuantity">Available Quantity (kg) *</Label>
+                  <Input
+                    id="availableQuantity"
+                    type="number"
+                    placeholder="Enter available quantity"
+                    value={availableQuantity}
+                    onChange={(e) => setAvailableQuantity(e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="remarks">Remarks</Label>
+                  <Textarea
+                    id="remarks"
+                    placeholder="Additional information about your offer"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    rows={3}
+                  />
                 </div>
               </div>
-
-              {/* <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                <h4 className="font-semibold text-sm text-blue-700 dark:text-blue-300 mb-3">Pricing Details</h4>
-                <div className="grid grid-cols-2 gap-4">
-
-                  <div>
-                    <h5 className="font-medium text-xs text-blue-600 dark:text-blue-400">Fixed Price ({selectedEnquiry.origin} - {selectedEnquiry.grade})</h5>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-400">${selectedEnquiry.fixedPrice?.toLocaleString() || 'N/A'}</p>
-                  </div>
-                </div>
-                {selectedEnquiry.expectedPrice && selectedEnquiry.fixedPrice && (
-                  <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded border">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Price Difference:</strong> ${(selectedEnquiry.fixedPrice - selectedEnquiry.expectedPrice).toLocaleString()}
-                      {selectedEnquiry.expectedPrice <= selectedEnquiry.fixedPrice
-                        ? <span className="text-green-600 ml-1">✓ Within limit</span>
-                        : <span className="text-red-600 ml-1">⚠ Exceeds fixed price</span>
-                      }
-                    </p>
-                  </div>
-                )}
-              </div> */}
-              <div>
-                <h4 className="font-semibold text-sm text-muted-foreground mb-2">Message</h4>
-                <p className="p-3 bg-muted rounded-md">{selectedEnquiry.message}</p>
-              </div>
+              
               <div className="flex gap-2 pt-4">
-                <Button onClick={() => handleChatClick(selectedEnquiry)} className="flex-1 bg-purple-600 text-white hover:bg-purple-700">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Reply to Enquiry
+                <Button onClick={handleSubmitResponse} className="flex-1">
+                  Submit Response
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-purple-600 text-black hover:text-purple-600 hover:bg-purple-50"
-                  onClick={() => setViewModalOpen(false)}
+                  onClick={() => {
+                    setResponseModalOpen(false);
+                    setMerchantPrice('');
+                    setAvailableQuantity('');
+                    setRemarks('');
+                  }}
                 >
-                  Close
+                  Cancel
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Responses Modal */}
+      <Dialog open={responseListModalOpen} onOpenChange={setResponseListModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Merchant Responses</DialogTitle>
+            <DialogDescription>View all responses for this requirement</DialogDescription>
+          </DialogHeader>
+          {selectedEnquiry && (
+            <div className="space-y-4">
+              {getResponsesByRequirementId(selectedEnquiry.id.toString()).map((response) => (
+                <Card key={response.id} className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold">{response.merchantName}</h3>
+                      <p className="text-sm text-muted-foreground">Origin: {response.origin}</p>
+                      <p className="text-sm text-muted-foreground">Contact: {response.contact}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Price:</span>
+                        <span className="font-medium ml-2">{response.price}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Available Qty:</span>
+                        <span className="font-medium ml-2">{response.quantity}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Message:</span>
+                        <p className="text-sm mt-1">{response.message}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Select defaultValue={response.status}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">Selected</SelectItem>
+                          <SelectItem value="accepted">Confirmation</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button size="sm" className="w-full">Submit</Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+              {getResponsesByRequirementId(selectedEnquiry.id.toString()).length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No responses yet for this requirement.
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

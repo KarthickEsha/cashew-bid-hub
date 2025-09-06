@@ -41,11 +41,6 @@ const navItems = [
     icon: Plus,
   },
   {
-    title: "Enquiries",
-    url: "/merchant/enquiries",
-    icon: MessageSquare,
-  },
-  {
     title: "Orders",
     url: "/merchant/orders",
     icon: ShoppingCart,
@@ -54,6 +49,24 @@ const navItems = [
     title: "Requirements",
     url: "/merchant/requirements",
     icon: ClipboardList,
+  },
+];
+
+const buyerNavItems = [
+  {
+    title: "Enquiries",
+    url: "/merchant/enquiries",
+    icon: MessageSquare,
+  },
+  {
+    title: "Confirm",
+    url: "/merchant/enquiries?status=confirmed",
+    icon: MessageSquare,
+  },
+  {
+    title: "Rejected",
+    url: "/merchant/enquiries?status=rejected",
+    icon: MessageSquare,
   },
 ];
 
@@ -104,14 +117,33 @@ export function MerchantSidebar() {
                     <NavLink to={item.url} end className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span className="text-[15px]">{item.title}</span>}
-                      {item.url === "/merchant/enquiries" && !collapsed && (
-                        <Badge variant="destructive" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
-                          5
-                        </Badge>
-                      )}
                       {item.url === "/merchant/orders" && !collapsed && (
                         <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
                           3
+                        </Badge>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Buyer Section */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Buyer</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {buyerNavItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} className={getNavCls}>
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span className="text-[15px]">{item.title}</span>}
+                      {item.url === "/merchant/enquiries" && !collapsed && (
+                        <Badge variant="destructive" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
+                          5
                         </Badge>
                       )}
                     </NavLink>
