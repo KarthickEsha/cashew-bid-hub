@@ -33,11 +33,11 @@ const mainNavItems = [
 ];
 
 const myActivityItems = [
-  { path: "/my-requests", label: "My Requests", icon: MessageSquare },
-  // { path: "/my-requirements", label: "My Requirements", icon: FileText },
+  // { path: "/my-requests", label: "My Requests", icon: MessageSquare },
   // { path: "/responses", label: "Responses", icon: Mail },
   // { path: "/my-bids", label: "My Bids", icon: FileText },
   { path: "/my-orders", label: "My Orders", icon: Mail },
+  { path: "/my-requirements", label: "My Requirements", icon: FileText }
 ];
 
 export function AppSidebar() {
