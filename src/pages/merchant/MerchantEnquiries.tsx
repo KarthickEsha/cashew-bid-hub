@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,13 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRequirements } from "@/hooks/useRequirements";
 
 const mockEnquiries = [
-  { id: 1, customerName: "John Doe", productName: "Premium Cashews W240", quantity: "100kg", message: "I'm interested in bulk purchase for my restaurant chain. Can you provide pricing for 500kg monthly supply?", date: "2024-01-15", status: "pending", expectedPrice: 8200, fixedPrice: 8500, origin: "India", grade: "W240" },
-  { id: 2, customerName: "Sarah Wilson", productName: "Organic Cashews W320", quantity: "50kg", message: "Need organic certification details and delivery timeline to New York.", date: "2024-01-14", status: "responded", expectedPrice: 7600, fixedPrice: 7800, origin: "Vietnam", grade: "W320" },
-  { id: 3, customerName: "Mike Johnson", productName: "Broken Cashews BB", quantity: "200kg", message: "Looking for competitive pricing for broken cashews for my processing unit.", date: "2024-01-13", status: "pending", expectedPrice: 7200, fixedPrice: 7500, origin: "Ghana", grade: "mixed" },
-  { id: 4, customerName: "Alice Brown", productName: "Cashews W180", quantity: "75kg", message: "Can you provide wholesale pricing?", date: "2024-01-12", status: "pending", expectedPrice: 8400, fixedPrice: 8500, origin: "India", grade: "W180" },
-  { id: 5, customerName: "Bob Smith", productName: "Premium Cashews W240", quantity: "120kg", message: "Interested in monthly subscription.", date: "2024-01-11", status: "responded", expectedPrice: 8100, fixedPrice: 8300, origin: "India", grade: "W240" },
-  { id: 6, customerName: "Carol White", productName: "Organic Cashews W320", quantity: "90kg", message: "Do you ship internationally?", date: "2024-01-10", status: "pending", expectedPrice: 7700, fixedPrice: 8000, origin: "Vietnam", grade: "W320" },
-  { id: 7, customerName: "David Green", productName: "Broken Cashews BB", quantity: "150kg", message: "Need delivery by next week.", date: "2024-01-09", status: "pending", expectedPrice: 7000, fixedPrice: 7300, origin: "Tanzania", grade: "mixed" }
+  // { id: 1, customerName: "John Doe", productName: "Premium Cashews W240", quantity: "100kg", message: "I'm interested in bulk purchase for my restaurant chain. Can you provide pricing for 500kg monthly supply?", date: "2024-01-15", status: "pending", expectedPrice: 8200, fixedPrice: 8500, origin: "India", grade: "W240" },
+  // { id: 2, customerName: "Sarah Wilson", productName: "Organic Cashews W320", quantity: "50kg", message: "Need organic certification details and delivery timeline to New York.", date: "2024-01-14", status: "responded", expectedPrice: 7600, fixedPrice: 7800, origin: "Vietnam", grade: "W320" },
+  // { id: 3, customerName: "Mike Johnson", productName: "Broken Cashews BB", quantity: "200kg", message: "Looking for competitive pricing for broken cashews for my processing unit.", date: "2024-01-13", status: "pending", expectedPrice: 7200, fixedPrice: 7500, origin: "Ghana", grade: "mixed" },
+  // { id: 4, customerName: "Alice Brown", productName: "Cashews W180", quantity: "75kg", message: "Can you provide wholesale pricing?", date: "2024-01-12", status: "pending", expectedPrice: 8400, fixedPrice: 8500, origin: "India", grade: "W180" },
+  // { id: 5, customerName: "Bob Smith", productName: "Premium Cashews W240", quantity: "120kg", message: "Interested in monthly subscription.", date: "2024-01-11", status: "responded", expectedPrice: 8100, fixedPrice: 8300, origin: "India", grade: "W240" },
+  // { id: 6, customerName: "Carol White", productName: "Organic Cashews W320", quantity: "90kg", message: "Do you ship internationally?", date: "2024-01-10", status: "pending", expectedPrice: 7700, fixedPrice: 8000, origin: "Vietnam", grade: "W320" },
+  // { id: 7, customerName: "David Green", productName: "Broken Cashews BB", quantity: "150kg", message: "Need delivery by next week.", date: "2024-01-09", status: "pending", expectedPrice: 7000, fixedPrice: 7300, origin: "Tanzania", grade: "mixed" }
 ];
 
 const MerchantEnquiries = () => {
@@ -51,6 +51,21 @@ const MerchantEnquiries = () => {
     negotiating: ['pending'],
   };
 
+  // Check if an enquiry is expired
+  const isExpired = (enquiry: any) => {
+    const today = new Date();
+    const expiryDate = new Date(enquiry.deliveryDeadline);
+    return expiryDate < today;
+  };
+
+  // Check if an enquiry is expiring soon (within 3 days)
+  const isExpiringSoon = (enquiry: any) => {
+    const today = new Date();
+    const expiryDate = new Date(enquiry.deliveryDeadline);
+    const threeDaysFromNow = new Date(today.getTime() + (3 * 24 * 60 * 60 * 1000));
+    return expiryDate <= threeDaysFromNow && expiryDate >= today;
+  };
+
   // Sort enquiries
   const sortEnquiries = (enquiries: any[]) => {
     if (!sortField) return enquiries;
@@ -60,7 +75,7 @@ const MerchantEnquiries = () => {
       let bValue = b[sortField];
 
       // Handle different data types
-      if (sortField === 'date') {
+      if (sortField === 'deliveryDeadline') {
         aValue = new Date(aValue).getTime();
         bValue = new Date(bValue).getTime();
       } else if (sortField === 'quantity') {
@@ -82,8 +97,13 @@ const MerchantEnquiries = () => {
   const storedEnquiries = getRequirementsAsEnquiries();
   const allEnquiries = [...mockEnquiries, ...storedEnquiries];
 
-  // Filter enquiries only when Apply clicked
-  const filteredEnquiries = sortEnquiries(allEnquiries.filter(enquiry => {
+  // Filter out expired enquiries
+  const activeEnquiries = useMemo(() => {
+    return allEnquiries.filter(enquiry => !isExpired(enquiry));
+  }, [allEnquiries]);
+
+  // Filter enquiries only when Apply clicked (excluding expired ones)
+  const filteredEnquiries = sortEnquiries(activeEnquiries.filter(enquiry => {
     const matchesSearch =
       searchFilter === '' ||
       enquiry.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -249,17 +269,17 @@ const MerchantEnquiries = () => {
                   onClick={() => handleSort('quantity')}
                 >
                   <div className="flex items-center justify-between">
-                    Quantity
+                     Required Quantity
                     {getSortIcon('quantity')}
                   </div>
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50 select-none"
-                  onClick={() => handleSort('date')}
+                  onClick={() => handleSort('deliveryDeadline')}
                 >
                   <div className="flex items-center justify-between">
-                    Date
-                    {getSortIcon('date')}
+                   Expire Date
+                    {getSortIcon('deliveryDeadline')}
                   </div>
                 </TableHead>
                 <TableHead
@@ -280,7 +300,16 @@ const MerchantEnquiries = () => {
                   <TableCell className="font-medium">{enquiry.customerName}</TableCell>
                   <TableCell>{enquiry.productName}</TableCell>
                   <TableCell>{enquiry.quantity}</TableCell>
-                  <TableCell>{new Date(enquiry.date).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span>{new Date(enquiry.deliveryDeadline).toLocaleDateString()}</span>
+                      {isExpiringSoon(enquiry) && (
+                        <Badge variant="outline" className="text-orange-600 border-orange-600 text-xs">
+                          Expiring Soon
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={enquiry.status === 'pending' ? 'destructive' : 'default'}>
                       {enquiry.status === 'pending' ? 'Pending' : 'Responded'}
@@ -360,7 +389,7 @@ const MerchantEnquiries = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-sm text-muted-foreground">Expire Date</h4>
-                  <p className="font-medium">{new Date(selectedEnquiry.date).toLocaleDateString()}</p>
+                  <p className="font-medium">{new Date(selectedEnquiry.deliveryDeadline).toLocaleDateString()}</p>
                 </div>
                 {/* <div>
                   <h4 className="font-semibold text-sm text-muted-foreground">Status</h4>
@@ -441,6 +470,7 @@ const MerchantEnquiries = () => {
         customerName={selectedEnquiry?.customerName || ''}
         productName={selectedEnquiry?.productName || ''}
         userType="merchant"
+        enquiry={selectedEnquiry}
       />
     </div>
   );

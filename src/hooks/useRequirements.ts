@@ -34,8 +34,10 @@ export interface Requirement {
 
 interface RequirementsState {
   requirements: Requirement[];
-  addRequirement: (requirement: Omit<Requirement, 'id' | 'createdAt' | 'customerName' | 'productName' | 'message' | 'fixedPrice'>) => void;
+  addRequirement: (requirement: Omit<Requirement, 'id' | 'createdAt' | 'productName' | 'message' | 'fixedPrice'>) => void;
+  updateRequirement: (id: string, requirement: Omit<Requirement, 'id' | 'createdAt' | 'customerName' | 'productName' | 'message' | 'fixedPrice'>) => void;
   updateRequirementStatus: (id: string, status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed') => void;
+  getRequirementById: (id: string) => Requirement | undefined;
   getRequirementsAsEnquiries: () => any[];
   getMyRequirements: () => any[];
   deleteRequirement: (id: string) => void;
@@ -111,7 +113,7 @@ export const useRequirements = create<RequirementsState>()(
         const newRequirement: Requirement = {
           ...requirement,
           id: Date.now().toString(),
-          customerName: 'Anonymous Buyer', // Default customer name
+          customerName: requirement.customerName || 'Anonymous Buyer',
           productName: `${requirement.grade} Cashews`,
           message: `Looking for ${requirement.quantity} of ${requirement.grade} cashews from ${requirement.origin}. ${requirement.specifications || 'Standard quality requirements.'}`,
           fixedPrice,
@@ -132,12 +134,47 @@ export const useRequirements = create<RequirementsState>()(
         }));
       },
 
+      updateRequirement: (id, requirement) => {
+        const fixedPrice = getFixedPrice(requirement.grade, requirement.origin);
+        const now = new Date().toISOString();
+        const originNames: { [key: string]: string } = {
+          india: 'India',
+          vietnam: 'Vietnam', 
+          ghana: 'Ghana',
+          tanzania: 'Tanzania',
+          any: 'Any'
+        };
+
+        set((state) => ({
+          requirements: state.requirements.map(req =>
+            req.id === id ? {
+              ...req,
+              ...requirement,
+              fixedPrice,
+              lastModified: now.split('T')[0],
+              title: `${requirement.grade} Cashews for ${requirement.deliveryLocation}`,
+              preferredOrigin: originNames[requirement.origin] || requirement.origin,
+              budgetRange: `₹${requirement.expectedPrice}/kg`,
+              requirementExpiry: requirement.deliveryDeadline,
+              productName: `${requirement.grade} Cashews`,
+              message: `Looking for ${requirement.quantity} of ${requirement.grade} cashews from ${requirement.origin}. ${requirement.specifications || 'Standard quality requirements.'}`,
+              status: requirement.isDraft ? 'draft' : 'active'
+            } : req
+          )
+        }));
+      },
+
       updateRequirementStatus: (id, status) => {
         set((state) => ({
           requirements: state.requirements.map(req =>
             req.id === id ? { ...req, status } : req
           )
         }));
+      },
+
+      getRequirementById: (id) => {
+        const { requirements } = get();
+        return requirements.find(req => req.id === id);
       },
 
       getRequirementsAsEnquiries: () => {

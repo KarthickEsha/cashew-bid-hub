@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useNavigate } from "react-router-dom";
+import { useProfile } from "@/hooks/useProfile";
+import { useUser } from "@clerk/clerk-react";
 
 // Origin countries
 const origins = [
@@ -65,6 +67,8 @@ const productPrices = {
 const PostRequirement = () => {
   const navigate = useNavigate();
   const { addRequirement } = useRequirements();
+  const { profile } = useProfile();
+  const { user } = useUser();
   const [formData, setFormData] = useState({
     title: "",
     grade: "",
@@ -122,6 +126,9 @@ const PostRequirement = () => {
       }
     }
 
+    // Get customer name from profile or user data
+    const customerName = profile?.name || user?.fullName || 'Anonymous Buyer';
+
     // Prepare requirement data
     const requirementData = {
       grade: formData.grade,
@@ -137,7 +144,8 @@ const PostRequirement = () => {
       allowLowerBid: formData.allowLowerBid,
       date: format(new Date(), 'yyyy-MM-dd'),
       status: 'pending' as const,
-      isDraft
+      isDraft,
+      customerName
     };
 
     // Save to local storage
@@ -342,6 +350,8 @@ const PostRequirement = () => {
                   onSelect={(date) =>
                     setFormData({ ...formData, deliveryDeadline: date })
                   }
+                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  fromDate={new Date()}
                   initialFocus
                 />
               </PopoverContent>

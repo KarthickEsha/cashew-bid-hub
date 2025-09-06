@@ -17,62 +17,200 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { useRequirements } from "@/hooks/useRequirements";
+import { useProfile } from "@/hooks/useProfile";
+import { useUser } from "@clerk/clerk-react";
+
+// Origin countries
+const origins = [
+  { id: "india", name: "India" },
+  { id: "vietnam", name: "Vietnam" },
+  { id: "ghana", name: "Ghana" },
+  { id: "tanzania", name: "Tanzania" },
+  { id: "any", name: "Any Origin" }
+];
+
+// Product-based fixed prices by origin (₹ per kg)
+const productPrices = {
+  W180: {
+    india: 8500,
+    vietnam: 8200,
+    ghana: 7800,
+    tanzania: 7500
+  },
+  W240: {
+    india: 8300,
+    vietnam: 8000,
+    ghana: 7600,
+    tanzania: 7300
+  },
+  W320: {
+    india: 8100,
+    vietnam: 7800,
+    ghana: 7400,
+    tanzania: 7100
+  },
+  SW240: {
+    india: 8200,
+    vietnam: 7900,
+    ghana: 7500,
+    tanzania: 7200
+  },
+  SW320: {
+    india: 8000,
+    vietnam: 7700,
+    ghana: 7300,
+    tanzania: 7000
+  },
+  mixed: {
+    india: 7800,
+    vietnam: 7500,
+    ghana: 7100,
+    tanzania: 6800
+  }
+};
 
 const EditRequirement = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { getRequirementById, updateRequirement } = useRequirements();
+  const { profile } = useProfile();
+  const { user } = useUser();
   
   const [formData, setFormData] = useState({
-    title: "",
     grade: "",
     quantity: "",
-    unit: "",
-    preferredOrigin: "",
-    minBudget: "",
-    maxBudget: "",
+    origin: "",
+    targetDate: undefined as Date | undefined,
+    minSupplyQuantity: "",
+    expectedPrice: "",
     deliveryLocation: "",
     city: "",
     country: "",
     specifications: "",
     deliveryDeadline: undefined as Date | undefined,
     requirementExpiry: undefined as Date | undefined,
+    allowLowerBid: false
   });
 
-  // Mock data - in real app, fetch from API
-  useEffect(() => {
-    if (id === "1") {
-      setFormData({
-        title: "Premium W320 Cashews for Export",
-        grade: "W320",
-        quantity: "50",
-        unit: "tons",
-        preferredOrigin: "india",
-        minBudget: "8000",
-        maxBudget: "9000",
-        deliveryLocation: "Port of Los Angeles",
-        city: "Los Angeles",
-        country: "USA",
-        specifications: "Premium quality cashews with moisture content below 5%, no broken kernels, suitable for export markets.",
-        deliveryDeadline: new Date("2024-12-15"),
-        requirementExpiry: new Date("2024-11-30"),
-      });
+  const [priceError, setPriceError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  // Get fixed price based on product and origin
+  const getFixedPrice = () => {
+    if (!formData.grade || !formData.origin || formData.origin === "any") {
+      return 0;
     }
-  }, [id]);
+    return (
+      productPrices[formData.grade as keyof typeof productPrices]?.[
+      formData.origin as keyof typeof productPrices.W180
+      ] || 0
+    );
+  };
+
+  const fixedPrice = getFixedPrice();
+  const selectedOrigin = origins.find((o) => o.id === formData.origin);
+
+  // Validate expected price
+  const validateExpectedPrice = (price: string) => {
+    const numPrice = parseFloat(price);
+    const currentFixedPrice = getFixedPrice();
+    if (price && currentFixedPrice && numPrice > currentFixedPrice) {
+      setPriceError(`Expected price cannot exceed fixed price of ₹${currentFixedPrice}`);
+      return false;
+    }
+    setPriceError("");
+    return true;
+  };
+
+  // Fetch requirement data
+  useEffect(() => {
+    if (id) {
+      const requirement = getRequirementById(id);
+      if (requirement) {
+        setFormData({
+          grade: requirement.grade,
+          quantity: requirement.quantity,
+          origin: requirement.origin,
+          targetDate: undefined,
+          minSupplyQuantity: requirement.minSupplyQuantity,
+          expectedPrice: requirement.expectedPrice.toString(),
+          deliveryLocation: requirement.deliveryLocation,
+          city: requirement.city,
+          country: requirement.country,
+          specifications: requirement.specifications,
+          deliveryDeadline: requirement.deliveryDeadline ? new Date(requirement.deliveryDeadline) : undefined,
+          requirementExpiry: requirement.requirementExpiry ? new Date(requirement.requirementExpiry) : undefined,
+          allowLowerBid: requirement.allowLowerBid
+        });
+      } else {
+        // Requirement not found, redirect back
+        navigate('/my-requirements');
+      }
+      setLoading(false);
+    }
+  }, [id, getRequirementById, navigate]);
 
   const handleSubmit = (isDraft = false) => {
-    console.log("Requirement updated:", { ...formData, isDraft });
-    toast({
-      title: "Requirement Updated",
-      description: isDraft ? "Requirement saved as draft" : "Requirement updated successfully",
-    });
-    navigate("/my-requirements");
+    if (!id) return;
+
+    // Validate required fields
+    if (!isDraft) {
+      if (!formData.grade || !formData.quantity || !formData.origin || 
+          !formData.expectedPrice || !formData.deliveryLocation || 
+          !formData.city || !formData.country || !formData.deliveryDeadline) {
+        alert('Please fill in all required fields');
+        return;
+      }
+    }
+
+    // Get customer name from profile or user data
+    const customerName = profile?.name || user?.fullName || 'Anonymous Buyer';
+
+    // Prepare requirement data
+    const requirementData = {
+      grade: formData.grade,
+      quantity: formData.quantity,
+      origin: formData.origin,
+      expectedPrice: parseFloat(formData.expectedPrice) || 0,
+      minSupplyQuantity: formData.minSupplyQuantity,
+      deliveryLocation: formData.deliveryLocation,
+      city: formData.city,
+      country: formData.country,
+      deliveryDeadline: formData.deliveryDeadline ? format(formData.deliveryDeadline, 'yyyy-MM-dd') : '',
+      specifications: formData.specifications,
+      allowLowerBid: formData.allowLowerBid,
+      date: format(new Date(), 'yyyy-MM-dd'),
+      status: 'pending' as const,
+      isDraft,
+      customerName
+    };
+
+    // Update requirement
+    updateRequirement(id, requirementData);
+
+    // Show success message and redirect
+    if (isDraft) {
+      alert('Requirement saved as draft successfully!');
+    } else {
+      alert('Requirement updated successfully!');
+    }
+    navigate('/my-requirements');
   };
 
   const handleBack = () => {
     navigate("/my-requirements");
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center py-10">
+          <p>Loading requirement data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -100,21 +238,16 @@ const EditRequirement = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Basic Information</h3>
             
-            {/* <div>
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                placeholder="e.g., Looking for Premium Grade Cashews"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="mt-1"
-              />
-            </div> */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="grade">Grade *</Label>
-                <Select value={formData.grade} onValueChange={(value) => setFormData({ ...formData, grade: value })}>
+                <Label htmlFor="grade">Product / Grade *</Label>
+                <Select
+                  value={formData.grade}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, grade: value })
+                  }
+                >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select grade" />
                   </SelectTrigger>
@@ -130,17 +263,23 @@ const EditRequirement = () => {
               </div>
 
               <div>
-                <Label htmlFor="preferredOrigin">Preferred Origin *</Label>
-                <Select value={formData.preferredOrigin} onValueChange={(value) => setFormData({ ...formData, preferredOrigin: value })}>
+                <Label htmlFor="origin">Origin *</Label>
+                <Select
+                  value={formData.origin}
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, origin: value, expectedPrice: "" });
+                    setPriceError("");
+                  }}
+                >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="e.g., Vietnam, India" />
+                    <SelectValue placeholder="Select origin" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="india">India</SelectItem>
-                    <SelectItem value="vietnam">Vietnam</SelectItem>
-                    <SelectItem value="ghana">Ghana</SelectItem>
-                    <SelectItem value="tanzania">Tanzania</SelectItem>
-                    <SelectItem value="any">Any Origin</SelectItem>
+                    {origins.map((origin) => (
+                      <SelectItem key={origin.id} value={origin.id}>
+                        {origin.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -148,65 +287,99 @@ const EditRequirement = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="quantity">Quantity Needed *</Label>
+                <Label htmlFor="quantity">Required Quantity (kg) *</Label>
                 <Input
                   id="quantity"
-                  placeholder="e.g., 50"
+                  placeholder="e.g., 500"
                   value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, quantity: e.target.value })
+                  }
                   className="mt-1"
                 />
               </div>
-
               <div>
-                <Label htmlFor="unit">Unit *</Label>
-                <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tons">Tons</SelectItem>
-                    <SelectItem value="kg">Kilograms</SelectItem>
-                    <SelectItem value="grams">Grams</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="minSupplyQuantity">
+                  Minimum Supply Quantity (kg) *
+                </Label>
+                <Input
+                  id="minSupplyQuantity"
+                  placeholder="e.g., 100"
+                  value={formData.minSupplyQuantity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, minSupplyQuantity: e.target.value })
+                  }
+                  className="mt-1"
+                />
               </div>
             </div>
           </div>
 
           {/* Budget Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Budget Information</h3>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Expected Price Field */}
               <div>
-                <Label htmlFor="minBudget">
-                  Min Budget ($/
-                  {formData.unit ? formData.unit.slice(0, -1) || 'unit' : 'unit'}) *
-                </Label>
+                <Label htmlFor="expectedPrice">Expected Price (₹/kg) *</Label>
                 <Input
-                  id="minBudget"
-                  placeholder="e.g., 8000"
-                  value={formData.minBudget}
-                  onChange={(e) => setFormData({ ...formData, minBudget: e.target.value })}
-                  className="mt-1"
+                  id="expectedPrice"
+                  placeholder="Enter expected price"
+                  value={formData.expectedPrice}
+                  onChange={(e) => {
+                    setFormData({ ...formData, expectedPrice: e.target.value });
+                    validateExpectedPrice(e.target.value);
+                  }}
+                  className={cn("mt-1", priceError && "border-red-500")}
                 />
+                {priceError && (
+                  <p className="text-sm text-red-500 mt-1">{priceError}</p>
+                )}
               </div>
 
-              <div>
-                <Label htmlFor="maxBudget">
-                  Max Budget ($/
-                  {formData.unit ? formData.unit.slice(0, -1) || 'unit' : 'unit'}) *
-                </Label>
-                <Input
-                  id="maxBudget"
-                  placeholder="e.g., 9500"
-                  value={formData.maxBudget}
-                  onChange={(e) => setFormData({ ...formData, maxBudget: e.target.value })}
-                  className="mt-1"
+              {/* Checkbox Field */}
+              <div className="flex items-center space-x-2 mt-6">
+                <input
+                  id="allowLowerBid"
+                  type="checkbox"
+                  checked={formData.allowLowerBid}
+                  onChange={(e) =>
+                    setFormData({ ...formData, allowLowerBid: e.target.checked })
+                  }
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                 />
+                <Label htmlFor="allowLowerBid">Seller can bid lower price?</Label>
               </div>
             </div>
+          </div>
+
+          <div>
+            <Label>Expected Delivery Date *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal mt-1",
+                    !formData.deliveryDeadline && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.deliveryDeadline
+                    ? format(formData.deliveryDeadline, "dd/MM/yyyy")
+                    : "Select delivery date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.deliveryDeadline}
+                  onSelect={(date) =>
+                    setFormData({ ...formData, deliveryDeadline: date })
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Delivery Information */}
@@ -248,31 +421,6 @@ const EditRequirement = () => {
               </div>
             </div>
 
-            <div>
-              <Label>Delivery Deadline *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal mt-1",
-                      !formData.deliveryDeadline && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.deliveryDeadline ? format(formData.deliveryDeadline, "dd/MM/yyyy") : "Select delivery date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.deliveryDeadline}
-                    onSelect={(date) => setFormData({ ...formData, deliveryDeadline: date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
           </div>
 
           {/* Additional Information */}
@@ -293,31 +441,6 @@ const EditRequirement = () => {
               />
             </div>
 
-            <div>
-              <Label>Requirement Expires On *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal mt-1",
-                      !formData.requirementExpiry && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.requirementExpiry ? format(formData.requirementExpiry, "dd/MM/yyyy") : "Select expiry date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.requirementExpiry}
-                    onSelect={(date) => setFormData({ ...formData, requirementExpiry: date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
           </div>
 
           {/* Action Buttons */}

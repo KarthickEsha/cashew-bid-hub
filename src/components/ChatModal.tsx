@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, User } from 'lucide-react';
+import { useResponses } from '@/hooks/useResponses';
+import { useProfile } from '@/hooks/useProfile';
+import { useUser } from '@clerk/clerk-react';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -12,10 +15,14 @@ interface ChatModalProps {
   customerName: string;
   productName: string;
   userType: 'customer' | 'merchant';
+  enquiry?: any; // Add enquiry data to create responses
 }
 
-const ChatModal = ({ isOpen, onClose, customerName, productName, userType }: ChatModalProps) => {
+const ChatModal = ({ isOpen, onClose, customerName, productName, userType, enquiry }: ChatModalProps) => {
   const [message, setMessage] = useState('');
+  const { addResponse } = useResponses();
+  const { profile } = useProfile();
+  const { user } = useUser();
   
   // Mock chat messages
   const mockMessages = [
@@ -40,8 +47,32 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType }: Cha
   ];
 
   const handleSendMessage = () => {
-    if (message.trim()) {
-      // In real app, this would send the message to backend
+    if (message.trim() && enquiry && userType === 'merchant') {
+      // Create a response when merchant sends a message
+      const merchantName = profile?.name || user?.fullName || 'Anonymous Merchant';
+      const merchantLocation = profile?.location || 'Location not specified';
+      
+      addResponse({
+        requirementId: enquiry.id.toString(),
+        merchantId: user?.id || 'anonymous',
+        merchantName,
+        merchantLocation,
+        price: `₹${enquiry.expectedPrice || 0}/kg`,
+        responseDate: new Date().toISOString().split('T')[0],
+        status: 'new',
+        grade: enquiry.grade || '',
+        quantity: enquiry.quantity || '',
+        origin: enquiry.origin || '',
+        certifications: ['ISO 22000', 'HACCP'],
+        deliveryTime: '15 days',
+        contact: profile?.phone || 'Contact not provided',
+        message: message.trim(),
+      });
+      
+      console.log('Response created for requirement:', enquiry.id);
+      setMessage('');
+    } else if (message.trim()) {
+      // For customer messages or general chat
       console.log('Sending message:', message);
       setMessage('');
     }

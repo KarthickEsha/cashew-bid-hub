@@ -34,9 +34,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useRequirements } from "@/hooks/useRequirements";
+import { useResponses } from "@/hooks/useResponses";
 
 const MyRequirements = () => {
   const { getMyRequirements, deleteRequirement } = useRequirements();
+  const { getResponseCount } = useResponses();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -160,7 +162,7 @@ const MyRequirements = () => {
           },
           {
             label: "Total Responses",
-            value: requirements.reduce((acc, r) => acc + r.responsesCount, 0),
+            value: requirements.reduce((acc, r) => acc + getResponseCount(r.id.toString()), 0),
             color: "text-orange-600",
           },
         ].map((stat, index) => (
@@ -276,7 +278,7 @@ const MyRequirements = () => {
                   <div>
                     <span className="text-muted-foreground">Responses:</span>
                     <div className="font-semibold text-primary">
-                      {requirement.responsesCount}
+                      {getResponseCount(requirement.id.toString())}
                     </div>
                   </div>
                 </div>
@@ -319,11 +321,13 @@ const MyRequirements = () => {
                     </span>
                   </div>
                   <div className="flex justify-end space-x-2">
-                    <Link to={`/requirement/${requirement.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Eye size={14} className="mr-2" /> View
-                      </Button>
-                    </Link>
+                    {(
+                      <Link to={`/requirement/${requirement.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Eye size={14} className="mr-2" /> View
+                        </Button>
+                      </Link>
+                    )}
                     {(requirement.status === "draft" ||
                       requirement.status === "active") && (
                         <Link to={`/edit-requirement/${requirement.id}`}>

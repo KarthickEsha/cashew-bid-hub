@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useRequirements } from '@/hooks/useRequirements';
+import { useResponses } from '@/hooks/useResponses';
 import {
   ArrowLeft,
   Calendar,
@@ -27,6 +28,7 @@ const RequirementDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getMyRequirements } = useRequirements();
+  const { getResponsesByRequirementId, updateResponseStatus } = useResponses();
   
   // State for managing responses popup
   const [showAllResponses, setShowAllResponses] = useState(false);
@@ -59,79 +61,8 @@ const RequirementDetails = () => {
     );
   }
 
-  // Mock responses data - in real app this would come from API
-  const mockResponses = [
-    {
-      id: 1,
-      merchantName: "Golden Cashew Co.",
-      location: "Mumbai, India",
-      price: "$8,200/ton",
-      responseDate: "2024-08-18",
-      status: "new",
-      grade: requirement.grade,
-      quantity: requirement.quantity,
-      origin: requirement.preferredOrigin,
-      certifications: ["ISO 22000", "HACCP"],
-      deliveryTime: "15 days",
-      contact: "+91-9876543210"
-    },
-    {
-      id: 2,
-      merchantName: "Premium Nuts Export",
-      location: "Kerala, India",
-      price: "$8,500/ton", 
-      responseDate: "2024-08-19",
-      status: "viewed",
-      grade: requirement.grade,
-      quantity: requirement.quantity,
-      origin: requirement.preferredOrigin,
-      certifications: ["ISO 22000", "HACCP", "Organic"],
-      deliveryTime: "12 days",
-      contact: "+91-9876543211"
-    },
-    {
-      id: 3,
-      merchantName: "Vietnam Cashew Export",
-      location: "Ho Chi Minh City, Vietnam",
-      price: "$8,100/ton",
-      responseDate: "2024-08-20",
-      status: "new",
-      grade: requirement.grade,
-      quantity: requirement.quantity,
-      origin: "Binh Phuoc, Vietnam",
-      certifications: ["ISO 22000", "HACCP"],
-      deliveryTime: "18 days",
-      contact: "+84-9876543212"
-    },
-    {
-      id: 4,
-      merchantName: "African Cashew Co.",
-      location: "Accra, Ghana",
-      price: "$7,800/ton",
-      responseDate: "2024-08-21",
-      status: "new",
-      grade: requirement.grade,
-      quantity: requirement.quantity,
-      origin: "Northern Ghana",
-      certifications: ["ISO 22000", "HACCP", "Fair Trade"],
-      deliveryTime: "20 days",
-      contact: "+233-9876543213"
-    },
-    {
-      id: 5,
-      merchantName: "Brazilian Nuts Ltd",
-      location: "São Paulo, Brazil",
-      price: "$8,300/ton",
-      responseDate: "2024-08-22",
-      status: "viewed",
-      grade: requirement.grade,
-      quantity: requirement.quantity,
-      origin: "Ceará, Brazil",
-      certifications: ["ISO 22000", "HACCP", "Organic"],
-      deliveryTime: "25 days",
-      contact: "+55-9876543214"
-    }
-  ];
+  // Get dynamic responses from merchants
+  const responses = getResponsesByRequirementId(id || '');
 
   // Mock specifications - in real app this would come from requirement data
   const mockSpecifications = {
@@ -335,18 +266,18 @@ const RequirementDetails = () => {
             <CardHeader>
               <CardTitle className="text-lg flex items-center">
                 <MessageSquare size={18} className="mr-2" />
-                Recent Responses ({mockResponses.length})
+                Recent Responses ({responses.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockResponses.slice(0, 2).map((response) => (
+                {responses.slice(0, 2).map((response) => (
                   <div key={response.id} className="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
                     <div>
                       <div className="font-medium">{response.merchantName}</div>
                       <div className="text-sm text-muted-foreground flex items-center">
                         <MapPin size={12} className="mr-1" />
-                        {response.location}
+                        {response.merchantLocation}
                       </div>
                     </div>
                     <div className="text-right">
@@ -357,13 +288,13 @@ const RequirementDetails = () => {
                     </div>
                   </div>
                 ))}
-                {mockResponses.length > 2 && (
+                {responses.length > 2 && (
                   <Button 
                     variant="outline" 
                     className="w-full"
                     onClick={() => setShowAllResponses(true)}
                   >
-                    View All Responses ({mockResponses.length})
+                    View All Responses ({responses.length})
                   </Button>
                 )}
               </div>
@@ -446,93 +377,108 @@ const RequirementDetails = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <MessageSquare size={20} className="mr-2" />
-              All Responses ({mockResponses.length})
+              All Responses ({responses.length})
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4">
-            {mockResponses.map((response) => (
-              <Card key={response.id} className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Merchant Info */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-lg">{response.merchantName}</h3>
-                      <Badge 
-                        variant={response.status === "new" ? "default" : "secondary"}
-                        className="text-xs"
-                      >
-                        {response.status}
-                      </Badge>
+            {responses.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No responses yet. Merchants will see your requirement and can respond with their offers.
+              </div>
+            ) : (
+              responses.map((response) => (
+                <Card key={response.id} className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Merchant Info */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-lg">{response.merchantName}</h3>
+                        <Badge 
+                          variant={response.status === "new" ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {response.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center text-muted-foreground text-sm">
+                        <MapPin size={14} className="mr-1" />
+                        {response.merchantLocation}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Origin: {response.origin}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Contact: {response.contact}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Message: {response.message}
+                      </div>
                     </div>
-                    <div className="flex items-center text-muted-foreground text-sm">
-                      <MapPin size={14} className="mr-1" />
-                      {response.location}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Origin: {response.origin}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Contact: {response.contact}
-                    </div>
-                  </div>
 
-                  {/* Product Details */}
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Grade:</span>
-                        <div className="font-medium">{response.grade}</div>
+                    {/* Product Details */}
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Grade:</span>
+                          <div className="font-medium">{response.grade}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Quantity:</span>
+                          <div className="font-medium">{response.quantity}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Delivery:</span>
+                          <div className="font-medium">{response.deliveryTime}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Response Date:</span>
+                          <div className="font-medium">
+                            {new Date(response.responseDate).toLocaleDateString()}
+                          </div>
+                        </div>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Quantity:</span>
-                        <div className="font-medium">{response.quantity}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Delivery:</span>
-                        <div className="font-medium">{response.deliveryTime}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Response Date:</span>
-                        <div className="font-medium">
-                          {new Date(response.responseDate).toLocaleDateString()}
+                        <span className="text-muted-foreground text-sm">Certifications:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {response.certifications.map((cert, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {cert}
+                            </Badge>
+                          ))}
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <span className="text-muted-foreground text-sm">Certifications:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {response.certifications.map((cert, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {cert}
-                          </Badge>
-                        ))}
+
+                    {/* Price & Actions */}
+                    <div className="space-y-3">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">{response.price}</div>
+                        <div className="text-sm text-muted-foreground">per kg</div>
+                      </div>
+                      <div className="space-y-2">
+                        <Button 
+                          className="w-full"
+                          onClick={() => {
+                            updateResponseStatus(response.id, 'accepted');
+                            toast({
+                              title: "Order Placed",
+                              description: `Order placed with ${response.merchantName}`,
+                            });
+                          }}
+                        >
+                          Place Order
+                        </Button>
+                        <Button variant="outline" className="w-full">
+                          <MessageSquare size={14} className="mr-2" />
+                          Contact Merchant
+                        </Button>
                       </div>
                     </div>
                   </div>
-
-                  {/* Price and Actions */}
-                  <div className="space-y-3">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">{response.price}</div>
-                      <div className="text-sm text-muted-foreground">per ton</div>
-                    </div>
-                    <div className="space-y-2">
-                      <Button 
-                        className="w-full"
-                        onClick={() => handlePlaceOrder(response)}
-                      >
-                        Place Order
-                      </Button>
-                      <Button variant="outline" className="w-full">
-                        <MessageSquare size={14} className="mr-2" />
-                        Contact Merchant
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))
+            )}
           </div>
         </DialogContent>
       </Dialog>

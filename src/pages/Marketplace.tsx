@@ -644,7 +644,7 @@ const Marketplace = () => {
                               View
                             </Button>
                           </Link>
-                          {product.pricingType === "bidding" ? (
+                          {/* {product.pricingType === "bidding" ? (
                             <Button
                               size="sm"
                               onClick={() => setSelectedProduct(product)}
@@ -655,7 +655,7 @@ const Marketplace = () => {
                             <Button size="sm">
                               Quick Order
                             </Button>
-                          )}
+                          )} */}
                         </div>
                       </TableCell>
                     </TableRow>
