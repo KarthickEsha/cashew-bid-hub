@@ -235,7 +235,7 @@ const MerchantEnquiries = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="merchant-theme p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -380,8 +380,22 @@ const MerchantEnquiries = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={enquiry.status === 'pending' ? 'destructive' : 'default'}>
-                      {enquiry.status === 'pending' ? 'Pending' : 'Responded'}
+                    <Badge variant={
+                      enquiry.status === 'pending' 
+                        ? 'default' 
+                        : enquiry.status === 'active' 
+                          ? 'secondary' 
+                          : enquiry.status === 'confirmed' 
+                            ? 'outline' 
+                            : 'destructive'
+                    }>
+                      {enquiry.status === 'pending' 
+                        ? 'Active' 
+                        : enquiry.status === 'responded' 
+                          ? 'Responded' 
+                          : enquiry.status === 'confirmed' 
+                            ? 'Confirmed' 
+                            : 'Rejected'}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -470,51 +484,52 @@ const MerchantEnquiries = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {/* Reply Message Input */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="merchantPrice">Your Price (₹/kg) *</Label>
-                  <Input
-                    id="merchantPrice"
-                    type="number"
-                    placeholder="Enter your price per kg"
-                    value={merchantPrice}
-                    onChange={(e) => setMerchantPrice(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="availableQuantity">Available Quantity (kg) *</Label>
+                  <Label className="text-sm font-medium">Available Quantity (kg) *</Label>
                   <Input
                     id="availableQuantity"
                     type="number"
                     placeholder="Enter available quantity"
                     value={availableQuantity}
                     onChange={(e) => setAvailableQuantity(e.target.value)}
+                    className="border-input focus:border-ring focus:ring-ring"
                   />
                 </div>
-
-                 <div>
-                  <Label htmlFor="replyMessage">Remarks</Label>
-                  <Textarea
-                    id="replyMessage"
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    placeholder="Type your reply message to the customer..."
-                    rows={3}
+                <div>
+                  <Label className="text-sm font-medium">Your Price (₹/kg) *</Label>
+                  <Input
+                    id="merchantPrice"
+                    type="number"
+                    placeholder="Enter your price per kg"
+                    value={merchantPrice}
+                    onChange={(e) => setMerchantPrice(e.target.value)}
+                    className="border-input focus:border-ring focus:ring-ring"
                   />
                 </div>
               </div>
 
+              <div>
+                <Label htmlFor="replyMessage">Remarks</Label>
+                <Textarea
+                  id="replyMessage"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  placeholder="Type your reply message to the customer..."
+                  rows={3}
+                  className="border-input focus:border-ring focus:ring-ring"
+                />
+              </div>
+
               <div className="flex gap-2 pt-4">
-                {/* Primary Purple Button */}
+                {/* Primary Button using theme */}
                 <Button onClick={handleSubmitResponse}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                  className="flex-1"
                 >
                   Submit Response
                 </Button>
 
-                {/* Outline Purple Button */}
+                {/* Outline Button using theme */}
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -523,7 +538,7 @@ const MerchantEnquiries = () => {
                     setAvailableQuantity('');
                     setRemarks('');
                   }}
-                  className="border-purple-600 text-purple-600 hover:bg-purple-50"
+                  className="border-input"
                 >
                   Cancel
                 </Button>

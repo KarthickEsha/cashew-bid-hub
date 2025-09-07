@@ -293,7 +293,7 @@ const RequirementDetails = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="max-h-80 overflow-y-auto space-y-3">
                 {responses.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No responses yet. Merchants will see your requirement and can respond with their offers.
@@ -571,7 +571,7 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
               <Label htmlFor="status">Status</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="new">Selected</SelectItem>

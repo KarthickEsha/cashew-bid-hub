@@ -6,7 +6,9 @@ import {
   Package,
   Plus,
   ClipboardList,
-  LogOut
+  LogOut,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import {
   Sidebar,
@@ -60,13 +62,13 @@ const buyerNavItems = [
   },
   {
     title: "Confirm",
-    url: "/merchant/enquiries?status=confirmed",
-    icon: MessageSquare,
+    url: "/merchant/confirmed-orders",
+    icon: CheckCircle,
   },
   {
     title: "Rejected",
-    url: "/merchant/enquiries?status=rejected",
-    icon: MessageSquare,
+    url: "/merchant/rejected-orders",
+    icon: XCircle,
   },
 ];
 

@@ -93,7 +93,7 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType, enqui
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md h-[600px] flex flex-col p-0">
+      <DialogContent className="merchant-theme max-w-md h-[600px] flex flex-col p-0 bg-popover">`
         <DialogHeader className="px-4 py-3 border-b">
           <DialogTitle className="flex items-center gap-3">
             <Avatar className="w-8 h-8">
@@ -124,7 +124,7 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType, enqui
               <Card className={`${
                 msg.isSystemMessage 
                   ? 'bg-accent/50 text-accent-foreground max-w-[90%]' 
-                  : `max-w-[80%] ${msg.sender === userType ? 'bg-purple-500 text-white' : 'bg-muted'}`
+                  : `max-w-[80%] ${msg.sender === userType ? 'bg-primary text-primary-foreground' : 'bg-muted'}`
               }`}>
                 <CardContent className="p-3">
                   <p className={`text-sm ${msg.isSystemMessage ? 'text-center font-medium' : ''}`}>
@@ -155,7 +155,7 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType, enqui
               placeholder="Type a message..."
               className="flex-1"
             />
-            <Button size="icon" className="bg-purple-500 text-white" onClick={handleSendMessage}>
+            <Button size="icon" className="bg-primary text-primary-foreground" onClick={handleSendMessage}>
               <Send className="w-4 h-4" />
             </Button>
           </div>
