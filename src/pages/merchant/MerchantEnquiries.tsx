@@ -395,7 +395,7 @@ const MerchantEnquiries = () => {
                           ? 'Responded' 
                           : enquiry.status === 'confirmed' 
                             ? 'Confirmed' 
-                            : 'Rejected'}
+                            : enquiry.status === 'rejected' ? 'Rejected' : 'Pending'}
                     </Badge>
                   </TableCell>
                   <TableCell>
