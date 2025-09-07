@@ -35,21 +35,21 @@ const navItems = [
     url: "/merchant/products",
     icon: Package,
   },
-  {
-    title: "Add Product",
-    url: "/merchant/add-product",
-    icon: Plus,
-  },
+  // {
+  //   title: "Add Product",
+  //   url: "/merchant/add-product",
+  //   icon: Plus,
+  // },
   {
     title: "Orders",
     url: "/merchant/orders",
     icon: ShoppingCart,
   },
-  {
-    title: "Requirements",
-    url: "/merchant/requirements",
-    icon: ClipboardList,
-  },
+  // {
+  //   title: "Requirements",
+  //   url: "/merchant/requirements",
+  //   icon: ClipboardList,
+  // },
 ];
 
 const buyerNavItems = [
@@ -132,7 +132,7 @@ export function MerchantSidebar() {
 
         {/* Buyer Section */}
         <SidebarGroup>
-          <SidebarGroupLabel>Buyer</SidebarGroupLabel>
+          <SidebarGroupLabel>Buyer Activity</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {buyerNavItems.map((item) => (
