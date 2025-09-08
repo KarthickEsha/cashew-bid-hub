@@ -117,7 +117,7 @@ const MerchantConfirmedOrders = () => {
                 <TableHead>Your Price</TableHead>
                 <TableHead>Available Qty</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                {/* <TableHead>Actions</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -134,7 +134,7 @@ const MerchantConfirmedOrders = () => {
                       Confirmed
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <div className="flex space-x-2">
                       <Button variant="ghost" size="sm" title="View Details">
                         <Eye className="h-4 w-4" />
@@ -143,7 +143,7 @@ const MerchantConfirmedOrders = () => {
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               ))}
               {filteredOrders.length === 0 && (

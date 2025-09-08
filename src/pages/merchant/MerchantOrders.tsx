@@ -21,41 +21,104 @@ const MerchantOrders = () => {
   const { profile } = useProfile();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  
-  // Get orders for current merchant
-  const merchantOrders = useMemo(() => {
-    return allOrders.filter(order => order.merchantId === profile?.id);
-  }, [allOrders, profile?.id]);
-
-  const [orders, setOrders] = useState(merchantOrders);
-  
-  // Update orders when merchantOrders changes
-  useEffect(() => {
-    setOrders(merchantOrders);
-  }, [merchantOrders]);
   const [filters, setFilters] = useState({ orderId: "", customer: "", product: "" });
   const [showFilterCard, setShowFilterCard] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  
+  // Get orders for current merchant
+  const merchantOrders = allOrders;
 
-  const handleAcceptOrder = (orderId: string) => {
-    updateOrderStatus(orderId, "confirmed");
-    setOrders(prev =>
-      prev.map(order =>
-        order.id === orderId ? { ...order, status: "confirmed" } : order
-      )
-    );
+  // Calculate displayed orders based on filters and sorting
+  const displayedOrders = useMemo(() => {
+    debugger
+    if (!merchantOrders) return [];
+    let result = [...merchantOrders];
+    
+    // Apply filters
+    if (filters.orderId || filters.customer || filters.product) {
+      result = result.filter(order => 
+        (filters.orderId ? order.id?.toLowerCase().includes(filters.orderId.toLowerCase()) : true) &&
+        (filters.customer ? order.customerName?.toLowerCase().includes(filters.customer.toLowerCase()) : true) &&
+        (filters.product ? order.productName?.toLowerCase().includes(filters.product.toLowerCase()) : true)
+      );
+    }
+    
+    // Apply sorting
+    if (sortField) {
+      result = [...result].sort((a, b) => {
+        // Get values with proper typing
+        const aValue = a[sortField as keyof typeof a];
+        const bValue = b[sortField as keyof typeof b];
+        
+        // Function to get comparable value from any type
+        const getComparableValue = (value: any): string | number => {
+          // Handle array type
+          if (Array.isArray(value)) {
+            const firstItem = value[0];
+            if (firstItem) {
+              // If items have a date field, use that for comparison
+              if (firstItem && typeof firstItem === 'object' && 'date' in firstItem) {
+                return new Date(firstItem.date).getTime();
+              }
+              // If items have a label field, use that for comparison
+              if (firstItem && typeof firstItem === 'object' && 'label' in firstItem) {
+                return String(firstItem.label).toLowerCase();
+              }
+            }
+            return ''; // Default for empty arrays
+          }
+          
+          // Handle date fields
+          if (sortField === 'orderDate' || sortField === 'deliveryDate' || sortField === 'shippingDate') {
+            return value ? new Date(String(value)).getTime() : 0;
+          }
+          
+          // Handle numeric fields
+          if (sortField === 'totalAmount') {
+            return Number(String(value || '').replace(/[^0-9.-]+/g,'') || 0);
+          }
+          
+          if (sortField === 'quantity') {
+            return parseInt(String(value || '').replace(/[^0-9]/g, '') || '0', 10) || 0;
+          }
+          
+          // Default to string comparison
+          return String(value || '').toLowerCase();
+        };
+        
+        // Get comparable values
+        const compareA = getComparableValue(aValue);
+        const compareB = getComparableValue(bValue);
+        
+        // Perform the comparison
+        if (compareA < compareB) return sortDirection === 'asc' ? -1 : 1;
+        if (compareA > compareB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    
+    return result;
+  }, [merchantOrders, filters, sortField, sortDirection]);
+
+  // Reset to first page when filters/sorting changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, sortField, sortDirection, pageSize]);
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(displayedOrders.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedOrders = displayedOrders.slice(startIndex, startIndex + pageSize);
+
+  const handleAcceptOrder = async (orderId: string) => {
+    await updateOrderStatus(orderId, "confirmed");
   };
 
-  const handleRejectOrder = (orderId: string) => {
-    updateOrderStatus(orderId, "cancelled");
-    setOrders(prev =>
-      prev.map(order =>
-        order.id === orderId ? { ...order, status: "cancelled" } : order
-      )
-    );
+  const handleRejectOrder = async (orderId: string) => {
+    await updateOrderStatus(orderId, "cancelled");
   };
 
   const getStatusColor = (status: string) => {
@@ -106,19 +169,13 @@ const MerchantOrders = () => {
   };
 
   const handleApplyFilter = () => {
-    const filtered = merchantOrders.filter(order =>
-      order.id.toLowerCase().includes(filters.orderId.toLowerCase()) &&
-      order.customerName.toLowerCase().includes(filters.customer.toLowerCase()) &&
-      order.productName.toLowerCase().includes(filters.product.toLowerCase())
-    );
-    setOrders(sortOrders(filtered));
+    // The filtering is already handled by the displayedOrders useMemo
     setCurrentPage(1);
     setShowFilterCard(false);
   };
 
   const handleCancelFilter = () => {
     setFilters({ orderId: "", customer: "", product: "" });
-    setOrders(sortOrders(merchantOrders));
     setCurrentPage(1);
     setShowFilterCard(false);
   };
@@ -134,8 +191,9 @@ const MerchantOrders = () => {
     }
     
     // Apply sorting to current orders
-    const currentFiltered = orders;
-    setOrders(sortOrders(currentFiltered));
+    const currentFiltered = [...merchantOrders];
+    // Note: setOrders is not defined in this component
+    // The sorting is already handled in the displayedOrders useMemo
     setCurrentPage(1); // Reset to first page when sorting
   };
 
@@ -152,10 +210,6 @@ const MerchantOrders = () => {
     setSelectedOrder(order);
     setIsDialogOpen(true);
   };
-
-  const totalPages = Math.ceil(orders.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedOrders = orders.slice(startIndex, startIndex + pageSize);
 
   return (
     <div className="p-6 space-y-6">
@@ -311,53 +365,54 @@ const MerchantOrders = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedOrders.map(order => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.customerName}</TableCell>
-                    <TableCell>{order.productName}</TableCell>
-                    <TableCell>{order.quantity}</TableCell>
-                    <TableCell>{order.totalAmount}</TableCell>
-                    <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(order.status)}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleViewDetails(order)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {order.status === "processing" && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-green-600 hover:text-green-700"
-                              onClick={() => handleAcceptOrder(order.id)}
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => handleRejectOrder(order.id)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {paginatedOrders.length === 0 && (
+                {paginatedOrders && paginatedOrders.length > 0 ? (
+                  paginatedOrders.map(order => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableCell>{order.customerName}</TableCell>
+                      <TableCell>{order.productName}</TableCell>
+                      <TableCell>{order.quantity}</TableCell>
+                      <TableCell>{order.totalAmount}</TableCell>
+                      <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusColor(order.status)}>
+                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleViewDetails(order)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {order.status === "processing" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-green-600 hover:text-green-700"
+                                onClick={() => handleAcceptOrder(order.id)}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => handleRejectOrder(order.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
-                      No orders found for selected filters.
+                      {merchantOrders.length === 0 ? 'No orders found' : 'No orders match the current filters'}
                     </TableCell>
                   </TableRow>
                 )}
@@ -366,10 +421,10 @@ const MerchantOrders = () => {
           </div>
 
           {/* Pagination */}
-          {orders.length > 0 && (
+          {merchantOrders.length > 0 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
-                Showing {startIndex + 1} to {Math.min(startIndex + pageSize, orders.length)} of {orders.length} orders
+                Showing {startIndex + 1} to {Math.min(startIndex + pageSize, merchantOrders.length)} of {merchantOrders.length} orders
               </div>
               <div className="flex items-center space-x-4">
                 {/* Page Size Selector */}
