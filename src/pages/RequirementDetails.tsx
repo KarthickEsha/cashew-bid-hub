@@ -162,7 +162,7 @@ const RequirementDetails = () => {
 
   // Handle response click to show detail popup
   const handleResponseClick = (response: any) => {
-    setSelectedResponse(response);
+    setSelectedResponse({...response, status: ''}); // Reset status to show placeholder
     setShowResponseDetail(true);
   };
 
@@ -547,13 +547,13 @@ const RequirementDetails = () => {
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select 
-                  defaultValue={selectedResponse.status}
+                  value={selectedResponse.status}
                   onValueChange={(value) => {
                     setSelectedResponse({...selectedResponse, status: value});
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="new">Selected</SelectItem>
@@ -625,7 +625,7 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
               <Label htmlFor="status">Status</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="new">Selected</SelectItem>

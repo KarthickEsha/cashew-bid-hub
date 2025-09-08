@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,116 +11,28 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Make sure you have your Select component
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog"; // Add Dialog components
-
-const mockOrders = [
-  {
-    id: "ORD-001",
-    customerName: "Restaurant ABC",
-    productName: "Premium Cashews W240",
-    quantity: "100kg",
-    totalAmount: 850,
-    date: "2024-01-15",
-    status: "pending",
-    deliveryDate: "2024-01-25",
-  },
-  {
-    id: "ORD-002",
-    customerName: "Food Corp Ltd",
-    productName: "Organic Cashews W320",
-    quantity: "200kg",
-    totalAmount: 1560,
-    date: "2024-01-14",
-    status: "accepted",
-    deliveryDate: "2024-01-28",
-  },
-  {
-    id: "ORD-003",
-    customerName: "Snack Factory",
-    productName: "Broken Cashews BB",
-    quantity: "300kg",
-    totalAmount: 1860,
-    date: "2024-01-13",
-    status: "shipped",
-    deliveryDate: "2024-01-20",
-  },
-  {
-    id: "ORD-004",
-    customerName: "Cafe Delight",
-    productName: "Cashew Kernels W180",
-    quantity: "150kg",
-    totalAmount: 1200,
-    date: "2024-01-12",
-    status: "pending",
-    deliveryDate: "2024-01-22",
-  },
-  {
-    id: "ORD-005",
-    customerName: "Bistro House",
-    productName: "Organic Almonds",
-    quantity: "250kg",
-    totalAmount: 2500,
-    date: "2024-01-11",
-    status: "accepted",
-    deliveryDate: "2024-01-30",
-  },
-  {
-    id: "ORD-006",
-    customerName: "Gourmet Snacks",
-    productName: "Walnuts Premium",
-    quantity: "180kg",
-    totalAmount: 2000,
-    date: "2024-01-10",
-    status: "shipped",
-    deliveryDate: "2024-01-18",
-  },
-  {
-    id: "ORD-007",
-    customerName: "Healthy Bites",
-    productName: "Pistachios Roasted",
-    quantity: "120kg",
-    totalAmount: 1500,
-    date: "2024-01-09",
-    status: "pending",
-    deliveryDate: "2024-01-19",
-  },
-  {
-    id: "ORD-008",
-    customerName: "Snack World",
-    productName: "Cashew Pieces W210",
-    quantity: "220kg",
-    totalAmount: 1800,
-    date: "2024-01-08",
-    status: "rejected",
-    deliveryDate: "2024-01-20",
-  },
-  {
-    id: "ORD-009",
-    customerName: "Tasty Treats",
-    productName: "Almond Slivers",
-    quantity: "140kg",
-    totalAmount: 1400,
-    date: "2024-01-07",
-    status: "accepted",
-    deliveryDate: "2024-01-17",
-  },
-  {
-    id: "ORD-010",
-    customerName: "Nutri Snacks",
-    productName: "Mixed Nuts Premium",
-    quantity: "200kg",
-    totalAmount: 2200,
-    date: "2024-01-06",
-    status: "shipped",
-    deliveryDate: "2024-01-16",
-  },
-];
+} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { useOrders } from "@/hooks/useOrders";
+import { useProfile } from "@/hooks/useProfile";
 
 const MerchantOrders = () => {
+  const { orders: allOrders, updateOrderStatus } = useOrders();
+  const { profile } = useProfile();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  const [orders, setOrders] = useState(mockOrders);
+  
+  // Get orders for current merchant
+  const merchantOrders = useMemo(() => {
+    return allOrders.filter(order => order.merchantId === profile?.id);
+  }, [allOrders, profile?.id]);
+
+  const [orders, setOrders] = useState(merchantOrders);
+  
+  // Update orders when merchantOrders changes
+  useEffect(() => {
+    setOrders(merchantOrders);
+  }, [merchantOrders]);
   const [filters, setFilters] = useState({ orderId: "", customer: "", product: "" });
   const [showFilterCard, setShowFilterCard] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -129,30 +41,34 @@ const MerchantOrders = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const handleAcceptOrder = (orderId: string) => {
+    updateOrderStatus(orderId, "confirmed");
     setOrders(prev =>
       prev.map(order =>
-        order.id === orderId ? { ...order, status: "accepted" } : order
+        order.id === orderId ? { ...order, status: "confirmed" } : order
       )
     );
   };
 
   const handleRejectOrder = (orderId: string) => {
+    updateOrderStatus(orderId, "cancelled");
     setOrders(prev =>
       prev.map(order =>
-        order.id === orderId ? { ...order, status: "rejected" } : order
+        order.id === orderId ? { ...order, status: "cancelled" } : order
       )
     );
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
+      case "processing":
         return "destructive";
-      case "accepted":
+      case "confirmed":
         return "default";
       case "shipped":
         return "secondary";
-      case "rejected":
+      case "delivered":
+        return "default";
+      case "cancelled":
         return "outline";
       default:
         return "default";
@@ -190,7 +106,7 @@ const MerchantOrders = () => {
   };
 
   const handleApplyFilter = () => {
-    const filtered = mockOrders.filter(order =>
+    const filtered = merchantOrders.filter(order =>
       order.id.toLowerCase().includes(filters.orderId.toLowerCase()) &&
       order.customerName.toLowerCase().includes(filters.customer.toLowerCase()) &&
       order.productName.toLowerCase().includes(filters.product.toLowerCase())
@@ -202,7 +118,7 @@ const MerchantOrders = () => {
 
   const handleCancelFilter = () => {
     setFilters({ orderId: "", customer: "", product: "" });
-    setOrders(sortOrders(mockOrders));
+    setOrders(sortOrders(merchantOrders));
     setCurrentPage(1);
     setShowFilterCard(false);
   };
@@ -401,9 +317,9 @@ const MerchantOrders = () => {
                     <TableCell>{order.customerName}</TableCell>
                     <TableCell>{order.productName}</TableCell>
                     <TableCell>{order.quantity}</TableCell>
-                    <TableCell>${order.totalAmount}</TableCell>
-                    <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(order.deliveryDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{order.totalAmount}</TableCell>
+                    <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusColor(order.status)}>
                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -414,7 +330,7 @@ const MerchantOrders = () => {
                         <Button variant="ghost" size="sm" onClick={() => handleViewDetails(order)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {order.status === "pending" && (
+                        {order.status === "processing" && (
                           <>
                             <Button
                               variant="ghost"
