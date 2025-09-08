@@ -88,7 +88,7 @@ const MerchantConfirmedOrders = () => {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search customer, product..."
-                    className="pl-8 border-input focus:border-ring focus:ring-ring"
+                    className="pl-8 border-input focus:ring-ring"
                     value={tempSearchFilter}
                     onChange={(e) => setTempSearchFilter(e.target.value)}
                   />

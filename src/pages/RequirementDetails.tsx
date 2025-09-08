@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRequirements } from '@/hooks/useRequirements';
 import { useResponses } from '@/hooks/useResponses';
+import { X } from 'lucide-react';
 import {
   ArrowLeft,
   Calendar,
@@ -30,7 +31,14 @@ const RequirementDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getMyRequirements } = useRequirements();
-  const { getResponsesByRequirementId, updateResponseStatus } = useResponses();
+  const { 
+    getResponsesByRequirementId, 
+    updateResponseStatus, 
+    deleteResponse 
+  } = useResponses();
+  
+  // State for managing responses
+  const [responses, setResponses] = useState(getResponsesByRequirementId(id || ''));
   
   // State for managing responses popup
   const [showAllResponses, setShowAllResponses] = useState(false);
@@ -65,8 +73,22 @@ const RequirementDetails = () => {
     );
   }
 
-  // Get dynamic responses from merchants
-  const responses = getResponsesByRequirementId(id || '');
+  // Handle response deletion
+  const handleDeleteResponse = (responseId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    
+    // Optimistic UI update
+    setResponses(prev => prev.filter(r => r.id !== responseId));
+    
+    // Call the API to delete
+    deleteResponse(responseId);
+    
+    // Show success message
+    toast({
+      title: "Response Deleted",
+      description: "The response has been removed successfully.",
+    });
+  };
 
   // Mock specifications - in real app this would come from requirement data
   const mockSpecifications = {
@@ -144,8 +166,27 @@ const RequirementDetails = () => {
   };
 
   // Handle status update for response
-  const handleStatusUpdate = (responseId: string, status: string) => {
-    updateResponseStatus(responseId, status as any);
+  const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected') => {
+    // Update the response status in the backend
+    updateResponseStatus(responseId, status);
+    
+    // Update the local state to reflect the change
+    setResponses(prevResponses => 
+      prevResponses.map(response => 
+        response.id === responseId 
+          ? { ...response, status }
+          : response
+      )
+    );
+    
+    // If we're viewing this response in the detail view, update that too
+    if (selectedResponse?.id === responseId) {
+      setSelectedResponse(prev => ({
+        ...prev!,
+        status
+      }));
+    }
+    
     toast({
       title: "Status Updated",
       description: `Response status changed to ${status}`,
@@ -285,7 +326,7 @@ const RequirementDetails = () => {
         {/* Sidebar - Responses */}
         <div className="space-y-6">
           {/* All Responses */}
-          <Card>
+          <Card className="h-full flex flex-col">
             <CardHeader>
               <CardTitle className="text-lg flex items-center">
                 <MessageSquare size={18} className="mr-2" />
@@ -293,7 +334,7 @@ const RequirementDetails = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="max-h-80 overflow-y-auto space-y-3">
+              <div className="space-y-3 max-h-[45rem] overflow-y-auto pr-2">
                 {responses.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No responses yet. Merchants will see your requirement and can respond with their offers.
@@ -302,9 +343,16 @@ const RequirementDetails = () => {
                    responses.map((response) => (
                      <Card 
                        key={response.id} 
-                       className="p-3 border cursor-pointer hover:bg-accent/50 transition-colors"
+                       className="p-3 border cursor-pointer hover:bg-accent/50 transition-colors relative"
                        onClick={() => handleResponseClick(response)}
                      >
+                       <button
+                         className="absolute right-2 top-2 p-1 rounded-full hover:bg-accent transition-colors"
+                         onClick={(e) => handleDeleteResponse(response.id, e)}
+                         aria-label="Delete response"
+                       >
+                         <X className="h-4 w-4 text-muted-foreground" />
+                       </button>
                        <div className="flex items-center justify-between">
                          <div>
                            <div className="font-medium">{response.merchantName}</div>
@@ -571,7 +619,7 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
               <Label htmlFor="status">Status</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="new">Selected</SelectItem>

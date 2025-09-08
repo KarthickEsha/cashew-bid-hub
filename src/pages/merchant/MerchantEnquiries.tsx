@@ -381,21 +381,15 @@ const MerchantEnquiries = () => {
                   </TableCell>
                   <TableCell>
                     <Badge variant={
-                      enquiry.status === 'pending' 
-                        ? 'default' 
-                        : enquiry.status === 'active' 
-                          ? 'secondary' 
-                          : enquiry.status === 'confirmed' 
-                            ? 'outline' 
+                      enquiry.status === 'pending'
+                        ? 'default'
+                        : enquiry.status === 'active'
+                          ? 'secondary'
+                          : enquiry.status === 'confirmed'
+                            ? 'outline'
                             : 'destructive'
                     }>
-                      {enquiry.status === 'pending' 
-                        ? 'Active' 
-                        : enquiry.status === 'responded' 
-                          ? 'Responded' 
-                          : enquiry.status === 'confirmed' 
-                            ? 'Confirmed' 
-                            : enquiry.status === 'rejected' ? 'Rejected' : 'Pending'}
+                      {enquiry.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -493,18 +487,18 @@ const MerchantEnquiries = () => {
                     placeholder="Enter available quantity"
                     value={availableQuantity}
                     onChange={(e) => setAvailableQuantity(e.target.value)}
-                    className="border-input focus:border-ring focus:ring-ring"
+                    className="border-input"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Your Price (₹/kg) *</Label>
+                  <Label className="text-sm font-medium">Your Price (₹) *</Label>
                   <Input
                     id="merchantPrice"
                     type="number"
                     placeholder="Enter your price per kg"
                     value={merchantPrice}
                     onChange={(e) => setMerchantPrice(e.target.value)}
-                    className="border-input focus:border-ring focus:ring-ring"
+                    className="border-input"
                   />
                 </div>
               </div>
@@ -517,31 +511,34 @@ const MerchantEnquiries = () => {
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder="Type your reply message to the customer..."
                   rows={3}
-                  className="border-input focus:border-ring focus:ring-ring"
+                  className="border-input focus:ring-ring"
                 />
               </div>
 
               <div className="flex gap-2 pt-4">
                 {/* Primary Button using theme */}
-                <Button onClick={handleSubmitResponse}
-                  className="flex-1"
+                <Button
+                  onClick={handleSubmitResponse}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   Submit Response
                 </Button>
 
+
                 {/* Outline Button using theme */}
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => {
                     setResponseModalOpen(false);
                     setMerchantPrice('');
                     setAvailableQuantity('');
                     setRemarks('');
                   }}
-                  className="border-input"
+                  className="text-purple-600 hover:bg-purple-600 hover:text-white"
                 >
                   Cancel
                 </Button>
+
               </div>
 
             </div>
