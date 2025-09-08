@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRequirements } from '@/hooks/useRequirements';
 import { useResponses } from '@/hooks/useResponses';
+import { useOrders } from '@/hooks/useOrders';
 import { X } from 'lucide-react';
 import {
   ArrowLeft,
@@ -30,7 +31,7 @@ const RequirementDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getMyRequirements } = useRequirements();
+  const { getMyRequirements, updateRequirementStatus } = useRequirements();
   const { 
     getResponsesByRequirementId, 
     updateResponseStatus, 
@@ -169,6 +170,11 @@ const RequirementDetails = () => {
   const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected') => {
     // Update the response status in the backend
     updateResponseStatus(responseId, status);
+    
+    // Update requirement status when response is accepted
+    if (status === 'accepted' && requirement) {
+      updateRequirementStatus(requirement.id, 'responded');
+    }
     
     // Update the local state to reflect the change
     setResponses(prevResponses => 

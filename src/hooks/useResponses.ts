@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useOrders } from './useOrders';
 
 export interface MerchantResponse {
   id: string;
@@ -54,9 +55,36 @@ export const useResponses = create<ResponsesState>()(
 
       updateResponseStatus: (responseId, status) => {
         set((state) => ({
-          responses: state.responses.map(response =>
-            response.id === responseId ? { ...response, status } : response
-          )
+          responses: state.responses.map(response => {
+            if (response.id === responseId) {
+              const updatedResponse = { ...response, status };
+              
+              // Create order when status is set to 'accepted'
+              if (status === 'accepted') {
+                const { addOrder } = useOrders.getState();
+                addOrder({
+                  requirementId: response.requirementId,
+                  responseId: response.id,
+                  productName: 'Cashews', // You might want to get this from requirement
+                  merchantName: response.merchantName,
+                  merchantId: response.merchantId,
+                  customerName: 'Current User', // You might want to get this from auth
+                  quantity: response.quantity,
+                  unitPrice: response.price,
+                  totalAmount: `$${(parseFloat(response.price.replace(/[^0-9.]/g, '')) * parseFloat(response.quantity.replace(/[^0-9.]/g, ''))).toLocaleString()}`,
+                  status: 'processing',
+                  orderDate: new Date().toISOString().split('T')[0],
+                  location: response.merchantLocation,
+                  grade: response.grade,
+                  origin: response.origin,
+                  remarks: response.message,
+                });
+              }
+              
+              return updatedResponse;
+            }
+            return response;
+          })
         }));
       },
 

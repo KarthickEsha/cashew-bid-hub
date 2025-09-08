@@ -25,6 +25,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useClerk } from "@clerk/clerk-react";
 import RoleSwitcher from "@/components/RoleSwitcher";
+import { useRequirements } from "@/hooks/useRequirements";
+import { useResponses } from "@/hooks/useResponses";
+import { useOrders } from "@/hooks/useOrders";
 
 const navItems = [
   {
@@ -78,6 +81,16 @@ export function MerchantSidebar() {
   const navigate = useNavigate();
   const { signOut } = useClerk();
   const currentPath = location.pathname;
+  
+  // Get dynamic counts
+  const { getRequirementsAsEnquiries } = useRequirements();
+  const { responses } = useResponses();
+  const { orders } = useOrders();
+  
+  const enquiriesCount = getRequirementsAsEnquiries().length;
+  const confirmedCount = responses.filter(r => r.status === 'accepted').length;
+  const rejectedCount = responses.filter(r => r.status === 'rejected').length;
+  const ordersCount = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -119,9 +132,9 @@ export function MerchantSidebar() {
                     <NavLink to={item.url} end className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span className="text-[15px]">{item.title}</span>}
-                      {item.url === "/merchant/orders" && !collapsed && (
+                      {item.url === "/merchant/orders" && !collapsed && ordersCount > 0 && (
                         <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
-                          3
+                          {ordersCount}
                         </Badge>
                       )}
                     </NavLink>
@@ -143,9 +156,19 @@ export function MerchantSidebar() {
                     <NavLink to={item.url} className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span className="text-[15px]">{item.title}</span>}
-                      {item.url === "/merchant/enquiries" && !collapsed && (
+                      {item.url === "/merchant/enquiries" && !collapsed && enquiriesCount > 0 && (
                         <Badge variant="destructive" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
-                          5
+                          {enquiriesCount}
+                        </Badge>
+                      )}
+                      {item.url === "/merchant/confirmed-orders" && !collapsed && confirmedCount > 0 && (
+                        <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
+                          {confirmedCount}
+                        </Badge>
+                      )}
+                      {item.url === "/merchant/rejected-orders" && !collapsed && rejectedCount > 0 && (
+                        <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
+                          {rejectedCount}
                         </Badge>
                       )}
                     </NavLink>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { useOrders } from "@/hooks/useOrders";
 import {
   Select,
   SelectContent,
@@ -33,6 +34,7 @@ import {
 
 const MyOrders = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const { orders, updateOrderStatus } = useOrders();
 
   // filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,7 +53,8 @@ const MyOrders = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [trackingOpen, setTrackingOpen] = useState(false);
 
-  const orders = [
+  // Add some mock orders if none exist
+  const allOrders = orders.length > 0 ? orders : [
     {
       id: "ORD-001",
       productName: "Premium W320 Cashews",
@@ -59,7 +62,7 @@ const MyOrders = () => {
       quantity: "25 tons",
       unitPrice: "$8,200/ton",
       totalAmount: "$205,000",
-      status: "confirmed",
+      status: "confirmed" as const,
       orderDate: "2024-08-20",
       shippingDate: "2024-08-22",
       deliveryDate: "2024-09-05",
@@ -72,60 +75,6 @@ const MyOrders = () => {
         { label: "In Transit", date: "2024-08-28", done: false },
         { label: "Delivered", date: "2024-09-05", done: false },
       ],
-    },
-    {
-      id: "ORD-002",
-      productName: "Organic SW240 Cashews",
-      merchantName: "Vietnam Nuts Ltd.",
-      quantity: "15 tons",
-      unitPrice: "$9,500/ton",
-      totalAmount: "$142,500",
-      status: "shipped",
-      orderDate: "2024-08-18",
-      shippingDate: "2024-08-22",
-      deliveryDate: "2024-09-01",
-      location: "Ho Chi Minh, Vietnam",
-      trackingNumber: "TRK987654321",
-      steps: [
-        { label: "Order Placed", date: "2024-08-18", done: true },
-        { label: "Confirmed", date: "2024-08-19", done: true },
-        { label: "Shipped", date: "2024-08-22", done: true },
-        { label: "In Transit", date: "2024-08-26", done: false },
-        { label: "Delivered", date: "2024-09-01", done: false },
-      ],
-    },
-    {
-      id: "ORD-003",
-      productName: "W240 Cashews",
-      merchantName: "African Cashew Co",
-      quantity: "30 tons",
-      unitPrice: "$7,800/ton",
-      totalAmount: "$234,000",
-      status: "delivered",
-      orderDate: "2024-08-10",
-      shippingDate: "2024-08-15",
-      deliveryDate: "2024-08-25",
-      location: "Accra, Ghana",
-      trackingNumber: "TRK555666777",
-      steps: [
-        { label: "Order Placed", date: "2024-08-10", done: true },
-        { label: "Confirmed", date: "2024-08-12", done: true },
-        { label: "Shipped", date: "2024-08-15", done: true },
-        { label: "In Transit", date: "2024-08-20", done: true },
-        { label: "Delivered", date: "2024-08-25", done: true },
-      ],
-    },
-    {
-      id: "ORD-004",
-      productName: "Premium Cashews",
-      merchantName: "Cashew Palace",
-      quantity: "20 tons",
-      unitPrice: "$8,000/ton",
-      totalAmount: "$160,000",
-      status: "processing",
-      orderDate: "2024-08-22",
-      expectedShipping: "2024-08-28",
-      location: "Kerala, India",
     },
   ];
 
@@ -160,7 +109,7 @@ const MyOrders = () => {
   };
 
   // filtering
-  const filteredOrders = orders.filter((order) => {
+  const filteredOrders = allOrders.filter((order) => {
     const matchesSearch = appliedFilters.searchTerm
       ? order.productName.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase()) ||
         order.merchantName.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase()) ||
@@ -185,7 +134,7 @@ const MyOrders = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
-  const uniqueLocations = Array.from(new Set(orders.map((o) => o.location)));
+  const uniqueLocations = Array.from(new Set(allOrders.map((o) => o.location)));
 
   const handleApplyFilters = () => {
     setAppliedFilters({

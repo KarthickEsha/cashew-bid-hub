@@ -107,7 +107,24 @@ const MerchantEnquiries = () => {
   };
 
   // Get enquiries from local storage and combine with mock data
-  const storedEnquiries = getRequirementsAsEnquiries();
+  const storedEnquiries = getRequirementsAsEnquiries().map(enquiry => {
+    const responses = getResponsesByRequirementId(enquiry.id);
+    const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
+    const hasRejectedResponse = responses.some(r => r.status === 'rejected');
+    
+    let status = enquiry.status;
+    if (hasAcceptedResponse) {
+      status = 'confirmed';
+    } else if (hasRejectedResponse && !hasAcceptedResponse) {
+      status = 'rejected';
+    }
+    
+    return {
+      ...enquiry,
+      status,
+      buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined
+    };
+  });
   const allEnquiries = [...mockEnquiries, ...storedEnquiries];
 
   // Filter out expired enquiries
