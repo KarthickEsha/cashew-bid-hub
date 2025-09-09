@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRequirements } from '@/hooks/useRequirements';
 import { useResponses } from '@/hooks/useResponses';
 import { useOrders } from '@/hooks/useOrders';
+import { Textarea } from '@/components/ui/textarea';
 import { X } from 'lucide-react';
 import {
   ArrowLeft,
@@ -46,6 +47,8 @@ const RequirementDetails = () => {
   const [showResponseDetail, setShowResponseDetail] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [status, setStatus] = useState('');
+  const [remarks, setRemarks] = useState('');
 
   // Get requirements and find the one with matching ID
   const requirements = getMyRequirements();
@@ -162,7 +165,9 @@ const RequirementDetails = () => {
 
   // Handle response click to show detail popup
   const handleResponseClick = (response: any) => {
-    setSelectedResponse({...response, status: ''}); // Reset status to show placeholder
+    setSelectedResponse(response);
+    setStatus(''); // Reset status to show placeholder
+    setRemarks('');
     setShowResponseDetail(true);
   };
 
@@ -340,7 +345,7 @@ const RequirementDetails = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-[45rem] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[45rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-purple-100">
                 {responses.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No responses yet. Merchants will see your requirement and can respond with their offers.
@@ -544,31 +549,45 @@ const RequirementDetails = () => {
                 <div className="font-medium">{selectedResponse.quantity}</div>
               </div>
               
-              <div>
+               <div>
                 <Label htmlFor="status">Status</Label>
-                <Select 
-                  value={selectedResponse.status}
-                  onValueChange={(value) => {
-                    setSelectedResponse({...selectedResponse, status: value});
-                  }}
-                >
+                <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Open" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="new">Selected</SelectItem>
-                    <SelectItem value="accepted">Confirmation</SelectItem>
+                    <SelectItem value="accepted">Confirmed</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="new">Open</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="remarks">Remarks</Label>
+                <Textarea 
+                  id="remarks"
+                  placeholder="Add your remarks here..."
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  className="mt-1"
+                />
               </div>
               
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setShowResponseDetail(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => handleStatusUpdate(selectedResponse.id, selectedResponse.status)}>
-                  Submit
+                <Button 
+                  onClick={() => {
+                    updateResponseStatus(selectedResponse.id, status as any);
+                    setShowResponseDetail(false);
+                    setStatus('');
+                    setRemarks('');
+                  }}
+                  disabled={!status}
+                >
+                  Update Status
                 </Button>
               </div>
             </div>

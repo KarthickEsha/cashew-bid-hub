@@ -14,17 +14,24 @@ import cashewHero from "@/assets/cashew-hero.jpg";
 import { Link, useNavigate } from "react-router-dom"; // ✅ import navigate
 import { useRole } from "@/hooks/useRole";
 import { useRequirements } from "@/hooks/useRequirements";
+import { useOrders } from "@/hooks/useOrders";
 
 const Dashboard = () => {
   const { role, setRole } = useRole();
   const navigate = useNavigate(); // ✅ initialize navigate
   const { getMyRequirements } = useRequirements();
+  const { orders } = useOrders();
   
   // Get dynamic data from requirements
   const requirements = getMyRequirements();
   const activeRequirements = requirements.filter(req => req.status === 'active').length;
   const draftRequirements = requirements.filter(req => req.status === 'draft').length;
   const totalResponses = requirements.reduce((acc, req) => acc + (req.responsesCount || 0), 0);
+  
+  // Get dynamic order counts
+  const totalOrders = orders.length;
+  const confirmedOrders = orders.filter(order => order.status === 'confirmed').length;
+  const pendingOrders = orders.filter(order => order.status === 'processing').length;
   
   // Calculate total value (mock calculation - in real app this would come from orders)
   const totalValue = requirements.reduce((acc, req) => {
@@ -50,11 +57,11 @@ const Dashboard = () => {
       trend: `From ${requirements.length} requirements`,
     },
     {
-      title: "Pending Orders",
-      value: "5", // This would come from orders data in real app
+      title: "Total Orders",
+      value: totalOrders.toString(),
       icon: Clock,
       color: "text-orange-500",
-      trend: "3 awaiting confirmation",
+      trend: `${confirmedOrders} confirmed, ${pendingOrders} pending`,
     },
     {
       title: "Total Value",

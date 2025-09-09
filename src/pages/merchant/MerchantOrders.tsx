@@ -216,10 +216,20 @@ const MerchantOrders = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Orders</h1>
+          <h1 className="text-3xl font-bold text-primary">Buyer Response</h1>
           <p className="text-muted-foreground mt-2">
-            Manage buyer orders and shipments
+            Manage buyer responses and orders
           </p>
+        </div>
+        <div className="flex gap-4">
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground">Current Enquiries</div>
+            <div className="text-2xl font-bold text-primary">{allOrders.filter(o => o.status === 'processing').length}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground">Past Date Enquiries</div>
+            <div className="text-2xl font-bold text-muted-foreground">{allOrders.filter(o => o.status !== 'processing').length}</div>
+          </div>
         </div>
         <Button
           variant="outline"
