@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Check, X, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Eye, Check, X, Filter, ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,12 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { useOrders } from "@/hooks/useOrders";
 import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/hooks/use-toast";
 
 const MerchantOrders = () => {
-  const { orders: allOrders, updateOrderStatus } = useOrders();
+  const { orders: allOrders, updateOrderStatus, deleteOrder } = useOrders();
+  const { toast } = useToast();
   const { profile } = useProfile();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -27,6 +29,8 @@ const MerchantOrders = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   // Get orders for current merchant
   const merchantOrders = allOrders;
@@ -210,6 +214,25 @@ const MerchantOrders = () => {
     setIsDialogOpen(true);
   };
 
+  const handleDeleteClick = (orderId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOrderToDelete(orderId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (orderToDelete) {
+      deleteOrder(orderToDelete);
+      toast({
+        title: "Buyer Response Deleted",
+        description: "The response has been successfully deleted.",
+        variant: "default",
+      });
+      setIsDeleteDialogOpen(false);
+      setOrderToDelete(null);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -381,8 +404,22 @@ const MerchantOrders = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleViewDetails(order)}>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleViewDetails(order)}
+                            title="View Details"
+                          >
                             <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => handleDeleteClick(order.id, e)}
+                            title="Delete Order"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                           {order.status === "processing" && (
                             <>
@@ -549,6 +586,34 @@ const MerchantOrders = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Response</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this response? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setOrderToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleConfirmDelete}
+            >
+              Delete Response
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

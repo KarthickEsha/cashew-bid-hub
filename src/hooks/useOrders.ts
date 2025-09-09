@@ -39,6 +39,7 @@ interface OrdersState {
   getOrdersByMerchant: (merchantId: string) => OrderItem[];
   getOrderById: (orderId: string) => OrderItem | undefined;
   updateOrderSteps: (orderId: string, steps: OrderItem['steps']) => void;
+  deleteOrder: (orderId: string) => void;
 }
 
 const generateDefaultSteps = (status: OrderItem['status']) => {
@@ -154,6 +155,11 @@ export const useOrders = create<OrdersState>()(
       getOrderById: (orderId) => {
         const { orders } = get();
         return orders.find(order => order.id === orderId);
+      },
+      deleteOrder: (orderId) => {
+        set((state) => ({
+          orders: state.orders.filter(order => order.id !== orderId)
+        }));
       },
     }),
     {
