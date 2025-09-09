@@ -10,7 +10,7 @@ export interface MerchantResponse {
   merchantLocation: string;
   price: string;
   responseDate: string;
-  status: 'new' | 'viewed' | 'accepted' | 'rejected';
+  status: 'new' | 'viewed' | 'Accepted' | 'Rejected';
   grade: string;
   quantity: string;
   origin: string;
@@ -26,7 +26,7 @@ interface ResponsesState {
   responses: MerchantResponse[];
   addResponse: (response: Omit<MerchantResponse, 'id' | 'createdAt'>) => void;
   getResponsesByRequirementId: (requirementId: string) => MerchantResponse[];
-  updateResponseStatus: (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected', remarks?: string) => void;
+  updateResponseStatus: (responseId: string, status: 'new' | 'viewed' | 'Accepted' | 'Rejected', remarks?: string) => void;
   getResponseCount: (requirementId: string) => number;
   deleteResponse: (responseId: string) => void;
 }
@@ -64,8 +64,8 @@ export const useResponses = create<ResponsesState>()(
                 ...(remarks !== undefined ? { remarks } : {})
               };
               
-              // Create order when status is set to 'accepted'
-              if (status === 'accepted') {
+              // Create order when status is set to 'Accepted'
+              if (status === 'Accepted') {
                 const { addOrder } = useOrders.getState();
                 addOrder({
                   requirementId: response.requirementId,

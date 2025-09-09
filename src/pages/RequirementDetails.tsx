@@ -171,12 +171,12 @@ const RequirementDetails = () => {
   };
 
   // Handle status update for response
-  const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected', remarks: string = '') => {
+  const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'Accepted' | 'Rejected', remarks: string = '') => {
     // Update the response status in the backend
     updateResponseStatus(responseId, status, remarks);
 
-    // Update requirement status when response is accepted
-    if (status === 'accepted' && requirement) {
+    // Update requirement status when response is Accepted
+    if (status === 'Accepted' && requirement) {
       updateRequirementStatus(requirement.id, 'responded');
     }
 
@@ -501,7 +501,7 @@ const RequirementDetails = () => {
                         <Button
                           className="w-full"
                           onClick={() => {
-                            updateResponseStatus(response.id, 'accepted');
+                            updateResponseStatus(response.id, 'Accepted');
                             toast({
                               title: "Order Placed",
                               description: `Order placed with ${response.merchantName}`,
@@ -566,8 +566,8 @@ const RequirementDetails = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="new">Selected</SelectItem>
-                    <SelectItem value="accepted">Confirmation</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="Accepted">Confirmation</SelectItem>
+                    <SelectItem value="Rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -665,8 +665,8 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="new">Selected</SelectItem>
-                  <SelectItem value="accepted">Confirmation</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="Accepted">Confirmation</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -89,8 +89,8 @@ export function MerchantSidebar() {
   const { orders } = useOrders();
 
   const enquiriesCount = getRequirementsAsEnquiries().length;
-  const confirmedCount = responses.filter(r => r.status === 'accepted').length;
-  const rejectedCount = responses.filter(r => r.status === 'rejected').length;
+  const confirmedCount = responses.filter(r => r.status === 'Accepted').length;
+  const rejectedCount = responses.filter(r => r.status === 'Rejected').length;
   const ordersCount = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
 
   const isActive = (path: string) => currentPath === path;

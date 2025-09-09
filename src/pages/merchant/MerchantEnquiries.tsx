@@ -14,15 +14,7 @@ import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
 import { useToast } from "@/hooks/use-toast";
 
-const mockEnquiries = [
-  // { id: 1, customerName: "John Doe", productName: "Premium Cashews W240", quantity: "100kg", message: "I'm interested in bulk purchase for my restaurant chain. Can you provide pricing for 500kg monthly supply?", date: "2024-01-15", status: "pending", expectedPrice: 8200, fixedPrice: 8500, origin: "India", grade: "W240" },
-  // { id: 2, customerName: "Sarah Wilson", productName: "Organic Cashews W320", quantity: "50kg", message: "Need organic certification details and delivery timeline to New York.", date: "2024-01-14", status: "responded", expectedPrice: 7600, fixedPrice: 7800, origin: "Vietnam", grade: "W320" },
-  // { id: 3, customerName: "Mike Johnson", productName: "Broken Cashews BB", quantity: "200kg", message: "Looking for competitive pricing for broken cashews for my processing unit.", date: "2024-01-13", status: "pending", expectedPrice: 7200, fixedPrice: 7500, origin: "Ghana", grade: "mixed" },
-  // { id: 4, customerName: "Alice Brown", productName: "Cashews W180", quantity: "75kg", message: "Can you provide wholesale pricing?", date: "2024-01-12", status: "pending", expectedPrice: 8400, fixedPrice: 8500, origin: "India", grade: "W180" },
-  // { id: 5, customerName: "Bob Smith", productName: "Premium Cashews W240", quantity: "120kg", message: "Interested in monthly subscription.", date: "2024-01-11", status: "responded", expectedPrice: 8100, fixedPrice: 8300, origin: "India", grade: "W240" },
-  // { id: 6, customerName: "Carol White", productName: "Organic Cashews W320", quantity: "90kg", message: "Do you ship internationally?", date: "2024-01-10", status: "pending", expectedPrice: 7700, fixedPrice: 8000, origin: "Vietnam", grade: "W320" },
-  // { id: 7, customerName: "David Green", productName: "Broken Cashews BB", quantity: "150kg", message: "Need delivery by next week.", date: "2024-01-09", status: "pending", expectedPrice: 7000, fixedPrice: 7300, origin: "Tanzania", grade: "mixed" }
-];
+const mockEnquiries = [];
 
 const MerchantEnquiries = () => {
   const { getRequirementsAsEnquiries, updateRequirementStatus } = useRequirements();
@@ -109,14 +101,14 @@ const MerchantEnquiries = () => {
   // Get enquiries from local storage and combine with mock data
   const storedEnquiries = getRequirementsAsEnquiries().map(enquiry => {
     const responses = getResponsesByRequirementId(enquiry.id);
-    const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
-    const hasRejectedResponse = responses.some(r => r.status === 'rejected');
+    const hasAcceptedResponse = responses.some(r => r.status === 'Accepted');
+    const hasRejectedResponse = responses.some(r => r.status === 'Rejected');
     
     let status = enquiry.status;
     if (hasAcceptedResponse) {
       status = 'confirmed';
     } else if (hasRejectedResponse && !hasAcceptedResponse) {
-      status = 'rejected';
+      status = 'Rejected';
     }
     
     return {
@@ -603,8 +595,8 @@ const MerchantEnquiries = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="new">Selected</SelectItem>
-                          <SelectItem value="accepted">Confirmation</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
+                          <SelectItem value="Accepted">Confirmation</SelectItem>
+                          <SelectItem value="Rejected">Rejected</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button size="sm" className="w-full">Submit</Button>

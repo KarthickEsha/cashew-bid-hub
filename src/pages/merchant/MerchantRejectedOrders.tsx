@@ -22,7 +22,7 @@ const MerchantRejectedOrders = () => {
   const rejectedOrders = useMemo(() => {
     const enquiries = getRequirementsAsEnquiries();
     return responses
-      .filter(response => response.status === 'rejected')
+      .filter(response => response.status === 'Rejected')
       .map(response => {
         const enquiry = enquiries.find(e => e.id.toString() === response.requirementId);
         return {

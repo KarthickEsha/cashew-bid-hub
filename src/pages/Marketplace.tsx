@@ -271,6 +271,30 @@ const Marketplace = () => {
 
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
+  const placeOrder = () => {
+    const orderData = {
+      id: `ORD-${Date.now()}`,
+      requirementId: `REQ-${Date.now()}`,
+      responseId: `RES-${Date.now()}`,
+      productName: selectedProduct?.name || 'Cashew Nuts',
+      merchantName: selectedProduct?.merchantName || 'Premium Cashews Ltd',
+      merchantId: selectedProduct?.merchantId || 'merchant-123',
+      customerName: 'Customer',
+      quantity: quantity?.toString() || '1',
+      unitPrice: bidAmount?.toString() || '0',
+      totalAmount: totalValue.toString(),
+      status: 'processing',
+      orderDate: new Date().toISOString(),
+      location: selectedProduct?.location || 'Mumbai, India',
+      grade: selectedProduct?.grade || 'W320',
+      origin: selectedProduct?.origin || 'India',
+      steps: []
+    };
+
+    // Add order placement logic here
+    console.log(orderData);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
@@ -482,16 +506,16 @@ const Marketplace = () => {
                         <span className="text-muted-foreground">Grade:</span>
                         <div className="font-semibold">{product.grade}</div>
                       </div>
-                                          <div>
-                      <span className="text-muted-foreground">Quantity:</span>
-                      <div className="font-semibold">{product.quantity} {product.quantityUnit}</div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Price:</span>
-                      <div className="font-semibold text-primary">
-                        {product.pricePerKg}/kg
+                      <div>
+                        <span className="text-muted-foreground">Quantity:</span>
+                        <div className="font-semibold">{product.quantity} {product.quantityUnit}</div>
                       </div>
-                    </div>
+                      <div>
+                        <span className="text-muted-foreground">Price:</span>
+                        <div className="font-semibold text-primary">
+                          {product.pricePerKg}/kg
+                        </div>
+                      </div>
                       <div>
                         <span className="text-muted-foreground">Type:</span>
                         <div className="flex items-center">
