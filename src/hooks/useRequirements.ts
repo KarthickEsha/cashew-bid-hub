@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useResponses } from './useResponses';
 
 export interface Requirement {
   id: string;
@@ -204,21 +205,22 @@ export const useRequirements = create<RequirementsState>()(
       },
 
       getMyRequirements: () => {
-        const { requirements } = get();
+        const { responses } = useResponses.getState();
+        const requirements = get().requirements;
+        
         return requirements.map(req => ({
-          id: parseInt(req.id),
-          title: req.title || `${req.grade} Cashews for ${req.deliveryLocation}`,
+          id: req.id,
+          title: `${req.quantity} of ${req.grade} Cashews`,
           grade: req.grade,
-          quantity: `${req.quantity} kg`,
-          preferredOrigin: req.preferredOrigin || req.origin,
-          budgetRange: req.budgetRange || `₹${req.expectedPrice}/kg`,
-          deliveryLocation: req.deliveryLocation,
-          deliveryDeadline: req.deliveryDeadline,
-          requirementExpiry: req.requirementExpiry || req.deliveryDeadline,
+          quantity: req.quantity,
+          preferredOrigin: req.origin,
+          budgetRange: `₹${req.expectedPrice?.toLocaleString() || '0'}/kg`,
+          deliveryLocation: `${req.deliveryLocation}, ${req.city}, ${req.country}`,
+          requirementExpiry: req.deliveryDeadline,
           status: req.status,
-          responsesCount: req.responsesCount || 0,
-          createdDate: req.createdDate || req.createdAt.split('T')[0],
-          lastModified: req.lastModified || req.createdAt.split('T')[0]
+          createdDate: req.createdAt,
+          lastModified: (req as any).updatedAt || req.createdAt,
+          responsesCount: responses.filter(r => r.requirementId === req.id).length
         }));
       },
 

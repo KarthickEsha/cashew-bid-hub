@@ -46,10 +46,11 @@ const navItems = [
   //   icon: Plus,
   // },
   {
-    title: "Orders",
+    title: "Buyer Response",
     url: "/merchant/orders",
-    icon: ShoppingCart,
-  },
+    icon: MessageSquare, // or another relevant icon
+  }
+
   // {
   //   title: "Requirements",
   //   url: "/merchant/requirements",
@@ -81,12 +82,12 @@ export function MerchantSidebar() {
   const navigate = useNavigate();
   const { signOut } = useClerk();
   const currentPath = location.pathname;
-  
+
   // Get dynamic counts
   const { getRequirementsAsEnquiries } = useRequirements();
   const { responses } = useResponses();
   const { orders } = useOrders();
-  
+
   const enquiriesCount = getRequirementsAsEnquiries().length;
   const confirmedCount = responses.filter(r => r.status === 'accepted').length;
   const rejectedCount = responses.filter(r => r.status === 'rejected').length;

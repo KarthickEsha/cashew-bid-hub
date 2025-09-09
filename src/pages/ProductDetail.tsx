@@ -160,16 +160,16 @@ const ProductDetail = () => {
           {role !== "processor" && (
             <Card>
               <CardHeader>
-                <CardTitle>{product.pricingType === "bidding" ? "Place Bid" : "Place Order"}</CardTitle>
+                <CardTitle>{product.pricingType === "bidding" ? "Place Bid" : "My Offers"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium">Quantity (tons)</label>
+                    <label className="block text-sm font-medium">Quantity (kg)</label>
                     <Input value={bidQuantity} onChange={(e) => setBidQuantity(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">Your Price ($/ton)</label>
+                    <label className="block text-sm font-medium">Your Expected Price ($/kg)</label>
                     <Input value={bidPrice} onChange={(e) => setBidPrice(e.target.value)} />
                   </div>
                   {/* {product.pricingType === "bidding" && (
@@ -184,7 +184,7 @@ const ProductDetail = () => {
                   <Textarea value={bidMessage} onChange={(e) => setBidMessage(e.target.value)} />
                 </div>
                 <Button onClick={handlePlaceBid} className="w-full">
-                  {product.pricingType === "bidding" ? "Place Bid" : "Send Order Request"}
+                  {product.pricingType === "bidding" ? "Place Bid" : "Send Request"}
                 </Button>
               </CardContent>
             </Card>

@@ -303,7 +303,7 @@ const MerchantOrders = () => {
                     onClick={() => handleSort('customerName')}
                   >
                     <div className="flex items-center justify-between">
-                      Customer
+                      Buyer Name
                       {getSortIcon('customerName')}
                     </div>
                   </TableHead>
@@ -343,7 +343,7 @@ const MerchantOrders = () => {
                       {getSortIcon('date')}
                     </div>
                   </TableHead>
-                  <TableHead 
+                  {/* <TableHead 
                     className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('deliveryDate')}
                   >
@@ -351,7 +351,7 @@ const MerchantOrders = () => {
                       Delivery Date
                       {getSortIcon('deliveryDate')}
                     </div>
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead 
                     className="w-[7%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('status')}
@@ -374,7 +374,7 @@ const MerchantOrders = () => {
                       <TableCell>{order.quantity}</TableCell>
                       <TableCell>{order.totalAmount}</TableCell>
                       <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
-                      <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell>
+                      {/* <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell> */}
                       <TableCell>
                         <Badge variant={getStatusColor(order.status)}>
                           {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -513,10 +513,10 @@ const MerchantOrders = () => {
                 <span className="font-semibold">{new Date(selectedOrder.date).toLocaleDateString()}</span>
               </div>
 
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span className="font-medium text-muted-foreground">Delivery Date</span>
                 <span className="font-semibold">{new Date(selectedOrder.deliveryDate).toLocaleDateString()}</span>
-              </div>
+              </div> */}
 
               <div className="flex justify-between items-center">
                 <span className="font-medium text-muted-foreground">Status</span>

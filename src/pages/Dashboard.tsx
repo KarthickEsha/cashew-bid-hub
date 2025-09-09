@@ -42,19 +42,19 @@ const Dashboard = () => {
       trend: `${activeRequirements} active, ${draftRequirements} draft`,
       path: "/my-requirements"
     },
+     {
+      title: "Total Responses",
+      value: totalResponses.toString(),
+      icon: MessageSquare,
+      color: "text-green-500",
+      trend: `From ${requirements.length} requirements`,
+    },
     {
       title: "Pending Orders",
       value: "5", // This would come from orders data in real app
       icon: Clock,
       color: "text-orange-500",
       trend: "3 awaiting confirmation",
-    },
-    {
-      title: "Total Responses",
-      value: totalResponses.toString(),
-      icon: MessageSquare,
-      color: "text-green-500",
-      trend: `From ${requirements.length} requirements`,
     },
     {
       title: "Total Value",
