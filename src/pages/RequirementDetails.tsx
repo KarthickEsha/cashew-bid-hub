@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useRequirements } from '@/hooks/useRequirements';
 import { useResponses } from '@/hooks/useResponses';
 import { useOrders } from '@/hooks/useOrders';
-import { Textarea } from '@/components/ui/textarea';
 import { X } from 'lucide-react';
 import {
   ArrowLeft,
@@ -47,8 +46,6 @@ const RequirementDetails = () => {
   const [showResponseDetail, setShowResponseDetail] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
-  const [status, setStatus] = useState('');
-  const [remarks, setRemarks] = useState('');
 
   // Get requirements and find the one with matching ID
   const requirements = getMyRequirements();
@@ -165,16 +162,18 @@ const RequirementDetails = () => {
 
   // Handle response click to show detail popup
   const handleResponseClick = (response: any) => {
-    setSelectedResponse(response);
-    setStatus(''); // Reset status to show placeholder
-    setRemarks('');
+    setSelectedResponse({
+      ...response,
+      status: response.status || 'new',
+      remarks: response.remarks || ''
+    });
     setShowResponseDetail(true);
   };
 
   // Handle status update for response
-  const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected') => {
+  const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected', remarks: string = '') => {
     // Update the response status in the backend
-    updateResponseStatus(responseId, status);
+    updateResponseStatus(responseId, status, remarks);
     
     // Update requirement status when response is accepted
     if (status === 'accepted' && requirement) {
@@ -185,7 +184,11 @@ const RequirementDetails = () => {
     setResponses(prevResponses => 
       prevResponses.map(response => 
         response.id === responseId 
-          ? { ...response, status }
+          ? { 
+              ...response, 
+              status,
+              ...(remarks ? { remarks } : {})
+            }
           : response
       )
     );
@@ -194,7 +197,8 @@ const RequirementDetails = () => {
     if (selectedResponse?.id === responseId) {
       setSelectedResponse(prev => ({
         ...prev!,
-        status
+        status,
+        ...(remarks ? { remarks } : {})
       }));
     }
     
@@ -345,7 +349,7 @@ const RequirementDetails = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-[45rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-purple-100">
+              <div className="space-y-3 max-h-[45rem] overflow-y-auto pr-2">
                 {responses.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No responses yet. Merchants will see your requirement and can respond with their offers.
@@ -549,46 +553,44 @@ const RequirementDetails = () => {
                 <div className="font-medium">{selectedResponse.quantity}</div>
               </div>
               
-               <div>
+              <div>
                 <Label htmlFor="status">Status</Label>
-                <Select value={status} onValueChange={setStatus}>
+                <Select 
+                  value={selectedResponse.status}
+                  onValueChange={(value) => {
+                    setSelectedResponse({...selectedResponse, status: value});
+                  }}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Open" />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="accepted">Confirmed</SelectItem>
+                    <SelectItem value="new">Selected</SelectItem>
+                    <SelectItem value="accepted">Confirmation</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="new">Open</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <Label htmlFor="remarks">Remarks</Label>
-                <Textarea 
-                  id="remarks"
-                  placeholder="Add your remarks here..."
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
               
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowResponseDetail(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={() => {
-                    updateResponseStatus(selectedResponse.id, status as any);
-                    setShowResponseDetail(false);
-                    setStatus('');
-                    setRemarks('');
-                  }}
-                  disabled={!status}
-                >
-                  Update Status
-                </Button>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="remarks">Remarks</Label>
+                  <textarea
+                    id="remarks"
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={selectedResponse.remarks || ''}
+                    onChange={(e) => setSelectedResponse({...selectedResponse, remarks: e.target.value})}
+                    placeholder="Enter any remarks or notes..."
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => setShowResponseDetail(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => handleStatusUpdate(selectedResponse.id, selectedResponse.status, selectedResponse.remarks)}>
+                    Submit
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -603,12 +605,13 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
   isOpen: boolean;
   onClose: () => void;
   response: any;
-  onStatusUpdate: (responseId: string, status: string) => void;
+  onStatusUpdate: (responseId: string, status: string, remarks?: string) => void;
 }) => {
   const [selectedStatus, setSelectedStatus] = useState(response?.status || 'new');
+  const [remarks, setRemarks] = useState(response?.remarks || '');
 
   const handleSubmit = () => {
-    onStatusUpdate(response.id, selectedStatus);
+    onStatusUpdate(response.id, selectedStatus, remarks);
   };
 
   return (

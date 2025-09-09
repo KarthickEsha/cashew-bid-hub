@@ -21,10 +21,6 @@ import {
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useRequirements } from "@/hooks/useRequirements";
-import { useOrders } from "@/hooks/useOrders";
 
 const Marketplace = () => {
   const [filters, setFilters] = useState({
@@ -39,13 +35,6 @@ const Marketplace = () => {
   const [bidAmount, setBidAmount] = useState<number | "">("");
   const [quantity, setQuantity] = useState<number | "">("");
   const [totalValue, setTotalValue] = useState<number>(0);
-  const [expectedPrice, setExpectedPrice] = useState<number | "">("");
-  const [message, setMessage] = useState("");
-  const [isQuickOrderDialogOpen, setIsQuickOrderDialogOpen] = useState(false);
-  const [quickOrderProduct, setQuickOrderProduct] = useState<any>(null);
-  
-  const { addRequirement } = useRequirements();
-  const { addOrder } = useOrders();
 
   const [showFilters, setShowFilters] = useState(false); // 🔹 state for filter toggle
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card'); // 🔹 state for view toggle
@@ -281,68 +270,6 @@ const Marketplace = () => {
   };
 
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-
-  const handleSendResponse = () => {
-    if (selectedProduct && quantity && expectedPrice && message) {
-      // Add to requirements (which acts as enquiries in merchant view)
-      addRequirement({
-        grade: selectedProduct.grade,
-        quantity: `${quantity}kg`,
-        origin: 'india',
-        expectedPrice: Number(expectedPrice),
-        minSupplyQuantity: `${quantity}kg`,
-        deliveryLocation: 'India',
-        city: 'Mumbai',
-        country: 'India',
-        deliveryDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        specifications: message,
-        allowLowerBid: true,
-        date: new Date().toISOString().split('T')[0],
-        isDraft: false,
-        customerName: 'Current User',
-        status: 'active' as const
-      });
-      
-      // Close dialog and reset form
-      setSelectedProduct(null);
-      setQuantity("");
-      setExpectedPrice("");
-      setMessage("");
-    }
-  };
-
-  const handleQuickOrder = (product: any) => {
-    setQuickOrderProduct(product);
-    setIsQuickOrderDialogOpen(true);
-  };
-
-  const handleConfirmQuickOrder = () => {
-    if (quickOrderProduct && quantity) {
-      // Add order
-      addOrder({
-        requirementId: `quick-${Date.now()}`,
-        responseId: `response-${Date.now()}`,
-        productName: `${quickOrderProduct.grade} Cashews`,
-        merchantName: quickOrderProduct.merchantName,
-        merchantId: quickOrderProduct.id.toString(),
-        customerName: 'Current User',
-        quantity: `${quantity}kg`,
-        unitPrice: quickOrderProduct.pricePerKg,
-        totalAmount: `$${(parseFloat(quickOrderProduct.pricePerKg.replace('$', '')) * Number(quantity)).toLocaleString()}`,
-        status: 'processing',
-        orderDate: new Date().toISOString().split('T')[0],
-        location: quickOrderProduct.location,
-        grade: quickOrderProduct.grade,
-        origin: quickOrderProduct.origin,
-        remarks: 'Quick order from marketplace'
-      });
-
-      // Close dialog and reset
-      setIsQuickOrderDialogOpen(false);
-      setQuickOrderProduct(null);
-      setQuantity("");
-    }
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

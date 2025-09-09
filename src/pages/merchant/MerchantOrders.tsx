@@ -218,18 +218,8 @@ const MerchantOrders = () => {
         <div>
           <h1 className="text-3xl font-bold text-primary">Buyer Response</h1>
           <p className="text-muted-foreground mt-2">
-            Manage buyer responses and orders
+            Manage buyer response and shipments
           </p>
-        </div>
-        <div className="flex gap-4">
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground">Current Enquiries</div>
-            <div className="text-2xl font-bold text-primary">{allOrders.filter(o => o.status === 'processing').length}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground">Past Date Enquiries</div>
-            <div className="text-2xl font-bold text-muted-foreground">{allOrders.filter(o => o.status !== 'processing').length}</div>
-          </div>
         </div>
         <Button
           variant="outline"
@@ -534,6 +524,15 @@ const MerchantOrders = () => {
                   {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
                 </Badge>
               </div>
+
+              {selectedOrder.remarks && (
+                <div className="mt-4 pt-4 border-t">
+                  <h4 className="font-medium mb-2">Remarks</h4>
+                  <div className="bg-muted/50 p-3 rounded-md">
+                    <p className="text-sm">{selectedOrder.remarks}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

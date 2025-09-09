@@ -47,7 +47,7 @@ const navItems = [
   // },
   {
     title: "Buyer Response",
-    url: "/merchant/orders",
+    url: "/merchant/buyer-response",
     icon: MessageSquare, // or another relevant icon
   }
 
@@ -133,7 +133,7 @@ export function MerchantSidebar() {
                     <NavLink to={item.url} end className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span className="text-[15px]">{item.title}</span>}
-                      {item.url === "/merchant/orders" && !collapsed && ordersCount > 0 && (
+                      {item.url === "/merchant/buyer-response" && !collapsed && ordersCount > 0 && (
                         <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
                           {ordersCount}
                         </Badge>

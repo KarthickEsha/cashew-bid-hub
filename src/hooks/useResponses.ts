@@ -18,6 +18,7 @@ export interface MerchantResponse {
   deliveryTime: string;
   contact: string;
   message: string;
+  remarks?: string;
   createdAt: string;
 }
 
@@ -25,7 +26,7 @@ interface ResponsesState {
   responses: MerchantResponse[];
   addResponse: (response: Omit<MerchantResponse, 'id' | 'createdAt'>) => void;
   getResponsesByRequirementId: (requirementId: string) => MerchantResponse[];
-  updateResponseStatus: (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected') => void;
+  updateResponseStatus: (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected', remarks?: string) => void;
   getResponseCount: (requirementId: string) => number;
   deleteResponse: (responseId: string) => void;
 }
@@ -53,11 +54,15 @@ export const useResponses = create<ResponsesState>()(
         return responses.filter(response => response.requirementId === requirementId);
       },
 
-      updateResponseStatus: (responseId, status) => {
+      updateResponseStatus: (responseId, status, remarks) => {
         set((state) => ({
           responses: state.responses.map(response => {
             if (response.id === responseId) {
-              const updatedResponse = { ...response, status };
+              const updatedResponse = { 
+                ...response, 
+                status,
+                ...(remarks !== undefined ? { remarks } : {})
+              };
               
               // Create order when status is set to 'accepted'
               if (status === 'accepted') {

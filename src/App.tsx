@@ -88,7 +88,7 @@ const AppContent = () => {
         <Route path="/merchant/enquiries" element={<MerchantEnquiries />} />
         <Route path="/merchant/confirmed-orders" element={<MerchantConfirmedOrders />} />
         <Route path="/merchant/rejected-orders" element={<MerchantRejectedOrders />} />
-        <Route path="/merchant/orders" element={<MerchantOrders />} />
+        <Route path="/merchant/buyer-response" element={<MerchantOrders />} />
         <Route path="/merchant/requirements" element={<MerchantRequirements />} />
         
         {/* Catch-all route */}
