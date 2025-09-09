@@ -27,6 +27,14 @@ export interface User {
   name: string;
 }
 
+export interface Location {
+  country?: string;
+  region?: string;
+  city?: string;
+  address?: string;
+  postalCode?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -38,7 +46,7 @@ export interface Product {
   stock: number;
   price: number;
   unit: string;
-  location: string;
+  location: string | Location;
   expireDate: string;
   status: 'active' | 'out_of_stock';
   enquiries: number;

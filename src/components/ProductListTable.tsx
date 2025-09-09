@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit, MessageSquare, ShoppingCart, TrendingUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { Product } from '@/types/user';
+import { Product, Location } from '@/types/user';
 
 interface ProductListTableProps {
   products: Product[];
@@ -115,7 +115,12 @@ const ProductListTable = ({
                     </span>
                   </TableCell>
                   <TableCell>₹{product.price.toLocaleString("en-IN")}</TableCell>
-                  <TableCell>{product.location}</TableCell>
+                  <TableCell>
+                    {typeof product.location === 'string' 
+                      ? product.location 
+                      : (product.location as Location).city || (product.location as Location).region || (product.location as Location).country || 'N/A'
+                    }
+                  </TableCell>
                   <TableCell>{product.expireDate}</TableCell>
                 </>
               ) : (
@@ -123,7 +128,12 @@ const ProductListTable = ({
                   <TableCell>{product.yearOfCrop || "-"}</TableCell>
                   <TableCell>{product.nutCount || "-"}</TableCell>
                   <TableCell>{product.outTurn || "-"}</TableCell>
-                  <TableCell>{product.location}</TableCell>
+                  <TableCell>
+                    {typeof product.location === 'string' 
+                      ? product.location 
+                      : (product.location as Location).city || (product.location as Location).region || (product.location as Location).country || 'N/A'
+                    }
+                  </TableCell>
                 </>
               )}
 
