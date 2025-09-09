@@ -33,7 +33,6 @@ const MerchantOrders = () => {
 
   // Calculate displayed orders based on filters and sorting
   const displayedOrders = useMemo(() => {
-    debugger
     if (!merchantOrders) return [];
     let result = [...merchantOrders];
     
@@ -525,14 +524,14 @@ const MerchantOrders = () => {
                 </Badge>
               </div>
 
-              {selectedOrder.remarks && (
+              {selectedOrder.buyerRemarks && (
                 <div className="mt-4 pt-4 border-t">
-                  <h4 className="font-medium mb-2">Remarks</h4>
+                  <h4 className="font-medium mb-2">Buyer's Remarks</h4>
                   <div className="bg-muted/50 p-3 rounded-md">
-                    <p className="text-sm">{selectedOrder.remarks}</p>
+                    <p className="text-sm whitespace-pre-wrap">{selectedOrder.buyerRemarks}</p>
                   </div>
                 </div>
-              )}
+              )}  
             </div>
           )}
 

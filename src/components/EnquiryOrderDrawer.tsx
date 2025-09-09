@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, ShoppingCart, Eye, Check, X } from 'lucide-react';
+import { MessageSquare, Eye, Check, X } from 'lucide-react';
 import ChatModal from './ChatModal';
 
 interface Enquiry {
@@ -95,24 +95,25 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
       <Sheet open={isOpen} onOpenChange={onClose}>
         <SheetContent side="right" className="w-[600px] sm:w-[700px]">
           <SheetHeader>
-            <SheetTitle>Enquiries & Orders</SheetTitle>
+            <SheetTitle>Buyer Response</SheetTitle>
             <p className="text-sm text-muted-foreground">{productName}</p>
           </SheetHeader>
 
           <div className="mt-6">
-            <Tabs defaultValue="enquiries" className="w-full">
+            <Tabs defaultValue="newResponse" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="enquiries" className="flex items-center gap-2">
+                <TabsTrigger value="newResponse" className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
-                  Enquiries ({mockEnquiries.length})
+                  New Response
                 </TabsTrigger>
-                <TabsTrigger value="orders" className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  Orders ({mockOrders.length})
+                <TabsTrigger value="allResponse" className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  All Response
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="enquiries" className="space-y-4 mt-4">
+              {/* New Response Tab (previously Enquiries) */}
+              <TabsContent value="newResponse" className="space-y-4 mt-4">
                 {mockEnquiries.map((enquiry) => (
                   <Card key={enquiry.id}>
                     <CardHeader className="pb-2">
@@ -150,7 +151,8 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
                 ))}
               </TabsContent>
 
-              <TabsContent value="orders" className="space-y-4 mt-4">
+              {/* All Response Tab (previously Orders) */}
+              <TabsContent value="allResponse" className="space-y-4 mt-4">
                 {mockOrders.map((order) => (
                   <Card key={order.id}>
                     <CardHeader className="pb-2">

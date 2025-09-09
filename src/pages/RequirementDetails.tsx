@@ -32,15 +32,15 @@ const RequirementDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getMyRequirements, updateRequirementStatus } = useRequirements();
-  const { 
-    getResponsesByRequirementId, 
-    updateResponseStatus, 
-    deleteResponse 
+  const {
+    getResponsesByRequirementId,
+    updateResponseStatus,
+    deleteResponse
   } = useResponses();
-  
+
   // State for managing responses
   const [responses, setResponses] = useState(getResponsesByRequirementId(id || ''));
-  
+
   // State for managing responses popup
   const [showAllResponses, setShowAllResponses] = useState(false);
   const [showResponseDetail, setShowResponseDetail] = useState(false);
@@ -77,13 +77,13 @@ const RequirementDetails = () => {
   // Handle response deletion
   const handleDeleteResponse = (responseId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click event
-    
+
     // Optimistic UI update
     setResponses(prev => prev.filter(r => r.id !== responseId));
-    
+
     // Call the API to delete
     deleteResponse(responseId);
-    
+
     // Show success message
     toast({
       title: "Response Deleted",
@@ -150,7 +150,7 @@ const RequirementDetails = () => {
     };
 
     setOrders(prev => [...prev, order]);
-    
+
     toast({
       title: "Order Placed Successfully",
       description: `Order placed with ${response.merchantName} for ${response.price}`,
@@ -174,25 +174,25 @@ const RequirementDetails = () => {
   const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected', remarks: string = '') => {
     // Update the response status in the backend
     updateResponseStatus(responseId, status, remarks);
-    
+
     // Update requirement status when response is accepted
     if (status === 'accepted' && requirement) {
       updateRequirementStatus(requirement.id, 'responded');
     }
-    
+
     // Update the local state to reflect the change
-    setResponses(prevResponses => 
-      prevResponses.map(response => 
-        response.id === responseId 
-          ? { 
-              ...response, 
-              status,
-              ...(remarks ? { remarks } : {})
-            }
+    setResponses(prevResponses =>
+      prevResponses.map(response =>
+        response.id === responseId
+          ? {
+            ...response,
+            status,
+            ...(remarks ? { remarks } : {})
+          }
           : response
       )
     );
-    
+
     // If we're viewing this response in the detail view, update that too
     if (selectedResponse?.id === responseId) {
       setSelectedResponse(prev => ({
@@ -201,7 +201,7 @@ const RequirementDetails = () => {
         ...(remarks ? { remarks } : {})
       }));
     }
-    
+
     toast({
       title: "Status Updated",
       description: `Response status changed to ${status}`,
@@ -292,7 +292,7 @@ const RequirementDetails = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm leading-relaxed">
-                Looking for premium quality {requirement.grade} cashews from {requirement.preferredOrigin}. 
+                Looking for premium quality {requirement.grade} cashews from {requirement.preferredOrigin}.
                 Required quantity: {requirement.quantity}. Delivery to {requirement.deliveryLocation} by {new Date(requirement.deliveryDeadline).toLocaleDateString()}.
               </p>
             </CardContent>
@@ -335,7 +335,7 @@ const RequirementDetails = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>    
+          </Card>
         </div>
 
         {/* Sidebar - Responses */}
@@ -354,58 +354,58 @@ const RequirementDetails = () => {
                   <div className="text-center py-8 text-muted-foreground">
                     No responses yet. Merchants will see your requirement and can respond with their offers.
                   </div>
-                 ) : (
-                   responses.map((response) => (
-                     <Card 
-                       key={response.id} 
-                       className="p-3 border cursor-pointer hover:bg-accent/50 transition-colors relative"
-                       onClick={() => handleResponseClick(response)}
-                     >
-                       <button
-                         className="absolute right-2 top-2 p-1 rounded-full hover:bg-accent transition-colors"
-                         onClick={(e) => handleDeleteResponse(response.id, e)}
-                         aria-label="Delete response"
-                       >
-                         <X className="h-4 w-4 text-muted-foreground" />
-                       </button>
-                       <div className="flex items-center justify-between">
-                         <div>
-                           <div className="font-medium">{response.merchantName}</div>
-                           <div className="text-sm text-muted-foreground flex items-center">
-                             <MapPin size={12} className="mr-1" />
-                             {response.merchantLocation}
-                           </div>
-                           {response.price && (
-                             <div className="text-sm text-primary font-medium">
-                               Merchant Price: {response.price}
-                             </div>
-                           )}
-                           {response.quantity && (
-                             <div className="text-sm text-muted-foreground">
-                               Available: {response.quantity}
-                             </div>
-                           )}
-                           {response.message && (
-                             <div className="text-sm text-muted-foreground mt-1">
-                               Remarks: {response.message}
-                             </div>
-                           )}
-                         </div>
-                         <div className="text-right">
-                           <Badge 
-                             variant={response.status === "new" ? "default" : "secondary"}
-                             className="text-xs"
-                           >
-                             {response.status}
-                           </Badge>
-                           <div className="text-xs text-muted-foreground mt-1">
-                             {new Date(response.responseDate).toLocaleDateString()}
-                           </div>
-                         </div>
-                       </div>
-                     </Card>
-                   ))
-                 )}
+                ) : (
+                  responses.map((response) => (
+                    <Card
+                      key={response.id}
+                      className="p-3 border cursor-pointer hover:bg-accent/50 transition-colors relative"
+                      onClick={() => handleResponseClick(response)}
+                    >
+                      <button
+                        className="absolute right-2 top-2 p-1 rounded-full hover:bg-accent transition-colors"
+                        onClick={(e) => handleDeleteResponse(response.id, e)}
+                        aria-label="Delete response"
+                      >
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{response.merchantName}</div>
+                          <div className="text-sm text-muted-foreground flex items-center">
+                            <MapPin size={12} className="mr-1" />
+                            {response.merchantLocation}
+                          </div>
+                          {response.price && (
+                            <div className="text-sm text-primary font-medium">
+                              Merchant Price: {response.price}
+                            </div>
+                          )}
+                          {response.quantity && (
+                            <div className="text-sm text-muted-foreground">
+                              Available: {response.quantity}
+                            </div>
+                          )}
+                          {response.message && (
+                            <div className="text-sm text-muted-foreground mt-1">
+                              Remarks: {response.message}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <Badge
+                            variant={response.status === "new" ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {response.status}
+                          </Badge>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {new Date(response.responseDate).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -421,7 +421,7 @@ const RequirementDetails = () => {
               All Responses ({responses.length})
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             {responses.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -435,7 +435,7 @@ const RequirementDetails = () => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-lg">{response.merchantName}</h3>
-                        <Badge 
+                        <Badge
                           variant={response.status === "new" ? "default" : "secondary"}
                           className="text-xs"
                         >
@@ -498,7 +498,7 @@ const RequirementDetails = () => {
                         <div className="text-sm text-muted-foreground">per kg</div>
                       </div>
                       <div className="space-y-2">
-                        <Button 
+                        <Button
                           className="w-full"
                           onClick={() => {
                             updateResponseStatus(response.id, 'accepted');
@@ -530,35 +530,35 @@ const RequirementDetails = () => {
           <DialogHeader>
             <DialogTitle>Response Details</DialogTitle>
           </DialogHeader>
-          
+
           {selectedResponse && (
             <div className="space-y-4">
               <div>
                 <div className="text-sm text-muted-foreground">Company Name</div>
                 <div className="font-medium">{selectedResponse.merchantName}</div>
               </div>
-              
+
               <div>
                 <div className="text-sm text-muted-foreground">Origin</div>
                 <div className="font-medium">{selectedResponse.origin}</div>
               </div>
-              
+
               <div>
                 <div className="text-sm text-muted-foreground">Merchant Price</div>
                 <div className="font-medium text-primary">{selectedResponse.price}</div>
               </div>
-              
+
               <div>
                 <div className="text-sm text-muted-foreground">Available Quantity</div>
                 <div className="font-medium">{selectedResponse.quantity}</div>
               </div>
-              
+
               <div>
                 <Label htmlFor="status">Status</Label>
-                <Select 
+                <Select
                   value={selectedResponse.status}
                   onValueChange={(value) => {
-                    setSelectedResponse({...selectedResponse, status: value});
+                    setSelectedResponse({ ...selectedResponse, status: value });
                   }}
                 >
                   <SelectTrigger>
@@ -571,15 +571,17 @@ const RequirementDetails = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="remarks">Remarks</Label>
                   <textarea
                     id="remarks"
                     className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={selectedResponse.remarks || ''}
-                    onChange={(e) => setSelectedResponse({...selectedResponse, remarks: e.target.value})}
+                    value={selectedResponse.remarks || ""}
+                    onChange={(e) =>
+                      setSelectedResponse({ ...selectedResponse, remarks: e.target.value })
+                    }
                     placeholder="Enter any remarks or notes..."
                   />
                 </div>
@@ -587,11 +589,23 @@ const RequirementDetails = () => {
                   <Button variant="outline" onClick={() => setShowResponseDetail(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={() => handleStatusUpdate(selectedResponse.id, selectedResponse.status, selectedResponse.remarks)}>
+                  <Button
+                    onClick={() => {
+                      const remarksInput = document.getElementById(
+                        "remarks"
+                      ) as HTMLTextAreaElement; // ✅ cast to textarea
+                      handleStatusUpdate(
+                        selectedResponse.id,
+                        selectedResponse.status,
+                        remarksInput.value // ✅ now TypeScript knows `.value`
+                      );
+                    }}
+                  >
                     Submit
                   </Button>
                 </div>
               </div>
+
             </div>
           )}
         </DialogContent>
@@ -620,29 +634,29 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
         <DialogHeader>
           <DialogTitle>Response Details</DialogTitle>
         </DialogHeader>
-        
+
         {response && (
           <div className="space-y-4">
             <div>
               <div className="text-sm text-muted-foreground">Company Name</div>
               <div className="font-medium">{response.merchantName}</div>
             </div>
-            
+
             <div>
               <div className="text-sm text-muted-foreground">Origin</div>
               <div className="font-medium">{response.origin}</div>
             </div>
-            
+
             <div>
               <div className="text-sm text-muted-foreground">Merchant Price</div>
               <div className="font-medium text-primary">{response.price}</div>
             </div>
-            
+
             <div>
               <div className="text-sm text-muted-foreground">Available Quantity</div>
               <div className="font-medium">{response.quantity}</div>
             </div>
-            
+
             <div>
               <Label htmlFor="status">Status</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -656,7 +670,7 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={onClose}>
                 Cancel
