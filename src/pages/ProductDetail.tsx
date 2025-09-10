@@ -11,46 +11,45 @@ import {
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { merchants, products } from "@/data/mockdata";
+import { Product, Location as LocationType } from "@/types/user";
+import { useInventory } from "@/hooks/useInventory";
+import { useUser } from "@clerk/clerk-react";
+import { useProfile } from "@/hooks/useProfile";
 
 const ProductDetail = () => {
+  // Hooks must be called at the top level
   const { id } = useParams<{ id: string }>();
-  const product = products.find((p) => p.id === Number(id));
-  const merchant = merchants.find((m) => m.id === product?.merchantId);
-
+  const { products: inventoryProducts } = useInventory();
   const navigate = useNavigate();
   const { role } = useRole();
+  const { user } = useUser();
+  const { profile, setProfile } = useProfile();
 
+  // State hooks - all hooks must be called unconditionally at the top level
+  const [isLoading, setIsLoading] = useState(true);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [merchant, setMerchant] = useState<{
+    id: string;
+    name: string;
+    rating?: number;
+    totalOrders?: number;
+    location: string | LocationType;
+    verified?: boolean;
+    responseTime?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+    description?: string;
+  } | null>(null);
   const [bidQuantity, setBidQuantity] = useState("");
   const [bidPrice, setBidPrice] = useState("");
   const [bidMessage, setBidMessage] = useState("");
-
-  // Mock Current Bids (replace with API later)
-  const currentBids = [
-    { id: 1, bidder: "Food Corp Ltd", price: "$950/ton", quantity: "20 tons", time: "2h ago" },
-    { id: 2, bidder: "SnackHub Traders", price: "$970/ton", quantity: "15 tons", time: "1h ago" },
-  ];
-
-  if (!product || !merchant) {
-    return <div className="p-6 text-center">Product not found</div>;
-  }
-
-  const handleBack = () => {
-    if (role === "processor") navigate("/merchant/products");
-    else navigate("/marketplace");
-  };
-
-  const handlePlaceBid = () => {
-    console.log("Bid placed:", { bidQuantity, bidPrice, bidMessage });
-  };
-
-  const handleViewAllProducts = () => {
-    navigate(`/merchant/${merchant.id}/products`);
-  };
-
   const [timeLeft, setTimeLeft] = useState("");
 
-  // Example: Auction end in 2 days from now
+  // Derived state
   const auctionEnd = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+
+  // All effects must be defined before any conditional returns
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date().getTime();
@@ -70,6 +69,107 @@ const ProductDetail = () => {
 
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const foundProduct = inventoryProducts.find((p) => p.id === id);
+        if (foundProduct) {
+          setProduct(foundProduct);
+          // In a real app, you would fetch merchant data based on product.merchantId or similar
+          const merchantData = merchants.find((m) => m.id === foundProduct.merchantId) || {
+            id: user?.id || 'default-merchant',
+            name: profile?.companyName || 'Unknown Merchant',
+            rating: 4.5,
+            totalOrders: 0,
+            location: profile?.location || 'Unknown',
+            verified: false,
+            responseTime: 'Within 24 hours',
+            phone: profile?.phone || 'N/A',
+            email: profile?.email || 'N/A',
+            website: 'www.kriyatec.in',
+            description: 'Merchant information not available'
+          };
+          setMerchant(merchantData);
+        }
+      } catch (error) {
+        console.error('Error loading product:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id, inventoryProducts]);
+
+
+  // Get product specifications safely
+  const getProductSpecs = () => {
+    if (!product) return [];
+
+    const specs = [];
+
+    // Add type-specific specs
+    if (product.type === 'RCN') {
+      if (product.yearOfCrop) specs.push(['Crop Year', product.yearOfCrop]);
+      if (product.nutCount) specs.push(['Nut Count', product.nutCount]);
+      if (product.outTurn) specs.push(['Out Turn', product.outTurn]);
+    } else if (product.type === 'Kernel') {
+      if (product.grade) specs.push(['Grade', product.grade]);
+    }
+
+    // Add common specs
+    specs.push(
+      ['Stock', `${product.stock} ${product.unit}`],
+      ['Minimum Order', product.minOrderQty ? `${product.minOrderQty} ${product.unit}` : 'No minimum'],
+      ['Pricing Type', product.pricingType === 'bidding' ? 'Bidding' : 'Fixed Price'],
+      ['Origin', product.location || 'N/A']
+    );
+
+    return specs;
+  };
+
+  // Mock Current Bids (replace with API later)
+  const currentBids = [
+    { id: 1, bidder: "Food Corp Ltd", price: "$950/ton", quantity: "20 tons", time: "2h ago" },
+    { id: 2, bidder: "SnackHub Traders", price: "$970/ton", quantity: "15 tons", time: "1h ago" },
+  ];
+  debugger
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6">
+        <h2 className="text-2xl font-semibold mb-4">Product Not Found</h2>
+        <p className="text-muted-foreground mb-6">The product you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate('/marketplace')} variant="outline">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Marketplace
+        </Button>
+      </div>
+    );
+  }
+
+  const handleBack = () => {
+    if (role === "processor") navigate("/merchant/products");
+    else navigate("/marketplace");
+  };
+
+  const handlePlaceBid = () => {
+    console.log("Bid placed:", { bidQuantity, bidPrice, bidMessage });
+  };
+
+  const handleViewAllProducts = () => {
+    navigate(`/merchant/${merchant.id}/products`);
+  };
+
 
 
   return (
@@ -94,7 +194,7 @@ const ProductDetail = () => {
                 <div>
                   <div className="flex items-center space-x-2 mb-2">
                     <CardTitle className="text-2xl">{product.grade} Cashews</CardTitle>
-                    {merchant.verified && (
+                    {merchant?.verified && (
                       <Badge variant="default">
                         <Shield size={12} className="mr-1" /> Verified
                       </Badge>
@@ -103,9 +203,16 @@ const ProductDetail = () => {
                   <p className="text-muted-foreground">{product.description}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-primary">{product.pricePerTon}</div>
-                  <div className="text-sm text-muted-foreground">per ton</div>
+                  <div className="text-3xl font-bold text-primary">
+                    {new Intl.NumberFormat("en-IN", {
+                      style: "currency",
+                      currency: "INR",
+                      maximumFractionDigits: 0,
+                    }).format(product.price)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Per ton</div>
                 </div>
+
               </div>
             </CardHeader>
             <CardContent>
@@ -114,21 +221,31 @@ const ProductDetail = () => {
                   <Package size={20} />
                   <div>
                     <div className="text-sm text-muted-foreground">Quantity</div>
-                    <div className="font-semibold">{product.quantity}</div>
+                    <div className="font-semibold">{product.availableQty}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <MapPin size={20} />
                   <div>
                     <div className="text-sm text-muted-foreground">Origin</div>
-                    <div className="font-semibold">{merchant.location}</div>
+                    <div className="font-semibold">
+                      {typeof merchant.location === 'string'
+                        ? merchant.location
+                        : [
+                          (merchant.location as LocationType)?.address,
+                          (merchant.location as LocationType)?.city,
+                          (merchant.location as LocationType)?.region,
+                          (merchant.location as LocationType)?.country
+                        ].filter(Boolean).join(', ')
+                      }
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Calendar size={20} />
                   <div>
                     <div className="text-sm text-muted-foreground">Expiry</div>
-                    <div className="font-semibold">{new Date(product.expiry).toLocaleDateString()}</div>
+                    <div className="font-semibold">{new Date(product.expireDate).toLocaleDateString()}</div>
                   </div>
                 </div>
               </div>
@@ -146,8 +263,8 @@ const ProductDetail = () => {
             <CardHeader><CardTitle>Specifications</CardTitle></CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(product.specifications).map(([key, value]) => (
-                  <div key={key} className="flex justify-between border-b py-2">
+                {getProductSpecs().map(([key, value], index) => (
+                  <div key={index} className="flex justify-between border-b py-2">
                     <span className="text-muted-foreground capitalize">{key}</span>
                     <span className="font-medium">{value}</span>
                   </div>
@@ -173,11 +290,11 @@ const ProductDetail = () => {
                     <Input value={bidPrice} onChange={(e) => setBidPrice(e.target.value)} />
                   </div>
                   {/* {product.pricingType === "bidding" && (
-                    <div>
-                      <label className="block text-sm font-medium">Your Price ($/ton)</label>
-                      <Input value={bidPrice} onChange={(e) => setBidPrice(e.target.value)} />
-                    </div>
-                  )} */}
+ <div>
+ <label className="block text-sm font-medium">Your Price ($/ton)</label>
+ <Input value={bidPrice} onChange={(e) => setBidPrice(e.target.value)} />
+ </div>
+ )} */}
                 </div>
                 <div>
                   <label className="block text-sm font-medium">Message</label>
@@ -204,18 +321,30 @@ const ProductDetail = () => {
               </div>
               <div className="flex items-center">
                 <Star size={16} className="text-yellow-500 mr-1" />
-                <span>{merchant.rating}</span>
-                <span className="text-muted-foreground ml-1">({merchant.totalOrders} orders)</span>
+                <span>{merchant?.rating || 'N/A'}</span>
+                <span className="text-muted-foreground ml-1">
+                  ({merchant?.totalOrders || 0} {merchant?.totalOrders === 1 ? 'order' : 'orders'})
+                </span>
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-sm mb-3">{merchant.description}</p>
+              <p className="text-sm mb-3">{merchant?.description || 'No description available'}</p>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center"><MapPin size={16} className="mr-2" /> {merchant.location}</div>
-                <div className="flex items-center"><Phone size={16} className="mr-2" /> {merchant.phone}</div>
-                <div className="flex items-center"><Mail size={16} className="mr-2" /> {merchant.email}</div>
-                <div className="flex items-center"><Globe size={16} className="mr-2" /> {merchant.website}</div>
-                <div className="flex items-center"><Clock size={16} className="mr-2" /> Response: {merchant.responseTime}</div>
+                <div className="flex items-center">
+                  <MapPin size={16} className="mr-2" />
+                  {typeof merchant?.location === 'string'
+                    ? merchant.location
+                    : [
+                      (merchant?.location as LocationType)?.address,
+                      (merchant?.location as LocationType)?.city,
+                      (merchant?.location as LocationType)?.region,
+                      (merchant?.location as LocationType)?.country
+                    ].filter(Boolean).join(', ') || 'N/A'}
+                </div>
+                <div className="flex items-center"><Phone size={16} className="mr-2" /> {merchant?.phone || 'N/A'}</div>
+                <div className="flex items-center"><Mail size={16} className="mr-2" /> {merchant?.email || 'N/A'}</div>
+                <div className="flex items-center"><Globe size={16} className="mr-2" /> {merchant?.website || 'N/A'}</div>
+                <div className="flex items-center"><Clock size={16} className="mr-2" /> Response: {merchant?.responseTime || 'N/A'}</div>
               </div>
               <div className="mt-4 space-y-2">
                 <Button variant="outline" className="w-full">Contact Merchant</Button>
@@ -243,7 +372,7 @@ const ProductDetail = () => {
                 <div className="p-3 rounded-lg border bg-muted/30">
                   <h4 className="text-xs font-medium mb-1">Opening Bid</h4>
                   <p className="text-base font-semibold text-primary">
-                    {product.pricePerTon} $/ton
+                    {product.price} $/ton
                   </p>
                 </div>
 

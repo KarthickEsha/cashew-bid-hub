@@ -163,8 +163,8 @@ const MerchantProducts = () => {
         if (filters.location) {
             const locationTerm = filters.location.toLowerCase();
             result = result.filter(p =>
-                p.location.toLowerCase().includes(locationTerm) ||
-                (p.origin && p.origin.toLowerCase().includes(locationTerm))
+                (typeof p.location === "string" && p.location.toLowerCase().includes(locationTerm)) ||
+                (p.origin && typeof p.origin === "string" && p.origin.toLowerCase().includes(locationTerm))
             );
         }
 
@@ -200,32 +200,32 @@ const MerchantProducts = () => {
         }
     }, [products]);
 
-  const handleDeleteClick = (productId: string) => {
-    setProductToDelete(productId);
-    setIsDeleteDialogOpen(true);
-  };
+    const handleDeleteClick = (productId: string) => {
+        setProductToDelete(productId);
+        setIsDeleteDialogOpen(true);
+    };
 
-  const confirmDelete = () => {
-    if (!productToDelete) return;
-    
-    try {
-      deleteProduct(productToDelete);
-      setAllProducts(prev => prev.filter(p => p.id !== productToDelete));
-      toast({
-        title: "Success",
-        description: "Product has been deleted successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete product. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setProductToDelete(null);
-    }
-  };
+    const confirmDelete = () => {
+        if (!productToDelete) return;
+
+        try {
+            deleteProduct(productToDelete);
+            setAllProducts(prev => prev.filter(p => p.id !== productToDelete));
+            toast({
+                title: "Success",
+                description: "Product has been deleted successfully.",
+            });
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Failed to delete product. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setProductToDelete(null);
+        }
+    };
 
     const handleUpdateStock = () => {
         if (!editingProduct) return;

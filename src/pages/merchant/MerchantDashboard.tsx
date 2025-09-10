@@ -1,18 +1,37 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Package, MessageSquare, Users, FileText } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useInventory } from "@/hooks/useInventory";
 import { useProfile } from "@/hooks/useProfile";
+import { useRequirements } from "@/hooks/useRequirements";
+import { useResponses } from "@/hooks/useResponses";
 import ProductTypeToggle from "@/components/ProductTypeToggle";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ProductType } from "@/types/user";
 
 const MerchantDashboard = () => {
   const { getProductStats } = useInventory();
   const { profile } = useProfile();
+  const { getRequirementsAsEnquiries } = useRequirements();
+  const { getResponsesByRequirementId } = useResponses();
   const stats = getProductStats();
-  
+  const navigate = useNavigate();
+
+  // Calculate new enquiries count based on responses
+  const newEnquiriesCount = useMemo(() => {
+    const enquiries = getRequirementsAsEnquiries();
+    return enquiries.filter(enquiry => {
+      const responses = getResponsesByRequirementId(enquiry.id);
+      const hasAcceptedResponse = responses.some(r => r.status === 'Accepted');
+      const hasRejectedResponse = responses.some(r => r.status === 'Rejected');
+
+      // Consider an enquiry as 'new' if it doesn't have any responses yet
+      // or if it only has rejected responses (no accepted ones)
+      return responses.length === 0 || (hasRejectedResponse && !hasAcceptedResponse);
+    }).length;
+  }, [getRequirementsAsEnquiries, getResponsesByRequirementId]);
+
   // State for product type toggle (only for "Both" users)
   const getInitialProductType = (): ProductType => {
     if (profile?.productType === 'Both') {
@@ -20,17 +39,17 @@ const MerchantDashboard = () => {
     }
     return profile?.productType || 'RCN';
   };
-  
+
   const [currentProductType, setCurrentProductType] = useState<ProductType>(getInitialProductType());
-  
+
   // Calculate display stats based on current type
   const getDisplayStats = () => {
     if (profile?.productType === 'Both') {
-      return currentProductType === 'RCN' 
+      return currentProductType === 'RCN'
         ? { products: stats.rcnProducts, stock: stats.totalStock.rcn }
         : { products: stats.kernelProducts, stock: stats.totalStock.kernel };
     }
-    
+
     // For single type users, show their specific type
     if (profile?.productType === 'RCN') {
       return { products: stats.rcnProducts, stock: stats.totalStock.rcn };
@@ -38,7 +57,7 @@ const MerchantDashboard = () => {
       return { products: stats.kernelProducts, stock: stats.totalStock.kernel };
     }
   };
-  
+
   const displayStats = getDisplayStats();
 
   const mockStats = {
@@ -66,7 +85,7 @@ const MerchantDashboard = () => {
       </div>
 
       {/* Product Type Toggle */}
-      <ProductTypeToggle 
+      <ProductTypeToggle
         currentType={currentProductType}
         onTypeChange={setCurrentProductType}
       />
@@ -74,13 +93,16 @@ const MerchantDashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Card 1 - New Enquiry */}
-        <Card>
+        <Card
+          onClick={() => navigate("/merchant/enquiries")}
+          className="cursor-pointer hover:shadow-md transition"
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">New Enquiries</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalEnquiries}</div>
+            <div className="text-2xl font-bold">{newEnquiriesCount}</div>
             <p className="text-xs text-muted-foreground">Requiring response</p>
           </CardContent>
         </Card>

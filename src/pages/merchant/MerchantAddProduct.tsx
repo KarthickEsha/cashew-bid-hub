@@ -15,305 +15,329 @@ import { cn } from "@/lib/utils";
 import { useProfile } from "@/hooks/useProfile";
 import { useInventory } from "@/hooks/useInventory";
 import ProductTypeToggle from "@/components/ProductTypeToggle";
-import { ProductType } from "@/types/user";
+import { ProductType, Location } from "@/types/user";
+
+interface ProductFormData {
+    name: string;
+    availableQty: string;
+    minOrderQty: string;
+    price: string;
+    unit: string;
+    location: string;
+    origin: string;
+    description: string;
+    allowBuyerOffers: boolean;
+    stockAvailable: string;
+    yearOfCrop: string;
+    nutCount: string;
+    outTurn: string;
+    grade: string;
+}
 
 const MerchantAddProduct = () => {
- const navigate = useNavigate();
- const [searchParams] = useSearchParams();
- const { profile } = useProfile();
- const { addProduct, products, updateProduct } = useInventory();
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const { profile } = useProfile();
+    const { addProduct, products, updateProduct } = useInventory();
 
- // Check if we're in edit mode
- const editProductId = searchParams.get('edit');
- const isEditMode = !!editProductId;
- const editingProduct = isEditMode ? products.find(p => p.id === editProductId) : null;
- const [images, setImages] = useState<string[]>([]);
+    // Check if we're in edit mode
+    const editProductId = searchParams.get('edit');
+    const isEditMode = !!editProductId;
+    const editingProduct = isEditMode ? products.find(p => p.id === editProductId) : null;
+    const [images, setImages] = useState<string[]>([]);
 
- // Determine initial product type based on profile
- const getInitialProductType = (): ProductType => {
- if (profile?.productType === 'Both') {
- return 'RCN';
- }
- return profile?.productType || 'RCN';
- };
+    // Determine initial product type based on profile
+    const getInitialProductType = (): ProductType => {
+        if (profile?.productType === 'Both') {
+            return 'RCN';
+        }
+        return profile?.productType || 'RCN';
+    };
 
- const [currentProductType, setCurrentProductType] = useState<ProductType>(
- isEditMode && editingProduct ? editingProduct.type : getInitialProductType()
- );
- const [expireDate, setExpireDate] = useState<Date | undefined>(
- isEditMode && editingProduct ? new Date(editingProduct.expireDate) : undefined
- );
+    const [currentProductType, setCurrentProductType] = useState<ProductType>(
+        isEditMode && editingProduct ? editingProduct.type : getInitialProductType()
+    );
+    const [expireDate, setExpireDate] = useState<Date | undefined>(
+        isEditMode && editingProduct ? new Date(editingProduct.expireDate) : undefined
+    );
 
- const [isSubmitting, setIsSubmitting] = useState(false);
- 
- const [formData, setFormData] = useState({
- name: isEditMode && editingProduct ? editingProduct.name : '',
- availableQty: isEditMode && editingProduct ? (editingProduct.availableQty || '').toString() : '',
- minOrderQty: isEditMode && editingProduct ? (editingProduct.minOrderQty || '').toString() : '',
- price: isEditMode && editingProduct ? editingProduct.price.toString() : '',
- unit: isEditMode && editingProduct ? editingProduct.unit : 'kg',
- location: isEditMode && editingProduct ? editingProduct.location : '',
- origin: isEditMode && editingProduct ? editingProduct.origin || '' : '',
- description: isEditMode && editingProduct ? editingProduct.description || '' : '',
- allowBuyerOffers: isEditMode && editingProduct ? editingProduct.allowBuyerOffers || false : false,
- stockAvailable: isEditMode && editingProduct ? (editingProduct.stock || '').toString() : '',
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
- // RCN specific fields
- yearOfCrop: isEditMode && editingProduct ? editingProduct.yearOfCrop || '' : '',
- nutCount: isEditMode && editingProduct ? editingProduct.nutCount || '' : '',
- outTurn: isEditMode && editingProduct ? editingProduct.outTurn || '' : '',
+    const [formData, setFormData] = useState<ProductFormData>({
+        name: isEditMode && editingProduct ? editingProduct.name : '',
+        availableQty: isEditMode && editingProduct ? (editingProduct.availableQty || '').toString() : '',
+        minOrderQty: isEditMode && editingProduct ? (editingProduct.minOrderQty || '').toString() : '',
+        price: isEditMode && editingProduct ? editingProduct.price.toString() : '',
+        unit: isEditMode && editingProduct ? editingProduct.unit : 'kg',
+        location: (() => {
+            if (!isEditMode || !editingProduct) return '';
+            if (typeof editingProduct.location === 'string') {
+                return editingProduct.location;
+            }
+            return (editingProduct.location as Location)?.address || '';
+        })(),
+        origin: isEditMode && editingProduct ? editingProduct.origin || '' : '',
+        description: isEditMode && editingProduct ? editingProduct.description || '' : '',
+        allowBuyerOffers: isEditMode && editingProduct ? editingProduct.allowBuyerOffers || false : false,
+        stockAvailable: isEditMode && editingProduct ? (editingProduct.stock || '').toString() : '',
 
- // Kernel specific fields
- grade: isEditMode && editingProduct ? editingProduct.grade || '' : '',
- });
+        // RCN specific fields
+        yearOfCrop: isEditMode && editingProduct ? editingProduct.yearOfCrop || '' : '',
+        nutCount: isEditMode && editingProduct ? editingProduct.nutCount || '' : '',
+        outTurn: isEditMode && editingProduct ? editingProduct.outTurn || '' : '',
 
- // Update form data when editing product is found
- useEffect(() => {
- if (isEditMode && editingProduct) {
- setCurrentProductType(editingProduct.type);
- setExpireDate(new Date(editingProduct.expireDate));
- setImages(editingProduct.images || []);
- setFormData({
- name: editingProduct.name,
- availableQty: (editingProduct.availableQty || '').toString(),
- minOrderQty: (editingProduct.minOrderQty || '').toString(),
- price: editingProduct.price.toString(),
- unit: editingProduct.unit,
- location: editingProduct.location,
- origin: editingProduct.origin || '',
- description: editingProduct.description || '',
- allowBuyerOffers: editingProduct.allowBuyerOffers || false,
- yearOfCrop: editingProduct.yearOfCrop || '',
- nutCount: editingProduct.nutCount || '',
- outTurn: editingProduct.outTurn || '',
- grade: editingProduct.grade || '',
- stockAvailable: (editingProduct.stock || '').toString(),
- });
- }
- }, [isEditMode, editingProduct]);
+        // Kernel specific fields
+        grade: isEditMode && editingProduct ? editingProduct.grade || '' : '',
+    });
 
- const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
- const files = e.target.files;
- if (files) {
- const newImages = Array.from(files).map(file => URL.createObjectURL(file));
- setImages(prev => [...prev, ...newImages]);
- }
- };
+    // Update form data when editing product is found
+    useEffect(() => {
+        if (isEditMode && editingProduct) {
+            setCurrentProductType(editingProduct.type);
+            setExpireDate(new Date(editingProduct.expireDate));
+            setImages(editingProduct.images || []);
+            setFormData({
+                name: editingProduct.name,
+                availableQty: (editingProduct.availableQty || '').toString(),
+                minOrderQty: (editingProduct.minOrderQty || '').toString(),
+                price: editingProduct.price.toString(),
+                unit: editingProduct.unit,
+                location: typeof editingProduct.location === 'string' ? editingProduct.location :
+                    (editingProduct.location as Location)?.address || '',
+                origin: editingProduct.origin || '',
+                description: editingProduct.description || '',
+                allowBuyerOffers: editingProduct.allowBuyerOffers || false,
+                yearOfCrop: editingProduct.yearOfCrop || '',
+                nutCount: editingProduct.nutCount || '',
+                outTurn: editingProduct.outTurn || '',
+                grade: editingProduct.grade || '',
+                stockAvailable: (editingProduct.stock || '').toString(),
+            });
+        }
+    }, [isEditMode, editingProduct]);
 
- const removeImage = (index: number) => {
- setImages(prev => prev.filter((_, i) => i !== index));
- };
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files) {
+            const newImages = Array.from(files).map(file => URL.createObjectURL(file));
+            setImages(prev => [...prev, ...newImages]);
+        }
+    };
 
- const handleSubmit = async (e: React.FormEvent) => {
- e.preventDefault();
- 
- if (!expireDate) {
- alert('Please select an expiry date');
- return;
- }
+    const removeImage = (index: number) => {
+        setImages(prev => prev.filter((_, i) => i !== index));
+    };
 
- try {
- setIsSubmitting(true);
- 
- // Base product data
- const baseProductData = {
- name: formData.name,
- type: currentProductType,
- stock: parseFloat(formData.stockAvailable) || 0,
- price: parseFloat(formData.price) || 0,
- unit: formData.unit,
- location: formData.location,
- description: formData.description || '',
- images,
- allowBuyerOffers: formData.allowBuyerOffers || false,
- expireDate: expireDate.toISOString().split('T')[0],
- status: 'active' as const,
- enquiries: 0,
- orders: 0,
- origin: formData.origin || '',
- availableQty: parseFloat(formData.availableQty) || 0,
- minOrderQty: parseFloat(formData.minOrderQty) || 1,
- };
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
 
- // Add type-specific fields
- const productData = {
- ...baseProductData,
- // Add RCN specific fields
- ...(currentProductType === 'RCN' && {
- yearOfCrop: formData.yearOfCrop || new Date().getFullYear().toString(),
- nutCount: formData.nutCount || '',
- outTurn: formData.outTurn || '',
- grade: undefined, // Ensure grade is not set for RCN
- }),
- // Add Kernel specific fields
- ...(currentProductType === 'Kernel' && {
- grade: formData.grade || '',
- yearOfCrop: undefined, // Ensure RCN fields are not set for Kernel
- nutCount: undefined,
- outTurn: undefined,
- }),
- };
+        if (!expireDate) {
+            alert('Please select an expiry date');
+            return;
+        }
 
- if (isEditMode && editingProduct) {
- updateProduct(editingProduct.id, productData);
- } else {
- // For new products, generate ID and createdAt
- const newProduct = {
- ...productData,
- id: Date.now().toString(),
- createdAt: new Date().toISOString().split('T')[0],
- };
- addProduct(newProduct);
- }
+        try {
+            setIsSubmitting(true);
 
- // Show success message
- alert(`Product ${isEditMode ? 'updated' : 'added'} successfully!`);
- 
- // Navigate to products list
- navigate('/merchant/products');
- 
- } catch (error) {
- console.error('Error saving product:', error);
- alert('Failed to save product. Please try again.');
- }
- };
+            // Base product data
+            const baseProductData = {
+                name: formData.name,
+                type: currentProductType,
+                stock: parseFloat(formData.stockAvailable) || 0,
+                price: parseFloat(formData.price) || 0,
+                unit: formData.unit,
+                location: formData.location,
+                description: formData.description || '',
+                images,
+                allowBuyerOffers: formData.allowBuyerOffers || false,
+                expireDate: expireDate.toISOString().split('T')[0],
+                status: 'active' as const,
+                enquiries: 0,
+                orders: 0,
+                origin: formData.origin || '',
+                availableQty: parseFloat(formData.availableQty) || 0,
+                minOrderQty: parseFloat(formData.minOrderQty) || 1,
+            };
 
- return (
- <div className="p-6 space-y-6">
- <div>
- <h1 className="text-3xl font-bold text-primary">
- {isEditMode ? 'Edit Stock' : 'Add New Stocks'}
- </h1>
- <p className="text-muted-foreground mt-2">
- {isEditMode
- ? `Update your ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product information`
- : `List a new ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product for sale`
- }
- </p>
- </div>
+            // Add type-specific fields
+            const productData = {
+                ...baseProductData,
+                // Add RCN specific fields
+                ...(currentProductType === 'RCN' && {
+                    yearOfCrop: formData.yearOfCrop || new Date().getFullYear().toString(),
+                    nutCount: formData.nutCount || '',
+                    outTurn: formData.outTurn || '',
+                    grade: undefined, // Ensure grade is not set for RCN
+                }),
+                // Add Kernel specific fields
+                ...(currentProductType === 'Kernel' && {
+                    grade: formData.grade || '',
+                    yearOfCrop: undefined, // Ensure RCN fields are not set for Kernel
+                    nutCount: undefined,
+                    outTurn: undefined,
+                }),
+            };
 
- {/* Product Type Toggle */}
- <ProductTypeToggle
- currentType={currentProductType}
- onTypeChange={setCurrentProductType}
- />
+            if (isEditMode && editingProduct) {
+                updateProduct(editingProduct.id, productData);
+            } else {
+                // For new products, generate ID and createdAt
+                const newProduct = {
+                    ...productData,
+                    id: Date.now().toString(),
+                    createdAt: new Date().toISOString().split('T')[0],
+                };
+                addProduct(newProduct);
+            }
 
- <Card>
- <CardHeader>
- <CardTitle>{isEditMode ? 'Edit Product Details' : 'Product Details'}</CardTitle>
- <CardDescription>
- {isEditMode
- ? 'Update the information for your product'
- : 'Fill in the information for your new product'
- }
- </CardDescription>
- </CardHeader>
- <CardContent>
- <form onSubmit={handleSubmit} className="space-y-6">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            // Show success message
+            alert(`Product ${isEditMode ? 'updated' : 'added'} successfully!`);
 
- {currentProductType === 'Kernel' ? (
- <div className="space-y-2">
- <Label htmlFor="grade">Product / Grade *</Label>
- <Select value={formData.grade} onValueChange={(value) => setFormData({ ...formData, grade: value })}>
- <SelectTrigger>
- <SelectValue placeholder="Select grade" />
- </SelectTrigger>
- <SelectContent>
- <SelectItem value="W180">W180</SelectItem>
- <SelectItem value="W240">W240</SelectItem>
- <SelectItem value="W320">W320</SelectItem>
- <SelectItem value="W450">W450</SelectItem>
- <SelectItem value="W500">W500</SelectItem>
- <SelectItem value="Broken BB">Broken BB</SelectItem>
- <SelectItem value="Broken LP">Broken LP</SelectItem>
- </SelectContent>
- </Select>
- </div>
- ) : (
- <>
- <div className="space-y-2">
- <Label htmlFor="yearOfCrop">Year of Crop *</Label>
- <Select value={formData.yearOfCrop} onValueChange={(value) => setFormData({ ...formData, yearOfCrop: value })}>
- <SelectTrigger>
- <SelectValue placeholder="Select year" />
- </SelectTrigger>
- <SelectContent>
- <SelectItem value="2024">2024</SelectItem>
- <SelectItem value="2023">2023</SelectItem>
- <SelectItem value="2022">2022</SelectItem>
- </SelectContent>
- </Select>
- </div>
+            // Navigate to products list
+            navigate('/merchant/products');
 
- <div className="space-y-2">
- <Label htmlFor="nutCount">Nut Count *</Label>
- <Input
- id="nutCount"
- value={formData.nutCount}
- onChange={(e) => setFormData({ ...formData, nutCount: e.target.value })}
- placeholder="e.g., 200-220 per kg"
- required
- />
- </div>
+        } catch (error) {
+            console.error('Error saving product:', error);
+            alert('Failed to save product. Please try again.');
+        }
+    };
 
- <div className="space-y-2">
- <Label htmlFor="outTurn">Out Turn *</Label>
- <Input
- id="outTurn"
- value={formData.outTurn}
- onChange={(e) => setFormData({ ...formData, outTurn: e.target.value })}
- placeholder="e.g., 22-24%"
- required
- />
- </div>
- </>
- )}
+    return (
+        <div className="p-6 space-y-6">
+            <div>
+                <h1 className="text-3xl font-bold text-primary">
+                    {isEditMode ? 'Edit Stock' : 'Add New Stocks'}
+                </h1>
+                <p className="text-muted-foreground mt-2">
+                    {isEditMode
+                        ? `Update your ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product information`
+                        : `List a new ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product for sale`
+                    }
+                </p>
+            </div>
 
- {/* Replaced Stock with Origin */}
- <div className="space-y-2">
- <Label htmlFor="origin">Origin *</Label>
- <Select value={formData.origin} onValueChange={(value) => setFormData({ ...formData, origin: value })}>
- <SelectTrigger>
- <SelectValue placeholder="Select origin" />
- </SelectTrigger>
- <SelectContent>
- <SelectItem value="India">India</SelectItem>
- <SelectItem value="Vietnam">Vietnam</SelectItem>
- <SelectItem value="Nigeria">Nigeria</SelectItem>
- <SelectItem value="Ivory Coast">Ivory Coast</SelectItem>
- <SelectItem value="Ghana">Ghana</SelectItem>
- </SelectContent>
- </Select>
- </div>
+            {/* Product Type Toggle */}
+            <ProductTypeToggle
+                currentType={currentProductType}
+                onTypeChange={setCurrentProductType}
+            />
 
- {/* NEW FIELD: Available Quantity */}
- <div className="space-y-2">
- <Label htmlFor="availableQty">Available Quantity (kg)*</Label>
- <Input
- id="availableQty"
- type="number"
- value={formData.availableQty}
- onChange={(e) => setFormData({ ...formData, availableQty: e.target.value })}
- placeholder="e.g., 400"
- required
- />
- </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>{isEditMode ? 'Edit Product Details' : 'Product Details'}</CardTitle>
+                    <CardDescription>
+                        {isEditMode
+                            ? 'Update the information for your product'
+                            : 'Fill in the information for your new product'
+                        }
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
- {/* NEW FIELD: Minimum Order Quantity */}
- <div className="space-y-2">
- <Label htmlFor="minOrderQty">Minimum Order Quantity (kg)*</Label>
- <Input
- id="minOrderQty"
- type="number"
- value={formData.minOrderQty}
- onChange={(e) => setFormData({ ...formData, minOrderQty: e.target.value })}
- placeholder="e.g., 50"
- required
- />
- </div>
+                            {currentProductType === 'Kernel' ? (
+                                <div className="space-y-2">
+                                    <Label htmlFor="grade">Product / Grade *</Label>
+                                    <Select value={formData.grade} onValueChange={(value) => setFormData({ ...formData, grade: value })}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select grade" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="W180">W180</SelectItem>
+                                            <SelectItem value="W240">W240</SelectItem>
+                                            <SelectItem value="W320">W320</SelectItem>
+                                            <SelectItem value="W450">W450</SelectItem>
+                                            <SelectItem value="W500">W500</SelectItem>
+                                            <SelectItem value="Broken BB">Broken BB</SelectItem>
+                                            <SelectItem value="Broken LP">Broken LP</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="yearOfCrop">Year of Crop *</Label>
+                                        <Select value={formData.yearOfCrop} onValueChange={(value) => setFormData({ ...formData, yearOfCrop: value })}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select year" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="2024">2024</SelectItem>
+                                                <SelectItem value="2023">2023</SelectItem>
+                                                <SelectItem value="2022">2022</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
- {/* <div className="space-y-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="nutCount">Nut Count *</Label>
+                                        <Input
+                                            id="nutCount"
+                                            value={formData.nutCount}
+                                            onChange={(e) => setFormData({ ...formData, nutCount: e.target.value })}
+                                            placeholder="e.g., 200-220 per kg"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="outTurn">Out Turn *</Label>
+                                        <Input
+                                            id="outTurn"
+                                            value={formData.outTurn}
+                                            onChange={(e) => setFormData({ ...formData, outTurn: e.target.value })}
+                                            placeholder="e.g., 22-24%"
+                                            required
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Replaced Stock with Origin */}
+                            <div className="space-y-2">
+                                <Label htmlFor="origin">Origin *</Label>
+                                <Select value={formData.origin} onValueChange={(value) => setFormData({ ...formData, origin: value })}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select origin" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="India">India</SelectItem>
+                                        <SelectItem value="Vietnam">Vietnam</SelectItem>
+                                        <SelectItem value="Nigeria">Nigeria</SelectItem>
+                                        <SelectItem value="Ivory Coast">Ivory Coast</SelectItem>
+                                        <SelectItem value="Ghana">Ghana</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* NEW FIELD: Available Quantity */}
+                            <div className="space-y-2">
+                                <Label htmlFor="availableQty">Available Quantity (kg)*</Label>
+                                <Input
+                                    id="availableQty"
+                                    type="number"
+                                    value={formData.availableQty}
+                                    onChange={(e) => setFormData({ ...formData, availableQty: e.target.value })}
+                                    placeholder="e.g., 400"
+                                    required
+                                />
+                            </div>
+
+                            {/* NEW FIELD: Minimum Order Quantity */}
+                            <div className="space-y-2">
+                                <Label htmlFor="minOrderQty">Minimum Order Quantity (kg)*</Label>
+                                <Input
+                                    id="minOrderQty"
+                                    type="number"
+                                    value={formData.minOrderQty}
+                                    onChange={(e) => setFormData({ ...formData, minOrderQty: e.target.value })}
+                                    placeholder="e.g., 50"
+                                    required
+                                />
+                            </div>
+
+                            {/* <div className="space-y-2">
  <Label htmlFor="unit">Unit *</Label>
  <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
  <SelectTrigger>
@@ -327,172 +351,172 @@ const MerchantAddProduct = () => {
  </Select>
  </div> */}
 
- <div className="space-y-2">
- <Label htmlFor="price">Expected Selling Price (₹) *</Label>
- <Input
- id="price"
- type="number"
- step="0.01"
- value={formData.price}
- onChange={(e) => setFormData({ ...formData, price: e.target.value })}
- placeholder="e.g., 8.50"
- required
- />
- </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="price">Expected Selling Price (₹) *</Label>
+                                <Input
+                                    id="price"
+                                    type="number"
+                                    step="0.01"
+                                    value={formData.price}
+                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                    placeholder="e.g., 8.50"
+                                    required
+                                />
+                            </div>
 
- <div className="flex items-center space-x-2 mt-6">
- <Checkbox
- id="allowBuyerOffers"
- checked={formData.allowBuyerOffers}
- onCheckedChange={(checked) => setFormData({ ...formData, allowBuyerOffers: !!checked })}
- />
- <Label htmlFor="allowBuyerOffers" className="text-sm">
- Allow buyers to negotiate price
- </Label>
- </div>
-
-
- <div className="space-y-2">
- <Label htmlFor="stockAvailable">Stock Available *</Label>
- <Input
- id="stockAvailable"
- type="number"
- value={formData.stockAvailable}
- onChange={(e) =>
- setFormData({ ...formData, stockAvailable: e.target.value })
- }
- placeholder="e.g., 1000"
- required
- />
- </div>
+                            <div className="flex items-center space-x-2 mt-6">
+                                <Checkbox
+                                    id="allowBuyerOffers"
+                                    checked={formData.allowBuyerOffers}
+                                    onCheckedChange={(checked) => setFormData({ ...formData, allowBuyerOffers: !!checked })}
+                                />
+                                <Label htmlFor="allowBuyerOffers" className="text-sm">
+                                    Allow buyers to negotiate price
+                                </Label>
+                            </div>
 
 
- <div className="space-y-2">
- <Label htmlFor="location">Location *</Label>
- <Input
- id="location"
- value={formData.location}
- onChange={(e) => setFormData({ ...formData, location: e.target.value })}
- placeholder="e.g., Kerala, India"
- required
- />
- </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="stockAvailable">Stock Available *</Label>
+                                <Input
+                                    id="stockAvailable"
+                                    type="number"
+                                    value={formData.stockAvailable}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, stockAvailable: e.target.value })
+                                    }
+                                    placeholder="e.g., 1000"
+                                    required
+                                />
+                            </div>
 
- <div className="space-y-2">
- <Label>Expire Date *</Label>
- <Popover>
- <PopoverTrigger asChild>
- <Button
- variant="outline"
- className={cn(
- "w-full justify-start text-left font-normal",
- !expireDate && "text-muted-foreground"
- )}
- >
- <CalendarIcon className="mr-2 h-4 w-4" />
- {expireDate ? format(expireDate, "PPP") : <span>Pick expire date</span>}
- </Button>
- </PopoverTrigger>
- <PopoverContent className="w-auto p-0" align="start">
- <Calendar
- mode="single"
- selected={expireDate}
- onSelect={setExpireDate}
- initialFocus
- className={cn("p-3 pointer-events-auto")}
- disabled={(date) => date < new Date()}
- />
- </PopoverContent>
- </Popover>
- </div>
- </div>
 
- <div className="space-y-2">
- <Label htmlFor="description">Product Description</Label>
- <Textarea
- id="description"
- value={formData.description}
- onChange={(e) => setFormData({ ...formData, description: e.target.value })}
- placeholder="Describe your product, including specifications, quality, etc."
- rows={4}
- />
- </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="location">Location *</Label>
+                                <Input
+                                    id="location"
+                                    value={formData.location}
+                                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                    placeholder="e.g., Kerala, India"
+                                    required
+                                />
+                            </div>
 
- {/* Image Upload */}
- <div className="space-y-4">
- <Label>Product Images</Label>
- <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
- <input
- type="file"
- multiple
- accept="image/*"
- onChange={handleImageUpload}
- className="hidden"
- id="image-upload"
- />
- <label htmlFor="image-upload" className="cursor-pointer">
- <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
- <p className="text-sm text-muted-foreground">
- Click to upload images or drag and drop
- </p>
- </label>
- </div>
+                            <div className="space-y-2">
+                                <Label>Expire Date *</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !expireDate && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {expireDate ? format(expireDate, "PPP") : <span>Pick expire date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={expireDate}
+                                            onSelect={setExpireDate}
+                                            initialFocus
+                                            className={cn("p-3 pointer-events-auto")}
+                                            disabled={(date) => date < new Date()}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
 
- {/* Image Preview */}
- {images.length > 0 && (
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
- {images.map((image, index) => (
- <div key={index} className="relative">
- <img
- src={image}
- alt={`Product ${index + 1}`}
- className="w-full h-24 object-cover rounded-lg border"
- />
- <Button
- type="button"
- variant="destructive"
- size="sm"
- className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
- onClick={() => removeImage(index)}
- >
- <X className="h-3 w-3" />
- </Button>
- </div>
- ))}
- </div>
- )}
- </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Product Description</Label>
+                            <Textarea
+                                id="description"
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                placeholder="Describe your product, including specifications, quality, etc."
+                                rows={4}
+                            />
+                        </div>
 
- <div className="flex gap-4">
- <Button 
- type="submit" 
- className="w-full md:w-auto"
- disabled={isSubmitting}
- >
- {isSubmitting ? (
- <>
- <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
- <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
- <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
- </svg>
- {isEditMode ? 'Updating...' : 'Adding...'}
- </>
- ) : isEditMode ? 'Update Product' : 'Add Product'}
- </Button>
- <Button
- type="button"
- variant="outline"
- className="flex-1"
- onClick={() => navigate('/merchant/products')}
- >
- Cancel
- </Button>
- </div>
- </form>
- </CardContent>
- </Card>
- </div>
- );
+                        {/* Image Upload */}
+                        <div className="space-y-4">
+                            <Label>Product Images</Label>
+                            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                    id="image-upload"
+                                />
+                                <label htmlFor="image-upload" className="cursor-pointer">
+                                    <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                                    <p className="text-sm text-muted-foreground">
+                                        Click to upload images or drag and drop
+                                    </p>
+                                </label>
+                            </div>
+
+                            {/* Image Preview */}
+                            {images.length > 0 && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {images.map((image, index) => (
+                                        <div key={index} className="relative">
+                                            <img
+                                                src={image}
+                                                alt={`Product ${index + 1}`}
+                                                className="w-full h-24 object-cover rounded-lg border"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="sm"
+                                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                                                onClick={() => removeImage(index)}
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-4">
+                            <Button
+                                type="submit"
+                                className="w-full md:w-auto"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        {isEditMode ? 'Updating...' : 'Adding...'}
+                                    </>
+                                ) : isEditMode ? 'Update Product' : 'Add Product'}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => navigate('/merchant/products')}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
+    );
 };
 
 export default MerchantAddProduct;
