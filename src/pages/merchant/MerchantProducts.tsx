@@ -305,15 +305,6 @@ const MerchantProducts = () => {
                                     ? 'No products match your filters.'
                                     : 'You have not added any products yet.'}
                             </p>
-                            <div className="mt-6">
-                                <Button
-                                    onClick={() => navigate('/merchant/add-product')}
-                                    className="inline-flex items-center"
-                                >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add New Product
-                                </Button>
-                            </div>
                         </div>
                     ) : null}
 
@@ -630,7 +621,7 @@ const MerchantProducts = () => {
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                        <AlertDialogTitle>Delete Stock</AlertDialogTitle>
                     </AlertDialogHeader>
                     <AlertDialogDescription>
                         Are you sure you want to delete this product?
@@ -639,7 +630,10 @@ const MerchantProducts = () => {
                         <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
                             Cancel
                         </AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete}>
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            className="bg-red-600 text-white hover:bg-red-700"
+                        >
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>

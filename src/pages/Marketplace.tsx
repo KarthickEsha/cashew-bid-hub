@@ -34,7 +34,7 @@ const Marketplace = () => {
     const { user } = useUser();
     const { addRequirement } = useRequirements();
     const { addOrder } = useOrders();
-    
+
     const [filters, setFilters] = useState({
         search: "",
         grade: "",
@@ -352,7 +352,7 @@ const Marketplace = () => {
             expectedPrice: parseFloat(requestPrice),
             minSupplyQuantity: requestQuantity,
             deliveryLocation: profile?.address || 'Not specified',
-            city: profile?.location || 'Not specified', 
+            city: profile?.location || 'Not specified',
             country: 'India',
             deliveryDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             specifications: requestMessage || 'Standard quality requirements',
@@ -383,7 +383,7 @@ const Marketplace = () => {
     const handleConfirmQuickOrder = () => {
         if (!selectedProduct || !quickOrderQuantity) {
             toast({
-                title: "Missing Information", 
+                title: "Missing Information",
                 description: "Please enter quantity.",
                 variant: "destructive",
             });
@@ -612,14 +612,15 @@ const Marketplace = () => {
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center justify-between mb-1 px-2">
                                                     <CardTitle className="text-lg">{profile?.companyName || 'Your Company'}</CardTitle>
                                                     {product.verified && (
-                                                        <Badge variant="default" className="text-xs">
+                                                        <Badge variant="default" className="text-xs ml-2">
                                                             Verified
                                                         </Badge>
                                                     )}
                                                 </div>
+
                                                 <div className="flex items-center text-muted-foreground text-sm">
                                                     <MapPin size={14} className="mr-1" />
                                                     {product.origin}
@@ -686,8 +687,8 @@ const Marketplace = () => {
                                                     Place Bid
                                                 </Button>
                                             ) : (
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     variant="outline"
                                                     onClick={() => handleQuickOrder(product)}
                                                 >
@@ -819,8 +820,8 @@ const Marketplace = () => {
                                                             Place Bid
                                                         </Button>
                                                     ) : (
-                                                        <Button 
-                                                            size="sm" 
+                                                        <Button
+                                                            size="sm"
                                                             onClick={() => handleQuickOrder(product)}
                                                         >
                                                             Quick Order
@@ -966,7 +967,7 @@ const Marketplace = () => {
                                 onChange={(e) => setRequestQuantity(e.target.value)}
                             />
                         </div>
-                        
+
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Expected Price (₹/{selectedProduct?.quantityUnit})</label>
                             <Input
@@ -1010,7 +1011,7 @@ const Marketplace = () => {
                         <div className="p-4 border rounded-lg bg-primary/5">
                             <h4 className="font-medium">{selectedProduct?.grade} Cashews</h4>
                             <p className="text-sm text-muted-foreground">
-                                From {selectedProduct?.merchantName} - {selectedProduct?.origin}
+                                From {profile?.companyName} - {selectedProduct?.origin}
                             </p>
                             <p className="text-lg font-bold text-primary mt-2">
                                 {selectedProduct?.pricePerKg}/{selectedProduct?.quantityUnit}
