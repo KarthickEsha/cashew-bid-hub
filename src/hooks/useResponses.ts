@@ -58,34 +58,68 @@ export const useResponses = create<ResponsesState>()(
         set((state) => ({
           responses: state.responses.map(response => {
             if (response.id === responseId) {
-              const updatedResponse = { 
-                ...response, 
+              const updatedResponse = {
+                ...response,
                 status,
                 ...(remarks !== undefined ? { remarks } : {})
               };
-              
-              // Create order when status is set to 'Accepted'
-              if (status === 'Accepted') {
-                const { addOrder } = useOrders.getState();
-                addOrder({
-                  requirementId: response.requirementId,
-                  responseId: response.id,
-                  productName: 'Cashews', // You might want to get this from requirement
-                  merchantName: response.merchantName,
-                  merchantId: response.merchantId,
-                  customerName: 'Current User', // You might want to get this from auth
-                  quantity: response.quantity,
-                  unitPrice: response.price,
-                  totalAmount: `$${(parseFloat(response.price.replace(/[^0-9.]/g, '')) * parseFloat(response.quantity.replace(/[^0-9.]/g, ''))).toLocaleString()}`,
-                  status: 'processing',
-                  orderDate: new Date().toISOString().split('T')[0],
-                  location: response.merchantLocation,
-                  grade: response.grade,
-                  origin: response.origin,
-                  remarks: response.message,
-                });
+
+              const now = new Date().toISOString();
+
+              // Handle both Accepted and Rejected statuses
+              if (status === 'Accepted' || status === 'Rejected') {
+                const { addOrder, updateOrderStatus, getOrderByResponseId } = useOrders.getState();
+
+                // Check if order already exists for this response
+                const existingOrder = getOrderByResponseId?.(responseId);
+
+                if (existingOrder) {
+                  // Update existing order status
+                  updateOrderStatus(
+                    existingOrder.id,
+                    status === 'Accepted' ? 'processing' : 'cancelled',
+                    remarks || `Response ${status.toLowerCase()} by buyer`
+                  );
+                } else if (status === 'Accepted') {
+                  // Only create new order for Accepted status
+                  const statusHistory = [{
+                    status: 'processing',
+                    timestamp: now,
+                    remarks: remarks || 'Order placed by buyer',
+                    updatedBy: 'Buyer'
+                  }];
+
+                  if (remarks) {
+                    statusHistory.push({
+                      status: status.toLowerCase(),
+                      timestamp: now,
+                      remarks: remarks,
+                      updatedBy: 'Buyer'
+                    });
+                  }
+
+                  addOrder({
+                    requirementId: response.requirementId,
+                    responseId: response.id,
+                    productName: 'Cashews',
+                    merchantName: response.merchantName,
+                    merchantId: response.merchantId,
+                    customerName: 'Current User',
+                    quantity: response.quantity,
+                    unitPrice: response.price,
+                    totalAmount: `$${(parseFloat(response.price.replace(/[^0-9.]/g, '')) * parseFloat(response.quantity.replace(/[^0-9.]/g, ''))).toLocaleString()}`,
+                    status: 'processing',
+                    orderDate: now.split('T')[0],
+                    location: response.merchantLocation,
+                    grade: response.grade,
+                    origin: response.origin,
+                    remarks: response.message,
+                    buyerRemarks: response.remarks,
+                    statusHistory: statusHistory
+                  });
+                }
               }
-              
+
               return updatedResponse;
             }
             return response;

@@ -31,7 +31,7 @@ const MerchantOrders = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  
+
   // Get orders for current merchant
   const merchantOrders = allOrders;
 
@@ -39,23 +39,23 @@ const MerchantOrders = () => {
   const displayedOrders = useMemo(() => {
     if (!merchantOrders) return [];
     let result = [...merchantOrders];
-    
+
     // Apply filters
     if (filters.orderId || filters.customer || filters.product) {
-      result = result.filter(order => 
+      result = result.filter(order =>
         (filters.orderId ? order.id?.toLowerCase().includes(filters.orderId.toLowerCase()) : true) &&
         (filters.customer ? order.customerName?.toLowerCase().includes(filters.customer.toLowerCase()) : true) &&
         (filters.product ? order.productName?.toLowerCase().includes(filters.product.toLowerCase()) : true)
       );
     }
-    
+
     // Apply sorting
     if (sortField) {
       result = [...result].sort((a, b) => {
         // Get values with proper typing
         const aValue = a[sortField as keyof typeof a];
         const bValue = b[sortField as keyof typeof b];
-        
+
         // Function to get comparable value from any type
         const getComparableValue = (value: any): string | number => {
           // Handle array type
@@ -73,36 +73,36 @@ const MerchantOrders = () => {
             }
             return ''; // Default for empty arrays
           }
-          
+
           // Handle date fields
           if (sortField === 'orderDate' || sortField === 'deliveryDate' || sortField === 'shippingDate') {
             return value ? new Date(String(value)).getTime() : 0;
           }
-          
+
           // Handle numeric fields
           if (sortField === 'totalAmount') {
-            return Number(String(value || '').replace(/[^0-9.-]+/g,'') || 0);
+            return Number(String(value || '').replace(/[^0-9.-]+/g, '') || 0);
           }
-          
+
           if (sortField === 'quantity') {
             return parseInt(String(value || '').replace(/[^0-9]/g, '') || '0', 10) || 0;
           }
-          
+
           // Default to string comparison
           return String(value || '').toLowerCase();
         };
-        
+
         // Get comparable values
         const compareA = getComparableValue(aValue);
         const compareB = getComparableValue(bValue);
-        
+
         // Perform the comparison
         if (compareA < compareB) return sortDirection === 'asc' ? -1 : 1;
         if (compareA > compareB) return sortDirection === 'asc' ? 1 : -1;
         return 0;
       });
     }
-    
+
     return result;
   }, [merchantOrders, filters, sortField, sortDirection]);
 
@@ -110,7 +110,7 @@ const MerchantOrders = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortField, sortDirection, pageSize]);
-  
+
   // Calculate pagination
   const totalPages = Math.ceil(displayedOrders.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -144,11 +144,11 @@ const MerchantOrders = () => {
   // Sort orders
   const sortOrders = (ordersToSort: any[]) => {
     if (!sortField) return ordersToSort;
-    
+
     return [...ordersToSort].sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
-      
+
       // Handle different data types
       if (sortField === 'date' || sortField === 'deliveryDate') {
         aValue = new Date(aValue).getTime();
@@ -164,7 +164,7 @@ const MerchantOrders = () => {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
       }
-      
+
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -192,7 +192,7 @@ const MerchantOrders = () => {
       setSortField(field);
       setSortDirection('asc');
     }
-    
+
     // Apply sorting to current orders
     const currentFiltered = [...merchantOrders];
     // Note: setOrders is not defined in this component
@@ -204,7 +204,7 @@ const MerchantOrders = () => {
     if (sortField !== field) {
       return <ArrowUpDown className="h-4 w-4 text-muted-foreground opacity-50" />;
     }
-    return sortDirection === 'asc' 
+    return sortDirection === 'asc'
       ? <ArrowUp className="h-4 w-4 text-primary" />
       : <ArrowDown className="h-4 w-4 text-primary" />;
   };
@@ -311,7 +311,7 @@ const MerchantOrders = () => {
             <Table className="min-w-[1000px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead 
+                  <TableHead
                     className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('id')}
                   >
@@ -320,7 +320,7 @@ const MerchantOrders = () => {
                       {getSortIcon('id')}
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="w-[15%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('customerName')}
                   >
@@ -329,7 +329,7 @@ const MerchantOrders = () => {
                       {getSortIcon('customerName')}
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="w-[20%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('productName')}
                   >
@@ -338,7 +338,7 @@ const MerchantOrders = () => {
                       {getSortIcon('productName')}
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('quantity')}
                   >
@@ -347,7 +347,7 @@ const MerchantOrders = () => {
                       {getSortIcon('quantity')}
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('totalAmount')}
                   >
@@ -356,7 +356,7 @@ const MerchantOrders = () => {
                       {getSortIcon('totalAmount')}
                     </div>
                   </TableHead>
-                  <TableHead 
+                  <TableHead
                     className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('date')}
                   >
@@ -366,15 +366,15 @@ const MerchantOrders = () => {
                     </div>
                   </TableHead>
                   {/* <TableHead 
-                    className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort('deliveryDate')}
-                  >
-                    <div className="flex items-center justify-between">
-                      Delivery Date
-                      {getSortIcon('deliveryDate')}
-                    </div>
-                  </TableHead> */}
-                  <TableHead 
+ className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
+ onClick={() => handleSort('deliveryDate')}
+ >
+ <div className="flex items-center justify-between">
+ Delivery Date
+ {getSortIcon('deliveryDate')}
+ </div>
+ </TableHead> */}
+                  <TableHead
                     className="w-[7%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('status')}
                   >
@@ -404,17 +404,17 @@ const MerchantOrders = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleViewDetails(order)}
                             title="View Details"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={(e) => handleDeleteClick(order.id, e)}
                             title="Delete Order"
@@ -511,7 +511,7 @@ const MerchantOrders = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Order Details</DialogTitle>
+            <DialogTitle>Buyer Response Details</DialogTitle>
             <DialogDescription>
               Detailed information about the selected order
             </DialogDescription>
@@ -550,9 +550,9 @@ const MerchantOrders = () => {
               </div>
 
               {/* <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Delivery Date</span>
-                <span className="font-semibold">{new Date(selectedOrder.deliveryDate).toLocaleDateString()}</span>
-              </div> */}
+ <span className="font-medium text-muted-foreground">Delivery Date</span>
+ <span className="font-semibold">{new Date(selectedOrder.deliveryDate).toLocaleDateString()}</span>
+ </div> */}
 
               <div className="flex justify-between items-center">
                 <span className="font-medium text-muted-foreground">Status</span>
@@ -561,27 +561,71 @@ const MerchantOrders = () => {
                 </Badge>
               </div>
 
-              {selectedOrder.buyerRemarks && (
-                <div className="mt-4 pt-4 border-t">
-                  <h4 className="font-medium mb-2">Buyer's Remarks</h4>
-                  <div className="bg-muted/50 p-3 rounded-md">
-                    <p className="text-sm whitespace-pre-wrap">{selectedOrder.buyerRemarks}</p>
+              {/* Buyer Response Section */}
+              <div className="mt-4 pt-4 border-t">
+                <h4 className="font-medium mb-3">Buyer Remarks</h4>
+
+                {/* Last Status Only */}
+                {selectedOrder.statusHistory?.length > 0 && (
+                  <div className="mb-4">
+                    {(() => {
+                      const lastHistory =
+                        selectedOrder.statusHistory[selectedOrder.statusHistory.length - 1];
+                      return (
+                        <div className="flex items-start gap-3 text-sm">
+                          <div
+                            className={`flex-shrink-0 w-2 h-2 mt-1.5 rounded-full ${lastHistory.status === "rejected"
+                              ? "bg-destructive"
+                              : "bg-primary"
+                              }`}
+                          ></div>
+                          <div className="flex-1">
+                            <div className="flex justify-between">
+                              <div>
+                                <span className="font-medium">
+                                  {lastHistory.updatedBy === "Buyer" ? "Buyer " : ""}
+                                  <span className="capitalize">{lastHistory.status}</span>
+                                </span>
+                                {lastHistory.updatedBy &&
+                                  lastHistory.updatedBy !== "System" && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      (by {lastHistory.updatedBy})
+                                    </span>
+                                  )}
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(lastHistory.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                            {lastHistory.remarks && (
+                              <div className="mt-1 bg-muted/50 p-2 rounded-md">
+                                <p className="text-sm whitespace-pre-wrap">
+                                  {lastHistory.remarks}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
-                </div>
-              )}  
+                )}
+              </div>
+
+
             </div>
           )}
 
           {/* <div className="mt-6 flex justify-end">
-            <DialogClose asChild>
-              <Button
-                className="bg-purple-600 text-white hover:bg-purple-700"
-                size="sm"
-              >
-                Close
-              </Button>
-            </DialogClose>
-          </div> */}
+ <DialogClose asChild>
+ <Button
+ className="bg-purple-600 text-white hover:bg-purple-700"
+ size="sm"
+ >
+ Close
+ </Button>
+ </DialogClose>
+ </div> */}
 
         </DialogContent>
       </Dialog>
@@ -596,8 +640,8 @@ const MerchantOrders = () => {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setIsDeleteDialogOpen(false);
                 setOrderToDelete(null);
@@ -605,7 +649,7 @@ const MerchantOrders = () => {
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               variant="destructive"
               onClick={handleConfirmDelete}
             >
