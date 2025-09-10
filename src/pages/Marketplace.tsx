@@ -1,10 +1,15 @@
 import { useEffect, useState, useMemo } from "react";
 import { useInventory } from "@/hooks/useInventory";
 import { useProfile } from "@/hooks/useProfile";
+import { useRequirements } from "@/hooks/useRequirements";
+import { useOrders } from "@/hooks/useOrders";
+import { useToast } from "@/components/ui/use-toast";
+import { useUser } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     MapPin,
@@ -25,6 +30,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const Marketplace = () => {
+    const { toast } = useToast();
+    const { user } = useUser();
+    const { addRequirement } = useRequirements();
+    const { addOrder } = useOrders();
+    
     const [filters, setFilters] = useState({
         search: "",
         grade: "",
@@ -316,6 +326,107 @@ const Marketplace = () => {
     };
 
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
+    const [showRequestDialog, setShowRequestDialog] = useState(false);
+    const [showQuickOrderDialog, setShowQuickOrderDialog] = useState(false);
+    const [requestQuantity, setRequestQuantity] = useState("");
+    const [requestPrice, setRequestPrice] = useState("");
+    const [requestMessage, setRequestMessage] = useState("");
+    const [quickOrderQuantity, setQuickOrderQuantity] = useState("");
+
+    const handleSendRequest = () => {
+        if (!selectedProduct || !requestQuantity || !requestPrice) {
+            toast({
+                title: "Missing Information",
+                description: "Please fill in all required fields.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Create requirement from marketplace product
+        addRequirement({
+            customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
+            grade: selectedProduct.grade || 'N/A',
+            quantity: `${requestQuantity} ${selectedProduct.quantityUnit}`,
+            origin: selectedProduct.origin?.toLowerCase() || 'any',
+            expectedPrice: parseFloat(requestPrice),
+            minSupplyQuantity: requestQuantity,
+            deliveryLocation: profile?.address || 'Not specified',
+            city: profile?.location || 'Not specified', 
+            country: 'India',
+            deliveryDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            specifications: requestMessage || 'Standard quality requirements',
+            allowLowerBid: true,
+            date: new Date().toISOString().split('T')[0],
+            status: 'active' as const,
+            isDraft: false,
+        });
+
+        toast({
+            title: "Request Sent Successfully",
+            description: "Your request has been sent to the merchant.",
+        });
+
+        // Reset form and close dialog
+        setRequestQuantity("");
+        setRequestPrice("");
+        setRequestMessage("");
+        setShowRequestDialog(false);
+        setSelectedProduct(null);
+    };
+
+    const handleQuickOrder = (product: any) => {
+        setSelectedProduct(product);
+        setShowQuickOrderDialog(true);
+    };
+
+    const handleConfirmQuickOrder = () => {
+        if (!selectedProduct || !quickOrderQuantity) {
+            toast({
+                title: "Missing Information", 
+                description: "Please enter quantity.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Create order directly
+        const unitPrice = parseFloat(selectedProduct.pricePerKg.replace('$', ''));
+        const totalAmount = unitPrice * parseFloat(quickOrderQuantity);
+
+        addOrder({
+            requirementId: `REQ-${Date.now()}`,
+            responseId: `RES-${Date.now()}`,
+            productName: `${selectedProduct.grade} Cashews`,
+            merchantName: selectedProduct.merchantName,
+            merchantId: selectedProduct.id || 'merchant-1',
+            customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
+            quantity: `${quickOrderQuantity} ${selectedProduct.quantityUnit}`,
+            unitPrice: `₹${unitPrice}`,
+            totalAmount: `₹${totalAmount.toFixed(2)}`,
+            status: 'processing' as const,
+            orderDate: new Date().toISOString().split('T')[0],
+            location: selectedProduct.location || 'N/A',
+            grade: selectedProduct.grade,
+            origin: selectedProduct.origin || 'N/A',
+            statusHistory: [{
+                status: 'processing',
+                timestamp: new Date().toISOString(),
+                remarks: 'Quick order placed from marketplace',
+                updatedBy: user?.fullName || 'Customer'
+            }],
+        });
+
+        toast({
+            title: "Order Placed Successfully",
+            description: "Your order has been placed and sent to the merchant.",
+        });
+
+        // Reset and close
+        setQuickOrderQuantity("");
+        setShowQuickOrderDialog(false);
+        setSelectedProduct(null);
+    };
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -567,12 +678,19 @@ const Marketplace = () => {
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    onClick={() => setSelectedProduct(product)}
+                                                    onClick={() => {
+                                                        setSelectedProduct(product);
+                                                        setShowRequestDialog(true);
+                                                    }}
                                                 >
                                                     Place Bid
                                                 </Button>
                                             ) : (
-                                                <Button size="sm" variant="outline">
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline"
+                                                    onClick={() => handleQuickOrder(product)}
+                                                >
                                                     Quick Order
                                                 </Button>
                                             )}
@@ -690,18 +808,24 @@ const Marketplace = () => {
                                                             View
                                                         </Button>
                                                     </Link>
-                                                    {/* {product.pricingType === "bidding" ? (
- <Button
- size="sm"
- onClick={() => setSelectedProduct(product)}
- >
- Place Bid
- </Button>
- ) : (
- <Button size="sm">
- Quick Order
- </Button>
- )} */}
+                                                    {product.pricingType === "bidding" ? (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedProduct(product);
+                                                                setShowRequestDialog(true);
+                                                            }}
+                                                        >
+                                                            Place Bid
+                                                        </Button>
+                                                    ) : (
+                                                        <Button 
+                                                            size="sm" 
+                                                            onClick={() => handleQuickOrder(product)}
+                                                        >
+                                                            Quick Order
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -815,74 +939,106 @@ const Marketplace = () => {
                 </>
             )}
 
-            {/* 🔹 Place Bid Dialog */}
-            <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-                <DialogContent className="max-w-md">
+            {/* Request Dialog */}
+            <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
+                <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            Place Bid - {selectedProduct?.merchantName}
-                        </DialogTitle>
+                        <DialogTitle>Send Product Request</DialogTitle>
                     </DialogHeader>
 
-                    <div className="space-y-4 text-sm">
-                        <p>
-                            <strong>Current highest bid:</strong> ${selectedProduct?.highestBid}/ton
-                        </p>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <p className="text-muted-foreground">Highest Bid</p>
-                                <p className="font-semibold">${selectedProduct?.highestBid}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground">Active Bidders</p>
-                                <p className="font-semibold">{selectedProduct?.activeBidders}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground">Time Left</p>
-                                <p className="font-semibold">{selectedProduct?.timeLeft}</p>
-                            </div>
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="font-medium">{selectedProduct?.grade} Cashews</h4>
+                            <p className="text-sm text-muted-foreground">
+                                From {selectedProduct?.merchantName} - {selectedProduct?.origin}
+                            </p>
+                            <p className="text-sm font-medium text-primary">
+                                {selectedProduct?.pricePerKg}/kg
+                            </p>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Bid Amount (per ton)</label>
+                            <label className="text-sm font-medium">Quantity ({selectedProduct?.quantityUnit})</label>
                             <Input
                                 type="number"
-                                placeholder="Enter bid amount"
-                                value={bidAmount}
-                                onChange={(e) => setBidAmount(e.target.value ? Number(e.target.value) : "")}
+                                placeholder="Enter quantity needed"
+                                value={requestQuantity}
+                                onChange={(e) => setRequestQuantity(e.target.value)}
                             />
                         </div>
+                        
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Quantity (ton)</label>
+                            <label className="text-sm font-medium">Expected Price (₹/{selectedProduct?.quantityUnit})</label>
                             <Input
                                 type="number"
-                                placeholder="Enter quantity"
-                                value={quantity}
-                                onChange={(e) => setQuantity(e.target.value ? Number(e.target.value) : "")}
+                                placeholder="Enter your expected price"
+                                value={requestPrice}
+                                onChange={(e) => setRequestPrice(e.target.value)}
                             />
                         </div>
+
                         <div className="space-y-2">
-                            <p className="text-muted-foreground">Total Value</p>
-                            <p className="font-semibold">${totalValue}</p>
+                            <label className="text-sm font-medium">Message (Optional)</label>
+                            <Textarea
+                                placeholder="Add any specific requirements..."
+                                value={requestMessage}
+                                onChange={(e) => setRequestMessage(e.target.value)}
+                                rows={3}
+                            />
                         </div>
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setSelectedProduct(null)}>
+                        <Button variant="outline" onClick={() => setShowRequestDialog(false)}>
                             Cancel
                         </Button>
-                        <Button
-                            onClick={() => {
-                                console.log({
-                                    merchant: selectedProduct?.merchantName,
-                                    bidAmount,
-                                    quantity,
-                                    totalValue,
-                                });
-                                setSelectedProduct(null);
-                            }}
-                        >
-                            Place Bid
+                        <Button onClick={handleSendRequest}>
+                            Send Request
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Quick Order Dialog */}
+            <Dialog open={showQuickOrderDialog} onOpenChange={setShowQuickOrderDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Quick Order</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        <div className="p-4 border rounded-lg bg-primary/5">
+                            <h4 className="font-medium">{selectedProduct?.grade} Cashews</h4>
+                            <p className="text-sm text-muted-foreground">
+                                From {selectedProduct?.merchantName} - {selectedProduct?.origin}
+                            </p>
+                            <p className="text-lg font-bold text-primary mt-2">
+                                {selectedProduct?.pricePerKg}/{selectedProduct?.quantityUnit}
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Quantity ({selectedProduct?.quantityUnit})</label>
+                            <Input
+                                type="number"
+                                placeholder="Enter quantity to order"
+                                value={quickOrderQuantity}
+                                onChange={(e) => setQuickOrderQuantity(e.target.value)}
+                            />
+                            {quickOrderQuantity && selectedProduct && (
+                                <p className="text-sm text-muted-foreground">
+                                    Total: ₹{(parseFloat(selectedProduct.pricePerKg.replace('$', '')) * parseFloat(quickOrderQuantity)).toFixed(2)}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowQuickOrderDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleConfirmQuickOrder}>
+                            Place Order
                         </Button>
                     </DialogFooter>
                 </DialogContent>

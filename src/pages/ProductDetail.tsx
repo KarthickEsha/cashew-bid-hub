@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 import {
   MapPin, Calendar, Star, Phone, Mail, Globe, ArrowLeft,
-  TrendingUp, Package, Shield, Clock
+  TrendingUp, Package, Shield, Clock, Send, Zap, Sparkles
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { merchants, products } from "@/data/mockdata";
@@ -15,6 +16,7 @@ import { Product, Location as LocationType } from "@/types/user";
 import { useInventory } from "@/hooks/useInventory";
 import { useUser } from "@clerk/clerk-react";
 import { useProfile } from "@/hooks/useProfile";
+import { useRequirements } from "@/hooks/useRequirements";
 
 const ProductDetail = () => {
   // Hooks must be called at the top level
@@ -24,6 +26,8 @@ const ProductDetail = () => {
   const { role } = useRole();
   const { user } = useUser();
   const { profile, setProfile } = useProfile();
+  const { addRequirement } = useRequirements();
+  const { toast } = useToast();
 
   // State hooks - all hooks must be called unconditionally at the top level
   const [isLoading, setIsLoading] = useState(true);
@@ -163,7 +167,43 @@ const ProductDetail = () => {
   };
 
   const handlePlaceBid = () => {
-    console.log("Bid placed:", { bidQuantity, bidPrice, bidMessage });
+    if (!bidQuantity || !bidPrice || !product) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in quantity and expected price.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create requirement from product details
+    addRequirement({
+      customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
+      grade: product.grade || 'N/A',
+      quantity: `${bidQuantity} ${product.unit}`,
+      origin: typeof product.location === 'string' ? product.location.toLowerCase() : 'any',
+      expectedPrice: parseFloat(bidPrice),
+      minSupplyQuantity: bidQuantity,
+      deliveryLocation: profile?.address || 'Not specified',
+      city: profile?.location || 'Not specified',
+      country: 'India',
+      deliveryDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      specifications: bidMessage || 'Standard quality requirements',
+      allowLowerBid: true,
+      date: new Date().toISOString().split('T')[0],
+      status: 'active' as const,
+      isDraft: false,
+    });
+
+    toast({
+      title: "Request Sent Successfully",
+      description: "Your request has been sent to the merchant.",
+    });
+
+    // Clear form
+    setBidQuantity("");
+    setBidPrice("");
+    setBidMessage("");
   };
 
   const handleViewAllProducts = () => {
@@ -184,171 +224,230 @@ const ProductDetail = () => {
         {role === "processor" ? "Back to My Product Stocks" : "Back to Marketplace"}
       </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Product Card */}
-          <Card>
-            <CardHeader>
+        <div className="lg:col-span-2 space-y-8">
+          {/* Hero Product Card */}
+          <Card className="overflow-hidden shadow-warm border-0 bg-gradient-warm">
+            <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <CardTitle className="text-2xl">{product.grade} Cashews</CardTitle>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <CardTitle className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                      {product.grade} Cashews
+                    </CardTitle>
+                    <Badge variant="secondary" className="text-xs">
+                      {product.type}
+                    </Badge>
                     {merchant?.verified && (
-                      <Badge variant="default">
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
                         <Shield size={12} className="mr-1" /> Verified
                       </Badge>
                     )}
                   </div>
-                  <p className="text-muted-foreground">{product.description}</p>
+                  <p className="text-muted-foreground text-lg leading-relaxed">{product.description}</p>
                 </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-primary">
-                    {new Intl.NumberFormat("en-IN", {
-                      style: "currency",
-                      currency: "INR",
+                <div className="text-right bg-primary/5 p-6 rounded-2xl border border-primary/20">
+                  <div className="text-4xl font-bold text-primary mb-1">
+                    ₹{new Intl.NumberFormat("en-IN", {
                       maximumFractionDigits: 0,
                     }).format(product.price)}
                   </div>
-                  <div className="text-sm text-muted-foreground">Per ton</div>
+                  <div className="text-sm font-medium text-primary/70">Per {product.unit}</div>
                 </div>
-
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Package size={20} />
+            <CardContent className="pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="flex items-center space-x-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Package size={24} className="text-primary" />
+                  </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Quantity</div>
-                    <div className="font-semibold">{product.availableQty}</div>
+                    <div className="text-sm text-muted-foreground font-medium">Available Stock</div>
+                    <div className="font-bold text-lg">{product.stock} {product.unit}</div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <MapPin size={20} />
+                <div className="flex items-center space-x-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <MapPin size={24} className="text-primary" />
+                  </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Origin</div>
-                    <div className="font-semibold">
-                      {typeof merchant.location === 'string'
-                        ? merchant.location
+                    <div className="text-sm text-muted-foreground font-medium">Origin Location</div>
+                    <div className="font-bold text-lg">
+                      {typeof product.location === 'string'
+                        ? product.location
                         : [
-                          (merchant.location as LocationType)?.address,
-                          (merchant.location as LocationType)?.city,
-                          (merchant.location as LocationType)?.region,
-                          (merchant.location as LocationType)?.country
-                        ].filter(Boolean).join(', ')
+                          (product.location as LocationType)?.city,
+                          (product.location as LocationType)?.country
+                        ].filter(Boolean).join(', ') || 'N/A'
                       }
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar size={20} />
+                <div className="flex items-center space-x-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Calendar size={24} className="text-primary" />
+                  </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Expiry</div>
-                    <div className="font-semibold">{new Date(product.expireDate).toLocaleDateString()}</div>
+                    <div className="text-sm text-muted-foreground font-medium">Best Before</div>
+                    <div className="font-bold text-lg">{new Date(product.expireDate).toLocaleDateString()}</div>
                   </div>
                 </div>
               </div>
+              
               {product.pricingType === "bidding" && (
-                <div className="flex items-center space-x-2 p-3 bg-accent/50 rounded-lg mt-4">
-                  <TrendingUp size={20} className="text-primary" />
-                  <span className="font-medium">This product accepts bidding</span>
+                <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <TrendingUp size={20} className="text-yellow-600" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-yellow-800">Live Bidding Available</span>
+                    <p className="text-sm text-yellow-700">This product accepts competitive bids</p>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Specs */}
-          <Card>
-            <CardHeader><CardTitle>Specifications</CardTitle></CardHeader>
+          {/* Enhanced Specifications */}
+          <Card className="shadow-soft">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Sparkles className="text-primary" size={20} />
+                <CardTitle>Product Specifications</CardTitle>
+              </div>
+            </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {getProductSpecs().map(([key, value], index) => (
-                  <div key={index} className="flex justify-between border-b py-2">
-                    <span className="text-muted-foreground capitalize">{key}</span>
-                    <span className="font-medium">{value}</span>
+                  <div key={index} className="p-4 bg-gradient-to-r from-accent/30 to-accent/10 rounded-lg border border-accent/50">
+                    <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">{key}</div>
+                    <div className="font-bold text-lg text-foreground mt-1">{value}</div>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Order/Bid - Hide in processor mode */}
+          {/* Enhanced Request Form - Hide in processor mode */}
           {role !== "processor" && (
-            <Card>
+            <Card className="shadow-warm border-primary/20 bg-gradient-to-br from-primary/5 to-accent/20">
               <CardHeader>
-                <CardTitle>{product.pricingType === "bidding" ? "Place Bid" : "My Offers"}</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Zap className="text-primary" size={20} />
+                  <CardTitle className="text-primary">{product.pricingType === "bidding" ? "Place Your Bid" : "Send Enquiry"}</CardTitle>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium">Quantity (kg)</label>
-                    <Input value={bidQuantity} onChange={(e) => setBidQuantity(e.target.value)} />
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-foreground">Quantity ({product.unit})</label>
+                    <Input 
+                      value={bidQuantity} 
+                      onChange={(e) => setBidQuantity(e.target.value)}
+                      placeholder={`Enter quantity in ${product.unit}`}
+                      className="border-primary/20 focus:border-primary"
+                    />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium">Your Expected Price ($/kg)</label>
-                    <Input value={bidPrice} onChange={(e) => setBidPrice(e.target.value)} />
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-foreground">Your Expected Price (₹/{product.unit})</label>
+                    <Input 
+                      value={bidPrice} 
+                      onChange={(e) => setBidPrice(e.target.value)}
+                      placeholder="Enter your expected price"
+                      className="border-primary/20 focus:border-primary"
+                    />
                   </div>
-                  {/* {product.pricingType === "bidding" && (
- <div>
- <label className="block text-sm font-medium">Your Price ($/ton)</label>
- <Input value={bidPrice} onChange={(e) => setBidPrice(e.target.value)} />
- </div>
- )} */}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium">Message</label>
-                  <Textarea value={bidMessage} onChange={(e) => setBidMessage(e.target.value)} />
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-foreground">Message to Merchant</label>
+                  <Textarea 
+                    value={bidMessage} 
+                    onChange={(e) => setBidMessage(e.target.value)}
+                    placeholder="Add any specific requirements or questions..."
+                    rows={4}
+                    className="border-primary/20 focus:border-primary resize-none"
+                  />
                 </div>
-                <Button onClick={handlePlaceBid} className="w-full">
-                  {product.pricingType === "bidding" ? "Place Bid" : "Send Request"}
+                <Button 
+                  onClick={handlePlaceBid} 
+                  className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white font-semibold py-3 text-lg shadow-warm"
+                  size="lg"
+                >
+                  <Send className="mr-2" size={18} />
+                  {product.pricingType === "bidding" ? "Place Bid Now" : "Send Request"}
                 </Button>
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* Merchant Card */}
-          <Card className="sticky top-20">
-            <CardHeader>
-              <div className="flex justify-between">
-                <CardTitle>{merchant.name}</CardTitle>
+        {/* Enhanced Right Sidebar */}
+        <div className="space-y-8">
+          {/* Enhanced Merchant Card */}
+          <Card className="sticky top-20 shadow-warm border-0 bg-gradient-warm">
+            <CardHeader className="pb-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-xl font-bold text-primary">{merchant.name}</CardTitle>
+                  <div className="flex items-center mt-2">
+                    <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-full border border-yellow-200">
+                      <Star size={14} className="text-yellow-500 mr-1" />
+                      <span className="font-semibold text-sm">{merchant?.rating || 'N/A'}</span>
+                    </div>
+                    <span className="text-muted-foreground ml-2 text-sm">
+                      ({merchant?.totalOrders || 0} {merchant?.totalOrders === 1 ? 'order' : 'orders'})
+                    </span>
+                  </div>
+                </div>
                 {merchant.verified && (
-                  <Badge><Shield size={12} className="mr-1" /> Verified</Badge>
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                    <Shield size={12} className="mr-1" /> Verified
+                  </Badge>
                 )}
               </div>
-              <div className="flex items-center">
-                <Star size={16} className="text-yellow-500 mr-1" />
-                <span>{merchant?.rating || 'N/A'}</span>
-                <span className="text-muted-foreground ml-1">
-                  ({merchant?.totalOrders || 0} {merchant?.totalOrders === 1 ? 'order' : 'orders'})
-                </span>
-              </div>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm mb-3">{merchant?.description || 'No description available'}</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center">
-                  <MapPin size={16} className="mr-2" />
-                  {typeof merchant?.location === 'string'
-                    ? merchant.location
-                    : [
-                      (merchant?.location as LocationType)?.address,
-                      (merchant?.location as LocationType)?.city,
-                      (merchant?.location as LocationType)?.region,
-                      (merchant?.location as LocationType)?.country
-                    ].filter(Boolean).join(', ') || 'N/A'}
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground leading-relaxed">{merchant?.description || 'Quality cashew supplier with years of experience'}</p>
+              
+              <div className="space-y-3">
+                <div className="flex items-center p-2 bg-primary/5 rounded-lg">
+                  <MapPin size={16} className="mr-3 text-primary" />
+                  <span className="text-sm font-medium">
+                    {typeof merchant?.location === 'string'
+                      ? merchant.location
+                      : [
+                        (merchant?.location as LocationType)?.city,
+                        (merchant?.location as LocationType)?.country
+                      ].filter(Boolean).join(', ') || 'N/A'}
+                  </span>
                 </div>
-                <div className="flex items-center"><Phone size={16} className="mr-2" /> {merchant?.phone || 'N/A'}</div>
-                <div className="flex items-center"><Mail size={16} className="mr-2" /> {merchant?.email || 'N/A'}</div>
-                <div className="flex items-center"><Globe size={16} className="mr-2" /> {merchant?.website || 'N/A'}</div>
-                <div className="flex items-center"><Clock size={16} className="mr-2" /> Response: {merchant?.responseTime || 'N/A'}</div>
+                <div className="flex items-center p-2 bg-primary/5 rounded-lg">
+                  <Phone size={16} className="mr-3 text-primary" />
+                  <span className="text-sm font-medium">{merchant?.phone || 'Contact via platform'}</span>
+                </div>
+                <div className="flex items-center p-2 bg-primary/5 rounded-lg">
+                  <Mail size={16} className="mr-3 text-primary" />
+                  <span className="text-sm font-medium">{merchant?.email || 'Available on request'}</span>
+                </div>
+                <div className="flex items-center p-2 bg-primary/5 rounded-lg">
+                  <Clock size={16} className="mr-3 text-primary" />
+                  <span className="text-sm font-medium">Response: {merchant?.responseTime || 'Within 24 hours'}</span>
+                </div>
               </div>
-              <div className="mt-4 space-y-2">
-                <Button variant="outline" className="w-full">Contact Merchant</Button>
-                <Button variant="ghost" className="w-full" onClick={handleViewAllProducts}>View All Products</Button>
+              
+              <div className="pt-4 space-y-3">
+                <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white shadow-warm">
+                  Contact Merchant
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-primary/20 hover:bg-primary/5" 
+                  onClick={handleViewAllProducts}
+                >
+                  View All Products
+                </Button>
               </div>
             </CardContent>
           </Card>

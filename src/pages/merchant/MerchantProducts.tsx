@@ -56,15 +56,12 @@ const MerchantProducts = () => {
     const [currentProductType, setCurrentProductType] =
         useState<ProductType>(getInitialProductType());
 
-    // Filter products based on current type (only if user has "Both" selected)
+    // Filter products based on current type (always filter by selected type)
     const filteredProductsByType = useMemo(() => {
         if (!profile) return [];
 
-        // First filter by product type if needed
-        let filtered = products;
-        if (profile.productType === "Both") {
-            filtered = products.filter((p) => p.type === currentProductType);
-        }
+        // Always filter by the current product type when posting stocks
+        let filtered = products.filter((p) => p.type === currentProductType);
 
         return filtered;
     }, [products, currentProductType, profile]);
