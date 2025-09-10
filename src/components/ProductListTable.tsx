@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, MessageSquare, ShoppingCart, TrendingUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Eye, Edit, MessageSquare, ShoppingCart, Trash2, TrendingUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { Product, Location } from '@/types/user';
 
 interface ProductListTableProps {
@@ -11,7 +12,9 @@ interface ProductListTableProps {
   onOrderClick: (product: Product) => void;
   onViewClick: (product: Product) => void;
   onEditClick: (product: Product) => void;
+  onDeleteClick?: (productId: string) => void;
   onBidClick?: (product: Product) => void;
+  isMerchantView?: boolean;
 }
 
 const ProductListTable = ({
@@ -21,7 +24,9 @@ const ProductListTable = ({
   onOrderClick,
   onViewClick,
   onEditClick,
-  onBidClick
+  onDeleteClick,
+  onBidClick,
+  isMerchantView = false
 }: ProductListTableProps) => {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -165,13 +170,26 @@ const ProductListTable = ({
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEditClick(product)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  {isMerchantView && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => onEditClick(product)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive/90"
+                        onClick={() => onDeleteClick?.(product.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

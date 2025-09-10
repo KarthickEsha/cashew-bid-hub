@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { User, Mail, MapPin, Building2, Edit, Settings } from 'lucide-react';
+import { User, Mail, MapPin, Building2, Edit, Settings, Home } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { useProfile } from '@/hooks/useProfile';
 import { useRole } from '@/hooks/useRole';
@@ -69,15 +69,21 @@ const ProfilePanel = ({ children }: ProfilePanelProps) => {
             
             {profile?.address && (
               <div className="flex items-center gap-3 text-sm">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <Home className="h-4 w-4 text-muted-foreground" />
                 <span>{profile.address}</span>
               </div>
             )}
             
             {profile?.location && (
               <div className="flex items-center gap-3 text-sm">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <MapPin className="h-4 w-4 text-muted-foreground" />
                 <span>{profile.location}</span>
+              </div>
+            )}
+            {profile?.companyName && (
+              <div className="flex items-center gap-3 text-sm">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span>{profile.companyName}</span>
               </div>
             )}
           </div>
