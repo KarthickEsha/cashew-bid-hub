@@ -273,7 +273,7 @@ const ProductDetail = () => {
                     <MapPin size={24} className="text-primary" />
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground font-medium">Origin Location</div>
+                    <div className="text-sm text-muted-foreground font-medium">Origin</div>
                     <div className="font-bold text-lg">
                       {typeof product.location === 'string'
                         ? product.location
