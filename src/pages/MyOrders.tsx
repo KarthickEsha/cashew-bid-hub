@@ -58,27 +58,27 @@ const MyOrders = () => {
 
   // Add some mock orders if none exist
   const allOrders = orders.length > 0 ? orders : [
-    {
-      id: "ORD-001",
-      productName: "Premium W320 Cashews",
-      merchantName: "Golden Cashew Co.",
-      quantity: "25 tons",
-      unitPrice: "$8,200/ton",
-      totalAmount: "$205,000",
-      status: "confirmed" as const,
-      orderDate: "2024-08-20",
-      shippingDate: "2024-08-22",
-      deliveryDate: "2024-09-05",
-      location: "Mumbai, India",
-      trackingNumber: "TRK123456789",
-      steps: [
-        { label: "Order Placed", date: "2024-08-20", done: true },
-        { label: "Confirmed", date: "2024-08-21", done: true },
-        { label: "Shipped", date: "2024-08-22", done: true },
-        { label: "In Transit", date: "2024-08-28", done: false },
-        { label: "Delivered", date: "2024-09-05", done: false },
-      ],
-    },
+    // {
+    //   id: "ORD-001",
+    //   productName: "Premium W320 Cashews",
+    //   merchantName: "Golden Cashew Co.",
+    //   quantity: "25 tons",
+    //   unitPrice: "$8,200/ton",
+    //   totalAmount: "$205,000",
+    //   status: "confirmed" as const,
+    //   orderDate: "2024-08-20",
+    //   shippingDate: "2024-08-22",
+    //   deliveryDate: "2024-09-05",
+    //   location: "Mumbai, India",
+    //   trackingNumber: "TRK123456789",
+    //   steps: [
+    //     { label: "Order Placed", date: "2024-08-20", done: true },
+    //     { label: "Confirmed", date: "2024-08-21", done: true },
+    //     { label: "Shipped", date: "2024-08-22", done: true },
+    //     { label: "In Transit", date: "2024-08-28", done: false },
+    //     { label: "Delivered", date: "2024-09-05", done: false },
+    //   ],
+    // },
   ];
 
   const getStatusIcon = (status: string) => {
@@ -115,8 +115,8 @@ const MyOrders = () => {
   const filteredOrders = allOrders.filter((order) => {
     const matchesSearch = appliedFilters.searchTerm
       ? order.productName.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase()) ||
-        order.merchantName.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase()) ||
-        order.id.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase())
+      order.merchantName.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase()) ||
+      order.id.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase())
       : true;
 
     const matchesStatus =
@@ -238,57 +238,64 @@ const MyOrders = () => {
             </p>
           </Card>
         ) : (
-           currentOrders.map((order) => (
-          <Card key={order.id}>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-semibold">Order #{order.id}</h3>
-                    {getStatusIcon(order.status)}
-                    <Badge className={getStatusColor(order.status)}>
-                      {order.status}
-                    </Badge>
+          currentOrders.map((order) => (
+            <Card key={order.id}>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="font-semibold">Order #{order.id}</h3>
+                      {getStatusIcon(order.status)}
+                      <Badge className={getStatusColor(order.status)}>
+                        {order.status}
+                      </Badge>
+                    </div>
+                    <p className="font-medium">{order.productName}</p>
+                    <p className="text-sm text-muted-foreground">{profile.companyName}</p>
+                    <div className="flex items-center text-sm text-muted-foreground mt-1">
+                      <MapPin size={14} className="mr-1" /> {order.location}
+                    </div>
                   </div>
-                  <p className="font-medium">{order.productName}</p>
-                  <p className="text-sm text-muted-foreground">{profile.companyName}</p>
-                  <div className="flex items-center text-sm text-muted-foreground mt-1">
-                    <MapPin size={14} className="mr-1" /> {order.location}
+                  <div>
+                    <div className="text-lg font-bold">
+                      {new Intl.NumberFormat("en-IN", {
+                        style: "currency",
+                        currency: "INR",
+                        maximumFractionDigits: 2,
+                      }).format(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold">{order.totalAmount}</div>
-                </div>
-              </div>
 
-              <div className="flex justify-end space-x-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedOrder(order);
-                    setDetailsOpen(true);
-                  }}
-                >
-                  <Eye size={14} className="mr-2" /> View Details
-                </Button>
+                </div>
 
-                {order.trackingNumber && (
+                <div className="flex justify-end space-x-2 mt-4">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
                       setSelectedOrder(order);
-                      setTrackingOpen(true);
+                      setDetailsOpen(true);
                     }}
                   >
-                    <Truck size={14} className="mr-2" /> Track Order
+                    <Eye size={14} className="mr-2" /> View Details
                   </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))
+
+                  {order.trackingNumber && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setTrackingOpen(true);
+                      }}
+                    >
+                      <Truck size={14} className="mr-2" /> Track Order
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
         )}
       </div>
 
