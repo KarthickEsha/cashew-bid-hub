@@ -44,7 +44,7 @@ const MyRequirements = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [filteredRequirements, setFilteredRequirements] = useState<any[]>([]);
-  
+
   // Get requirements from the hook
   const requirements = getMyRequirements();
 
@@ -272,9 +272,12 @@ const MyRequirements = () => {
                   <div>
                     <span className="text-muted-foreground">Origin:</span>
                     <div className="font-semibold">
-                      {requirement.preferredOrigin}
+                      {requirement.preferredOrigin
+                        ? requirement.preferredOrigin.charAt(0).toUpperCase() + requirement.preferredOrigin.slice(1).toLowerCase()
+                        : ""}
                     </div>
                   </div>
+
                   <div>
                     <span className="text-muted-foreground">Responses:</span>
                     <div className="font-semibold text-primary">
@@ -296,13 +299,13 @@ const MyRequirements = () => {
                     <MapPin size={14} className="mr-1" />
                     {requirement.deliveryLocation}
                   </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
+                  {/* <div className="flex items-center text-sm text-muted-foreground">
                     <Calendar size={14} className="mr-1" />
                     Delivery:{" "}
                     {new Date(requirement.deliveryDeadline).toLocaleDateString()}
-                  </div>
+                  </div> */}
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock size={14} className="mr-1" />
+                    <Calendar size={14} className="mr-1" />
                     Expires:{" "}
                     {new Date(
                       requirement.requirementExpiry

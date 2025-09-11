@@ -17,6 +17,17 @@ import { useOrders } from "@/hooks/useOrders";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 
+// Utility function to format currency in Indian Rupees
+const formatINR = (amount: number | string): string => {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num);
+};
+
 const MerchantOrders = () => {
   const { orders: allOrders, updateOrderStatus, deleteOrder } = useOrders();
   const { toast } = useToast();
@@ -117,11 +128,11 @@ const MerchantOrders = () => {
   const paginatedOrders = displayedOrders.slice(startIndex, startIndex + pageSize);
 
   const handleAcceptOrder = async (orderId: string) => {
-    await updateOrderStatus(orderId, "confirmed");
+    await updateOrderStatus(orderId, "Confirmed");
   };
 
   const handleRejectOrder = async (orderId: string) => {
-    await updateOrderStatus(orderId, "cancelled");
+    await updateOrderStatus(orderId, "Cancelled");
   };
 
   const getStatusColor = (status: string) => {
@@ -391,10 +402,10 @@ const MerchantOrders = () => {
                   paginatedOrders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">{order.id}</TableCell>
-                      <TableCell>{order.customerName}</TableCell>
+                      <TableCell>{profile.name}</TableCell>
                       <TableCell>{order.productName}</TableCell>
                       <TableCell>{order.quantity}</TableCell>
-                      <TableCell>{order.totalAmount}</TableCell>
+                      <TableCell>{formatINR(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}</TableCell>
                       <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
                       {/* <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell> */}
                       <TableCell>
@@ -421,7 +432,7 @@ const MerchantOrders = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                          {order.status === "processing" && (
+                          {order.status === "Processing" && (
                             <>
                               <Button
                                 variant="ghost"
@@ -541,7 +552,7 @@ const MerchantOrders = () => {
 
               <div className="flex justify-between">
                 <span className="font-medium text-muted-foreground">Total Amount</span>
-                <span className="font-semibold">${selectedOrder.totalAmount}</span>
+                <span className="font-semibold">{formatINR(parseFloat(selectedOrder.totalAmount.replace(/[^0-9.-]+/g, "")))}</span>
               </div>
 
               <div className="flex justify-between">

@@ -51,7 +51,6 @@ const RequirementDetails = () => {
 
   // Get requirements and find the one with matching ID
   const requirements = getMyRequirements();
-  debugger;
   const requirement = requirements.find(req => req.id.toString() === id);
 
   // If requirement not found, show error state
@@ -538,13 +537,18 @@ const RequirementDetails = () => {
             <div className="space-y-4">
               <div>
                 <div className="text-sm text-muted-foreground">Company Name</div>
-                <div className="font-medium">{selectedResponse.merchantName}</div>
+                <div className="font-medium">{profile.companyName}</div>
               </div>
 
               <div>
                 <div className="text-sm text-muted-foreground">Origin</div>
-                <div className="font-medium">{selectedResponse.origin}</div>
+                <div className="font-medium">
+                  {selectedResponse.origin
+                    ? selectedResponse.origin.charAt(0).toUpperCase() + selectedResponse.origin.slice(1)
+                    : ""}
+                </div>
               </div>
+
 
               <div>
                 <div className="text-sm text-muted-foreground">Merchant Price</div>

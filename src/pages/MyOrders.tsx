@@ -247,13 +247,14 @@ const MyOrders = () => {
                       <h3 className="font-semibold">Order #{order.id}</h3>
                       {getStatusIcon(order.status)}
                       <Badge className={getStatusColor(order.status)}>
-                        {order.status}
+                        {order.status.charAt(0).toUpperCase() + order.status.slice(1).toLowerCase()}
                       </Badge>
+
                     </div>
                     <p className="font-medium">{order.productName}</p>
                     <p className="text-sm text-muted-foreground">{profile.companyName}</p>
                     <div className="flex items-center text-sm text-muted-foreground mt-1">
-                      <MapPin size={14} className="mr-1" /> {order.location}
+                      <MapPin size={14} className="mr-1" /> {profile.location}
                     </div>
                   </div>
                   <div>
@@ -348,9 +349,9 @@ const MyOrders = () => {
                   <h3 className="font-semibold text-lg mb-2 flex items-center">
                     <User className="mr-2 h-5 w-5 text-purple-500" /> Merchant & Location
                   </h3>
-                  <p><strong>Merchant:</strong> {selectedOrder.merchantName}</p>
+                  <p><strong>Merchant:</strong> {profile.companyName}</p>
                   <p className="flex items-center text-sm text-muted-foreground">
-                    <MapPin size={14} className="mr-1" /> {selectedOrder.location}
+                    <MapPin size={14} className="mr-1" /> {profile.location}
                   </p>
                 </div>
               </CardContent>

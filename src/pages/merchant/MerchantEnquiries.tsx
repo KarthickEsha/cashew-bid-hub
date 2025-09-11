@@ -398,7 +398,7 @@ const MerchantEnquiries = () => {
                             ? 'outline'
                             : 'destructive'
                     }>
-                      {enquiry.status}
+                      {enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell>

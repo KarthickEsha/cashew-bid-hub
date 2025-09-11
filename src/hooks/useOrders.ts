@@ -19,7 +19,7 @@ export interface OrderItem {
   quantity: string;
   unitPrice: string;
   totalAmount: string;
-  status: 'processing' | 'confirmed' | 'shipped' | 'in_transit' | 'delivered' | 'cancelled';
+  status: 'Processing' | 'Confirmed' | 'Shipped' | 'in_transit' | 'Delivered' | 'Cancelled';
   orderDate: string;
   shippingDate?: string;
   deliveryDate?: string;
@@ -62,10 +62,10 @@ const generateDefaultSteps = (status: OrderItem['status']) => {
   ];
 
   switch (status) {
-    case 'confirmed':
+    case 'Confirmed':
       baseSteps[1] = { ...baseSteps[1], date: new Date().toISOString().split('T')[0], done: true };
       break;
-    case 'shipped':
+    case 'Shipped':
       baseSteps[1] = { ...baseSteps[1], date: new Date().toISOString().split('T')[0], done: true };
       baseSteps[2] = { ...baseSteps[2], date: new Date().toISOString().split('T')[0], done: true };
       break;
@@ -74,7 +74,7 @@ const generateDefaultSteps = (status: OrderItem['status']) => {
       baseSteps[2] = { ...baseSteps[2], date: new Date().toISOString().split('T')[0], done: true };
       baseSteps[3] = { ...baseSteps[3], date: new Date().toISOString().split('T')[0], done: true };
       break;
-    case 'delivered':
+    case 'Delivered':
       baseSteps.forEach((step, index) => {
         baseSteps[index] = { ...step, date: new Date().toISOString().split('T')[0], done: true };
       });
@@ -151,7 +151,7 @@ export const useOrders = create<OrdersState>()(
                 shippingDate,
                 status: 'shipped' as OrderItem['status'],
                 updatedAt: new Date().toISOString(),
-                steps: generateDefaultSteps('shipped')
+                steps: generateDefaultSteps('Shipped')
               }
               : order
           )

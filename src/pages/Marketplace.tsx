@@ -404,13 +404,13 @@ const Marketplace = () => {
             quantity: `${quickOrderQuantity} ${selectedProduct.quantityUnit}`,
             unitPrice: `₹${unitPrice}`,
             totalAmount: `₹${totalAmount.toFixed(2)}`,
-            status: 'processing' as const,
+            status: 'Processing' as const,
             orderDate: new Date().toISOString().split('T')[0],
             location: selectedProduct.location || 'N/A',
             grade: selectedProduct.grade,
             origin: selectedProduct.origin || 'N/A',
             statusHistory: [{
-                status: 'processing',
+                status: 'Processing',
                 timestamp: new Date().toISOString(),
                 remarks: 'Quick order placed from marketplace',
                 updatedBy: user?.fullName || 'Customer'

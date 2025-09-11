@@ -97,8 +97,8 @@ const ProductListTable = ({
               <SortableHeader field="location">Origin</SortableHeader>
             </>
           )}
-          <TableHead>Buyer Response</TableHead>
-          {/* <TableHead>Orders</TableHead> */}
+          <TableHead>Buyer Enquiries</TableHead>
+          <TableHead>Buyer Responses</TableHead>
           <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -142,14 +142,21 @@ const ProductListTable = ({
                 </>
               )}
 
-              {/* Removed Status column */}
               <TableCell>
                 <div
                   onClick={() => onEnquiryClick(product)}
                   className="flex items-center space-x-1 cursor-pointer hover:text-blue-600"
                 >
                   <MessageSquare className="h-4 w-4" />
-                  <span>{product.enquiries}</span>
+                  <span>{product.enquiries || 0}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div
+                  className="flex items-center space-x-1"
+                >
+                  <MessageSquare className="h-4 w-4 text-green-600" />
+                  <span>{product.buyerResponses || 0}</span>
                 </div>
               </TableCell>
               {/* <TableCell>
@@ -197,7 +204,7 @@ const ProductListTable = ({
         ) : (
           <TableRow>
             <TableCell
-              colSpan={currentProductType === "Kernel" ? 8 : 7} // Kernel: 8 columns, RCN: 7 columns
+              colSpan={currentProductType === "Kernel" ? 9 : 8} // Kernel: 9 columns, RCN: 8 columns
               className="text-center py-6 text-muted-foreground"
             >
               No products found for selected filters.

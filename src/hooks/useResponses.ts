@@ -26,6 +26,7 @@ interface ResponsesState {
   responses: MerchantResponse[];
   addResponse: (response: Omit<MerchantResponse, 'id' | 'createdAt'>) => void;
   getResponsesByRequirementId: (requirementId: string) => MerchantResponse[];
+  getResponsesByProductId: (productId: string) => MerchantResponse[];
   updateResponseStatus: (responseId: string, status: 'new' | 'viewed' | 'Accepted' | 'Rejected', remarks?: string) => void;
   getResponseCount: (requirementId: string) => number;
   deleteResponse: (responseId: string) => void;
@@ -77,13 +78,13 @@ export const useResponses = create<ResponsesState>()(
                   // Update existing order status
                   updateOrderStatus(
                     existingOrder.id,
-                    status === 'Accepted' ? 'processing' : 'cancelled',
+                    status === 'Accepted' ? 'Processing' : 'Cancelled',
                     remarks || `Response ${status.toLowerCase()} by buyer`
                   );
                 } else if (status === 'Accepted') {
                   // Only create new order for Accepted status
                   const statusHistory = [{
-                    status: 'processing',
+                    status: 'Processing',
                     timestamp: now,
                     remarks: remarks || 'Order placed by buyer',
                     updatedBy: 'Buyer'
@@ -108,7 +109,7 @@ export const useResponses = create<ResponsesState>()(
                     quantity: response.quantity,
                     unitPrice: response.price,
                     totalAmount: `$${(parseFloat(response.price.replace(/[^0-9.]/g, '')) * parseFloat(response.quantity.replace(/[^0-9.]/g, ''))).toLocaleString()}`,
-                    status: 'processing',
+                    status: 'Processing',
                     orderDate: now.split('T')[0],
                     location: response.merchantLocation,
                     grade: response.grade,
@@ -125,6 +126,14 @@ export const useResponses = create<ResponsesState>()(
             return response;
           })
         }));
+      },
+
+      getResponsesByProductId: (productId) => {
+        const { responses } = get();
+        // In a real implementation, you would need to filter responses based on the product ID
+        // This assumes that the requirementId in the response is the same as the productId
+        // You might need to adjust this based on your actual data structure
+        return responses.filter(response => response.requirementId === productId);
       },
 
       getResponseCount: (requirementId) => {

@@ -139,7 +139,6 @@ const ProductDetail = () => {
     { id: 1, bidder: "Food Corp Ltd", price: "$950/ton", quantity: "20 tons", time: "2h ago" },
     { id: 2, bidder: "SnackHub Traders", price: "$970/ton", quantity: "15 tons", time: "1h ago" },
   ];
-  debugger
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

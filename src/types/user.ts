@@ -51,6 +51,7 @@ export interface Product {
   status: 'active' | 'out_of_stock';
   enquiries: number;
   orders: number;
+  buyerResponses: number;
   [key: string]: any;
 }
 
