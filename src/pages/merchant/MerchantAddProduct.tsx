@@ -376,7 +376,7 @@ const MerchantAddProduct = () => {
                             </div>
 
 
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                                 <Label htmlFor="stockAvailable">Stock Available *</Label>
                                 <Input
                                     id="stockAvailable"
@@ -388,7 +388,7 @@ const MerchantAddProduct = () => {
                                     placeholder="e.g., 1000"
                                     required
                                 />
-                            </div>
+                            </div> */}
 
 
                             <div className="space-y-2">

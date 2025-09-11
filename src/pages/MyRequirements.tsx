@@ -40,6 +40,7 @@ const MyRequirements = () => {
   const { getMyRequirements, deleteRequirement } = useRequirements();
   const { getResponseCount } = useResponses();
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [gradeFilter, setGradeFilter] = useState("all");
@@ -103,16 +104,16 @@ const MyRequirements = () => {
   // Run filters automatically when dependencies change
   useEffect(() => {
     applyFilters();
+    // Reset to first page when filters change
+    setCurrentPage(1);
   }, [requirements, searchTerm, statusFilter, gradeFilter]);
 
   // Pagination
-  const itemsPerPage = 6;
-  const totalPages = Math.ceil(filteredRequirements.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentRequirements = filteredRequirements.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredRequirements.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, filteredRequirements.length);
+  const currentRequirements = filteredRequirements.slice(startIndex, endIndex);
 
   // Handle delete confirm
   const handleDelete = () => {
@@ -361,34 +362,61 @@ const MyRequirements = () => {
 
       {/* Pagination */}
       {filteredRequirements.length > 0 && (
-        <div className="flex justify-center">
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-            >
-              Previous
-            </Button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                size="sm"
-                variant={currentPage === page ? "default" : "outline"}
-                onClick={() => setCurrentPage(page)}
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {startIndex + 1} to {" "}
+            {Math.min(startIndex + itemsPerPage, filteredRequirements.length)} of {" "}
+            {filteredRequirements.length} requirements
+          </div>
+          <div className="flex items-center space-x-4">
+            {/* Page Size Selector */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">Show:</span>
+              <Select
+                value={String(itemsPerPage)}
+                onValueChange={(value) => {
+                  setItemsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}
               >
-                {page}
+                <SelectTrigger className="w-[80px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="6">6</SelectItem>
+                  <SelectItem value="12">12</SelectItem>
+                  <SelectItem value="24">24</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Prev/Next Buttons */}
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const prevPage = Math.max(1, currentPage - 1);
+                  setCurrentPage(prevPage);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={currentPage === 1}
+              >
+                Previous
               </Button>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-            >
-              Next
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const nextPage = Math.min(totalPages, currentPage + 1);
+                  setCurrentPage(nextPage);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={currentPage >= totalPages}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </div>
       )}
