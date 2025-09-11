@@ -31,6 +31,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { profile } from "console";
+import { useProfile } from "@/hooks/useProfile";
 
 const MyOrders = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,6 +53,7 @@ const MyOrders = () => {
   // dialog states
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const { profile, setProfile } = useProfile();
   const [trackingOpen, setTrackingOpen] = useState(false);
 
   // Add some mock orders if none exist
@@ -248,7 +251,7 @@ const MyOrders = () => {
                     </Badge>
                   </div>
                   <p className="font-medium">{order.productName}</p>
-                  <p className="text-sm text-muted-foreground">{order.merchantName}</p>
+                  <p className="text-sm text-muted-foreground">{profile.companyName}</p>
                   <div className="flex items-center text-sm text-muted-foreground mt-1">
                     <MapPin size={14} className="mr-1" /> {order.location}
                   </div>

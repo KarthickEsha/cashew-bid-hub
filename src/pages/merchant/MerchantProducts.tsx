@@ -41,7 +41,7 @@ const MerchantProducts = () => {
 
     // Keep local state for products so we can update them
     const [allProducts, setAllProducts] = useState<Product[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [productToDelete, setProductToDelete] = useState<string | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 

@@ -26,10 +26,12 @@ import {
   MessageSquare,
   Users
 } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
 
 const RequirementDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { profile, setProfile } = useProfile();
   const { toast } = useToast();
   const { getMyRequirements, updateRequirementStatus } = useRequirements();
   const {
@@ -49,6 +51,7 @@ const RequirementDetails = () => {
 
   // Get requirements and find the one with matching ID
   const requirements = getMyRequirements();
+  debugger;
   const requirement = requirements.find(req => req.id.toString() === id);
 
   // If requirement not found, show error state
@@ -270,7 +273,7 @@ const RequirementDetails = () => {
                   <div>
                     <div className="text-sm text-muted-foreground">Delivery Deadline</div>
                     <div className="font-medium">
-                      {new Date(requirement.deliveryDeadline).toLocaleDateString()}
+                      {new Date(requirement.requirementExpiry).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -370,7 +373,7 @@ const RequirementDetails = () => {
                       </button>
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium">{response.merchantName}</div>
+                          <div className="font-medium">{profile.companyName}</div>
                           <div className="text-sm text-muted-foreground flex items-center">
                             <MapPin size={12} className="mr-1" />
                             {response.merchantLocation}

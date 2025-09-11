@@ -188,7 +188,7 @@ const Dashboard = () => {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Link to="/marketplace" className="block">
+            <Link to="" className="block">
               <Button variant="outline" size="sm" className="w-full justify-start">
                 <Eye size={16} className="mr-2" />
                 Browse Products
@@ -200,7 +200,7 @@ const Dashboard = () => {
                 Post Requirement
               </Button>
             </Link>
-            <Link to="/my-requests" className="block">
+            <Link to="" className="block">
               <Button variant="outline" size="sm" className="w-full justify-start">
                 <MessageSquare size={16} className="mr-2" />
                 View My Requests
