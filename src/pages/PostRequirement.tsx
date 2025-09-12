@@ -87,6 +87,25 @@ const PostRequirement = () => {
   });
 
   const [priceError, setPriceError] = useState("");
+  const [quantityError, setQuantityError] = useState("");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+
+    // If either quantity field changes, validate them
+    if ((name === 'quantity' || name === 'minSupplyQuantity') && formData.quantity && formData.minSupplyQuantity) {
+      validateQuantity(
+        name === 'minSupplyQuantity' ? value : formData.minSupplyQuantity,
+        name === 'quantity' ? value : formData.quantity
+      );
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   // Get fixed price based on product and origin
   const getFixedPrice = () => {
@@ -115,13 +134,32 @@ const PostRequirement = () => {
     return true;
   };
 
+  // Validate minimum quantity against required quantity
+  const validateQuantity = (minQty: string, reqQty: string) => {
+    if (minQty && reqQty && parseFloat(minQty) > parseFloat(reqQty)) {
+      setQuantityError('Minimum quantity cannot be greater than required quantity');
+      return false;
+    }
+    setQuantityError('');
+    return true;
+  };
+
   const handleSubmit = (isDraft = false) => {
+    // Reset errors
+    setQuantityError('');
+
+    // Validate quantities
+    if (formData.minSupplyQuantity && formData.quantity) {
+      if (!validateQuantity(formData.minSupplyQuantity, formData.quantity)) {
+        return;
+      }
+    }
+
     // Validate required fields
     if (!isDraft) {
-      if (!formData.grade || !formData.quantity || !formData.origin || 
-          !formData.expectedPrice || !formData.deliveryLocation || 
-          !formData.city || !formData.country || !formData.deliveryDeadline) {
-        // alert('Please fill in all required fields');
+      if (!formData.grade || !formData.quantity || !formData.origin ||
+        !formData.expectedPrice || !formData.deliveryLocation ||
+        !formData.city || !formData.country || !formData.deliveryDeadline) {
         return;
       }
     }
@@ -233,59 +271,68 @@ const PostRequirement = () => {
                 <Label htmlFor="quantity">Required Quantity (kg) *</Label>
                 <Input
                   id="quantity"
-                  placeholder="e.g., 500"
+                  name="quantity"
+                  type="number"
+                  min="0"
+                  step="0.01"
                   value={formData.quantity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, quantity: e.target.value })
-                  }
-                  className="mt-1"
+                  onChange={handleInputChange}
+                  placeholder="Enter required quantity"
+                  required
+                  className={quantityError ? 'border-red-500' : ''}
                 />
               </div>
               <div>
-                <Label htmlFor="minSupplyQuantity">
-                  Minimum Supply Quantity (kg) *
-                </Label>
+                <Label htmlFor="minSupplyQuantity">Minimum Supply Quantity (kg)</Label>
                 <Input
                   id="minSupplyQuantity"
-                  placeholder="e.g., 100"
+                  name="minSupplyQuantity"
+                  type="number"
+                  min="0"
+                  step="0.01"
                   value={formData.minSupplyQuantity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, minSupplyQuantity: e.target.value })
-                  }
-                  className="mt-1"
+                  onChange={handleInputChange}
+                  placeholder="Enter minimum supply quantity"
+                  className={quantityError ? 'border-red-500' : ''}
                 />
+                {quantityError && (
+                  <p className="mt-1 text-sm text-red-500">{quantityError}</p>
+                )}
               </div>
+
             </div>
 
             {/* <div>
-              <Label>Target Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal mt-1",
-                      !formData.targetDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.targetDate
-                      ? format(formData.targetDate, "dd/MM/yyyy")
-                      : "Select target date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.targetDate}
-                    onSelect={(date) =>
-                      setFormData({ ...formData, targetDate: date })
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div> */}
+ <Label>Target Date *</Label>
+ <Popover>
+ <PopoverTrigger asChild>
+ <Button
+ variant="outline"
+ className={cn(
+ "w-full justify-start text-left font-normal mt-1",
+ !formData.targetDate && "text-muted-foreground"
+ )}
+ >
+ <CalendarIcon className="mr-2 h-4 w-4" />
+ {formData.targetDate
+ ? format(formData.targetDate, "dd/MM/yyyy")
+ : "Select target date"}
+ </Button>
+ </PopoverTrigger>
+ <PopoverContent className="w-auto p-0">
+ <Calendar
+ mode="single"
+ selected={formData.targetDate}
+ onSelect={(date) =>
+ setFormData({ ...formData, targetDate: date })
+ }
+ disabled={(date) => date < new Date()}
+ initialFocus
+ defaultMonth={new Date()}
+ />
+ </PopoverContent>
+ </Popover>
+ </div> */}
           </div>
 
           {/* Budget Information */}
@@ -325,34 +372,36 @@ const PostRequirement = () => {
             </div>
           </div>
 
-
           <div>
             <Label>Expected Delivery Date *</Label>
-            <Popover>
+            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal mt-1",
+                    "w-full justify-start text-left font-normal",
                     !formData.deliveryDeadline && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.deliveryDeadline
-                    ? format(formData.deliveryDeadline, "dd/MM/yyyy")
-                    : "Select delivery date"}
+                  {formData.deliveryDeadline ? (
+                    format(formData.deliveryDeadline, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
                   selected={formData.deliveryDeadline}
-                  onSelect={(date) =>
-                    setFormData({ ...formData, deliveryDeadline: date })
-                  }
-                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                  fromDate={new Date()}
+                  onSelect={(date) => {
+                    setFormData({ ...formData, deliveryDeadline: date });
+                    setIsDatePickerOpen(false);
+                  }}
+                  disabled={(date) => date < new Date()}
                   initialFocus
+                  defaultMonth={new Date()}
                 />
               </PopoverContent>
             </Popover>
@@ -360,42 +409,42 @@ const PostRequirement = () => {
 
           {/* Mode of Pricing */}
           {/* {formData.origin && formData.grade && formData.origin !== "any" && fixedPrice > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Mode of Pricing</h3>
+ <div className="space-y-4">
+ <h3 className="text-lg font-semibold">Mode of Pricing</h3>
 
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Product Grade</Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {formData.grade}
-                    </p>
-                  </div>
+ <div className="bg-muted/50 p-4 rounded-lg">
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+ <div>
+ <Label className="text-sm font-medium">Product Grade</Label>
+ <p className="text-sm text-muted-foreground mt-1">
+ {formData.grade}
+ </p>
+ </div>
 
-                  <div>
-                    <Label className="text-sm font-medium">Origin</Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {selectedOrigin?.name}
-                    </p>
-                  </div>
+ <div>
+ <Label className="text-sm font-medium">Origin</Label>
+ <p className="text-sm text-muted-foreground mt-1">
+ {selectedOrigin?.name}
+ </p>
+ </div>
 
-                  <div>
-                    <Label className="text-sm font-medium">Fixed Price</Label>
-                    <p className="text-lg font-semibold text-primary mt-1">
-                      ₹{fixedPrice.toLocaleString()}/kg
-                    </p>
-                  </div>
-                </div>
+ <div>
+ <Label className="text-sm font-medium">Fixed Price</Label>
+ <p className="text-lg font-semibold text-primary mt-1">
+ ₹{fixedPrice.toLocaleString()}/kg
+ </p>
+ </div>
+ </div>
 
-                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    <strong>Note:</strong> Your expected price must not exceed the fixed
-                    price of ₹{fixedPrice.toLocaleString()} per kg.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )} */}
+ <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+ <p className="text-sm text-blue-700 dark:text-blue-300">
+ <strong>Note:</strong> Your expected price must not exceed the fixed
+ price of ₹{fixedPrice.toLocaleString()} per kg.
+ </p>
+ </div>
+ </div>
+ </div>
+ )} */}
 
           {/* Delivery Information */}
           <div className="space-y-4">

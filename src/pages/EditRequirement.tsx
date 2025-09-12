@@ -448,10 +448,6 @@ const EditRequirement = () => {
             <Button variant="outline" onClick={handleBack}>
               Cancel
             </Button>
-            <Button variant="outline" onClick={() => handleSubmit(true)}>
-              <Save size={16} className="mr-2" />
-              Save as Draft
-            </Button>
             <Button onClick={() => handleSubmit(false)} size="lg">
               <Send size={16} className="mr-2" />
               Update Requirement

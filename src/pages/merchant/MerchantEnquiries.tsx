@@ -1,6 +1,14 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -9,7 +17,6 @@ import { Label } from "@/components/ui/label";
 import { Eye, MessageSquare, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import ChatModal from "@/components/ChatModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +25,7 @@ const mockEnquiries = [];
 
 const MerchantEnquiries = () => {
   const { getRequirementsAsEnquiries, updateRequirementStatus } = useRequirements();
-  const { addResponse, getResponsesByRequirementId } = useResponses();
+  const { addResponse, getResponsesByRequirementId, updateResponseStatus } = useResponses();
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -44,22 +51,30 @@ const MerchantEnquiries = () => {
   const [merchantPrice, setMerchantPrice] = useState('');
   const [availableQuantity, setAvailableQuantity] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [actionType, setActionType] = useState<'skip' | 'selected' | 'quotes'>('quotes');
+  const [quantityError, setQuantityError] = useState('');
 
   // Map UI status values to the underlying enquiry statuses in your data
   // (adjust as you add real workflow statuses)
   const statusMap: Record<string, string[]> = {
-    all: [],            // no filter
-    '': [],             // treat empty like "all"
+    all: [], // no filter
+    '': [], // treat empty like "all"
     new: ['pending'],
     viewed: ['responded'],
     contacted: ['responded'],
     negotiating: ['pending'],
   };
 
-  // Check if an enquiry is expired
+  // Check if an enquiry is expired (shows only current and future dates)
   const isExpired = (enquiry: any) => {
+    if (!enquiry.deliveryDeadline) return true; // If no date, consider it expired
+
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for accurate date comparison
+
     const expiryDate = new Date(enquiry.deliveryDeadline);
+    expiryDate.setHours(0, 0, 0, 0); // Set to start of day for accurate date comparison
+
     return expiryDate < today;
   };
 
@@ -98,34 +113,63 @@ const MerchantEnquiries = () => {
     });
   };
 
-  // Get enquiries from local storage and combine with mock data
-  const storedEnquiries = getRequirementsAsEnquiries().map(enquiry => {
-    const responses = getResponsesByRequirementId(enquiry.id);
-    const hasAcceptedResponse = responses.some(r => r.status === 'Accepted');
-    const hasRejectedResponse = responses.some(r => r.status === 'Rejected');
-    
-    let status = enquiry.status;
-    if (hasAcceptedResponse) {
-      status = 'confirmed';
-    } else if (hasRejectedResponse && !hasAcceptedResponse) {
-      status = 'Rejected';
-    }
-    
-    return {
-      ...enquiry,
-      status,
-      buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined
-    };
+  // State for enquiries
+  const [enquiries, setEnquiries] = useState(() => {
+    const storedEnquiries = getRequirementsAsEnquiries().map(enquiry => {
+      const responses = getResponsesByRequirementId(enquiry.id);
+      const hasAcceptedResponse = responses.some(r => r.status === 'Accepted');
+      const hasRejectedResponse = responses.some(r => r.status === 'Rejected');
+
+      let status = enquiry.status;
+      if (hasAcceptedResponse) {
+        status = 'confirmed';
+      } else if (hasRejectedResponse && !hasAcceptedResponse) {
+        status = 'Rejected';
+      }
+
+      return {
+        ...enquiry,
+        status,
+        buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined
+      };
+    });
+    return [...mockEnquiries, ...storedEnquiries];
   });
-  const allEnquiries = [...mockEnquiries, ...storedEnquiries];
 
   // Filter out expired enquiries
   const activeEnquiries = useMemo(() => {
-    return allEnquiries.filter(enquiry => !isExpired(enquiry));
-  }, [allEnquiries]);
+    return enquiries.filter(enquiry => !isExpired(enquiry));
+  }, [enquiries]);
 
-  // Filter enquiries only when Apply clicked (excluding expired ones)
+  // Function to refresh enquiries
+  const refreshEnquiries = () => {
+    const updatedStoredEnquiries = getRequirementsAsEnquiries().map(enquiry => {
+      const responses = getResponsesByRequirementId(enquiry.id);
+      const hasAcceptedResponse = responses.some(r => r.status === 'Accepted');
+      const hasRejectedResponse = responses.some(r => r.status === 'Rejected');
+
+      let status = enquiry.status;
+      if (hasAcceptedResponse) {
+        status = 'confirmed';
+      } else if (hasRejectedResponse && !hasAcceptedResponse) {
+        status = 'Rejected';
+      }
+
+      return {
+        ...enquiry,
+        status,
+        buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined
+      };
+    });
+
+    setEnquiries([...mockEnquiries, ...updatedStoredEnquiries]);
+  };
+
+  // Filter enquiries only when Apply clicked (excluding expired and skipped ones)
   const filteredEnquiries = sortEnquiries(activeEnquiries.filter(enquiry => {
+    // Skip any enquiries with 'closed' status (skipped)
+    if (enquiry.status === 'closed') return false;
+
     const matchesSearch =
       searchFilter === '' ||
       enquiry.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -202,45 +246,148 @@ const MerchantEnquiries = () => {
       : <ArrowDown className="h-4 w-4 text-primary" />;
   };
 
-  const handleSubmitResponse = () => {
-    if (!merchantPrice || !availableQuantity) {
+  const validateQuantity = (quantity: string) => {
+    if (!selectedEnquiry) return false;
+
+    const requiredQty = parseFloat(selectedEnquiry.quantity);
+    const availableQty = parseFloat(quantity);
+
+    if (isNaN(availableQty)) {
+      setQuantityError('Please enter a valid quantity');
+      return false;
+    }
+
+    if (availableQty > requiredQty) {
+      setQuantityError(`Available quantity cannot be more than required quantity (${requiredQty}kg)`);
+      return false;
+    }
+
+    setQuantityError('');
+    return true;
+  };
+
+  const handleSubmitResponse = async () => {
+    if (actionType === 'skip') {
+      try {
+        // Update the requirement status to 'closed' for the skipped enquiry
+        updateRequirementStatus(selectedEnquiry.id, 'closed');
+        
+        // Get fresh list of enquiries after update
+        const updatedEnquiries = getRequirementsAsEnquiries();
+        
+        // Filter out the skipped enquiry from the current list
+        const filteredEnquiries = updatedEnquiries.filter(
+          (enquiry) => enquiry.id !== selectedEnquiry.id
+        );
+        
+        // Update the state with filtered enquiries
+        setEnquiries(prevEnquiries => 
+          prevEnquiries.filter(enquiry => enquiry.id !== selectedEnquiry.id)
+        );
+
+        toast({
+          title: 'Skipped',
+          description: 'Enquiry has been skipped and removed from your list',
+        });
+
+        // Close the modal and reset form
+        setResponseModalOpen(false);
+        resetForm();
+      } catch (error) {
+        console.error('Error updating requirement status:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update enquiry status',
+          variant: 'destructive',
+        });
+      }
+      return;
+    }
+
+    // For quotes and selected actions, validate fields
+    if (actionType === 'quotes' && (!merchantPrice || !availableQuantity)) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
       });
       return;
     }
 
-    const response = {
-      requirementId: selectedEnquiry.id.toString(),
-      merchantId: "merchant-1", // This would come from auth context
-      merchantName: "ABC Trading Co.", // This would come from merchant profile
-      merchantLocation: "Mumbai, India",
-      price: `₹${merchantPrice}/kg`,
+    if (actionType === 'quotes' && !validateQuantity(availableQuantity)) {
+      return;
+    }
+
+    // Prepare response data
+    const responseData = {
+      requirementId: selectedEnquiry.id,
+      merchantId: 'current-merchant-id', // This should be replaced with actual merchant ID
+      merchantName: 'Current Merchant', // This should be replaced with actual merchant name
+      merchantLocation: 'Location', // This should be replaced with actual location
+      price: merchantPrice,
       responseDate: new Date().toISOString(),
       status: 'new' as const,
-      grade: selectedEnquiry.grade,
-      quantity: availableQuantity + " kg",
-      origin: selectedEnquiry.origin,
-      certifications: ["ISO 22000", "HACCP"],
-      deliveryTime: "15-20 days",
-      contact: "+91-9876543210",
-      message: remarks || `We can supply ${availableQuantity}kg of ${selectedEnquiry.grade} cashews at ₹${merchantPrice}/kg.`
+      grade: selectedEnquiry.grade || '',
+      quantity: availableQuantity,
+      origin: selectedEnquiry.origin || '',
+      certifications: [], // Add certifications if available
+      deliveryTime: 'TBD', // Add actual delivery time if available
+      contact: '', // Add contact info if available
+      message: remarks,
+      remarks: remarks,
     };
 
-    addResponse(response);
+    // Add response to the system
+    addResponse(responseData);
+
+    // Update requirement status based on action
+    const newStatus = actionType === 'selected' ? 'active' : 'responded';
+    updateRequirementStatus(selectedEnquiry.id, newStatus);
 
     toast({
-      title: "Response Submitted",
-      description: "Your response has been sent to the buyer",
+      title: 'Success',
+      description: `Enquiry has been marked as ${newStatus}`,
     });
 
     // Reset form and close modal
+    resetForm();
+    setResponseModalOpen(false);
+  };
+
+  const resetForm = () => {
+    setSelectedEnquiry(null);
     setMerchantPrice('');
     setAvailableQuantity('');
     setRemarks('');
     setResponseModalOpen(false);
+  };
+
+  type ResponseStatus = 'new' | 'viewed' | 'Accepted' | 'Rejected';
+
+  const handleStatusChange = async (responseId: string, newStatus: ResponseStatus) => {
+    try {
+      await updateResponseStatus(responseId, newStatus);
+      // Refresh the responses to show the updated status
+      const updatedResponses = getResponsesByRequirementId(selectedEnquiry?.id?.toString() || '');
+      // You might want to update the local state here if needed
+      
+      toast({
+        title: 'Status updated',
+        description: `Response status has been updated to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating response status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update response status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleActionChange = (action: 'skip' | 'selected' | 'quotes') => {
+    setActionType(action);
+    setQuantityError('');
   };
 
   return (
@@ -278,7 +425,7 @@ const MerchantEnquiries = () => {
                 </div>
               </div>
 
-              {/* ✅ Filter by Status — shadcn/ui Select (exact structure you asked for) */}
+              {/* Filter by Status — shadcn/ui Select (exact structure you asked for) */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Filter by Status</label>
                 <Select
@@ -364,7 +511,7 @@ const MerchantEnquiries = () => {
                   onClick={() => handleSort('status')}
                 >
                   <div className="flex items-center justify-between">
-                    Buyer Status
+                     Status
                     {getSortIcon('status')}
                   </div>
                 </TableHead>
@@ -396,9 +543,13 @@ const MerchantEnquiries = () => {
                           ? 'secondary'
                           : enquiry.status === 'confirmed'
                             ? 'outline'
-                            : 'destructive'
+                            : enquiry.status === 'closed'
+                              ? 'destructive'
+                              : 'default'
                     }>
-                      {enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+                      {enquiry.status === 'closed'
+                        ? 'Skipped'
+                        : enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -455,7 +606,7 @@ const MerchantEnquiries = () => {
       <Dialog open={responseModalOpen} onOpenChange={setResponseModalOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>View Details & Reply</DialogTitle>
+            <DialogTitle>View Details & Take Action</DialogTitle>
             <DialogDescription>
               Enquiry from {selectedEnquiry?.customerName} for {selectedEnquiry?.productName}
             </DialogDescription>
@@ -487,42 +638,109 @@ const MerchantEnquiries = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Available Quantity (kg) *</Label>
-                  <Input
-                    id="availableQuantity"
-                    type="number"
-                    placeholder="Enter available quantity"
-                    value={availableQuantity}
-                    onChange={(e) => setAvailableQuantity(e.target.value)}
-                    className="border-input"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Your Price (₹) *</Label>
-                  <Input
-                    id="merchantPrice"
-                    type="number"
-                    placeholder="Enter your price per kg"
-                    value={merchantPrice}
-                    onChange={(e) => setMerchantPrice(e.target.value)}
-                    className="border-input"
-                  />
-                </div>
+               <div className="flex border rounded-md p-0.5 bg-muted/50 mt-2">
+                <button
+                  onClick={() => handleActionChange('skip')}
+                  className={`flex-1 py-1.5 text-sm font-medium transition-colors rounded-sm ${
+                    actionType === 'skip' 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                      : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  Skip
+                </button>
+                <div className="w-px bg-border my-1.5" />
+                <button
+                  onClick={() => handleActionChange('selected')}
+                  className={`flex-1 py-1.5 text-sm font-medium transition-colors rounded-sm ${
+                    actionType === 'selected' 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                      : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  Selected
+                </button>
+                <div className="w-px bg-border my-1.5" />
+                <button
+                  onClick={() => handleActionChange('quotes')}
+                  className={`flex-1 py-1.5 text-sm font-medium transition-colors rounded-sm ${
+                    actionType === 'quotes' 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                      : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  Send Quote
+                </button>
               </div>
 
-              <div>
-                <Label htmlFor="replyMessage">Remarks</Label>
-                <Textarea
-                  id="replyMessage"
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                  placeholder="Type your reply message to the customer..."
-                  rows={3}
-                  className="border-input focus:ring-ring"
-                />
-              </div>
+              {actionType === 'quotes' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Available Quantity (kg) *</Label>
+                      <Input
+                        id="availableQuantity"
+                        type="number"
+                        placeholder={`Max: ${selectedEnquiry?.quantity}kg`}
+                        value={availableQuantity}
+                        onChange={(e) => {
+                          setAvailableQuantity(e.target.value);
+                          if (e.target.value) validateQuantity(e.target.value);
+                        }}
+                        className={`border-input ${quantityError ? 'border-red-500' : ''}`}
+                        min="0"
+                        step="0.01"
+                      />
+                      {quantityError && (
+                        <p className="text-sm text-red-500 mt-1">{quantityError}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Your Price (₹) *</Label>
+                      <Input
+                        id="merchantPrice"
+                        type="number"
+                        placeholder="Enter your price per kg"
+                        value={merchantPrice}
+                        onChange={(e) => setMerchantPrice(e.target.value)}
+                        className="border-input"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="replyMessage">Remarks</Label>
+                    <Textarea
+                      id="replyMessage"
+                      value={remarks}
+                      onChange={(e) => setRemarks(e.target.value)}
+                      placeholder="Type your reply message to the customer..."
+                      rows={3}
+                      className="border-input focus:ring-ring"
+                    />
+                  </div>
+                </>
+              )}
+
+              {actionType !== 'quotes' && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-yellow-700">
+                        This action will mark the enquiry as <span className="font-bold">{actionType}</span>.
+                        {actionType === 'skip' ? ' The enquiry will be removed from your active list.' : ' You can provide additional details if needed.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2 pt-4">
                 {/* Primary Button using theme */}
@@ -530,9 +748,9 @@ const MerchantEnquiries = () => {
                   onClick={handleSubmitResponse}
                   className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  Submit Response
+                  {actionType === 'skip' ? 'Submit' :
+                    actionType === 'selected' ? 'Submit' : 'Submit'}
                 </Button>
-
 
                 {/* Outline Button using theme */}
                 <Button
@@ -542,12 +760,13 @@ const MerchantEnquiries = () => {
                     setMerchantPrice('');
                     setAvailableQuantity('');
                     setRemarks('');
+                    setActionType('quotes');
+                    setQuantityError('');
                   }}
-                  className="text-purple-600 hover:bg-purple-600 hover:text-white"
+                  className="text-gray-600 hover:bg-gray-100"
                 >
                   Cancel
                 </Button>
-
               </div>
 
             </div>
@@ -589,17 +808,32 @@ const MerchantEnquiries = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Select defaultValue={response.status}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">Selected</SelectItem>
-                          <SelectItem value="Accepted">Confirmation</SelectItem>
-                          <SelectItem value="Rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button size="sm" className="w-full">Submit</Button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant={response.status === 'new' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleStatusChange(response.id, 'new')}
+                        >
+                          New
+                        </Button>
+                        <Button
+                          variant={response.status === 'Accepted' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleStatusChange(response.id, 'Accepted')}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          variant={response.status === 'Rejected' ? 'destructive' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleStatusChange(response.id, 'Rejected')}
+                        >
+                          Reject
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </Card>
