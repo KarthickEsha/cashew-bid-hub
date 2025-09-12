@@ -254,7 +254,8 @@ const MyOrders = () => {
                     <p className="font-medium">{order.productName}</p>
                     <p className="text-sm text-muted-foreground">{profile.companyName}</p>
                     <div className="flex items-center text-sm text-muted-foreground mt-1">
-                      <MapPin size={14} className="mr-1" /> {profile.location}
+                      <MapPin size={14} className="mr-1" />
+                      {[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}
                     </div>
                   </div>
                   <div>
@@ -351,7 +352,7 @@ const MyOrders = () => {
                   </h3>
                   <p><strong>Merchant:</strong> {profile.companyName}</p>
                   <p className="flex items-center text-sm text-muted-foreground">
-                    <MapPin size={14} className="mr-1" /> {profile.location}
+                    <MapPin size={14} className="mr-1" /> {profile.city}
                   </p>
                 </div>
               </CardContent>

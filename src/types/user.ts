@@ -1,5 +1,6 @@
-export type UserRole = 'buyer' | 'processor';
+export type UserRole = 'buyer' | 'processor' | 'both';
 export type ProductType = 'RCN' | 'Kernel' | 'Both';
+export type RegistrationType = 'private_limited' | 'public_limited' | 'llp' | 'sole_proprietorship' | 'partnership' | 'other';
 
 export interface UserProfile {
   id: string;
@@ -7,13 +8,20 @@ export interface UserProfile {
   name: string;
   phone?: string;
   address?: string;
-  location?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
   role: UserRole;
   profilePicture?: string;
-  merchantLogo?: string;
   companyName?: string;
+  registrationType?: RegistrationType;
+  officeEmail?: string;
+  isGstRegistered?: boolean;
+  establishedYear?: string;
   businessType?: string;
-  productType: ProductType;
+  dealingWith: ProductType;
+  description?: string;
   isProfileComplete: boolean;
   userId?: string;
   createdAt?: string;

@@ -13,6 +13,7 @@ export interface Requirement {
   minSupplyQuantity: string;
   deliveryLocation: string;
   city: string;
+  state: string;
   country: string;
   deliveryDeadline: string;
   specifications: string;
@@ -31,6 +32,7 @@ export interface Requirement {
   responsesCount?: number;
   createdDate?: string;
   lastModified?: string;
+  [key: string]: any; // Add index signature to allow additional properties
 }
 
 interface RequirementsState {
@@ -111,24 +113,41 @@ export const useRequirements = create<RequirementsState>()(
           any: 'Any'
         };
         
-        const newRequirement: Requirement = {
-          ...requirement,
+        // Ensure all required fields have default values
+        const defaultRequirement: Partial<Requirement> = {
           id: Date.now().toString(),
-          customerName: requirement.customerName || 'Anonymous Buyer',
+          customerName: 'Anonymous Buyer',
+          productName: `${requirement.grade} Cashews`,
+          message: '',
+          fixedPrice: 0,
+          state: '',
+          city: '',
+          country: '',
+          deliveryLocation: '',
+          specifications: '',
+          allowLowerBid: false,
+          date: now.split('T')[0],
+          isDraft: false,
+          status: 'active',
+          createdAt: now,
+          responsesCount: 0,
+          createdDate: now.split('T')[0],
+          lastModified: now.split('T')[0]
+        };
+        
+        const newRequirement: Requirement = {
+          ...defaultRequirement,
+          ...requirement,
           productName: `${requirement.grade} Cashews`,
           message: `Looking for ${requirement.quantity} of ${requirement.grade} cashews from ${requirement.origin}. ${requirement.specifications || 'Standard quality requirements.'}`,
           fixedPrice,
-          createdAt: now,
           // Additional fields for MyRequirements compatibility
           title: `${requirement.grade} Cashews for ${requirement.deliveryLocation}`,
           preferredOrigin: originNames[requirement.origin] || requirement.origin,
           budgetRange: `₹${requirement.expectedPrice}/kg`,
           requirementExpiry: requirement.deliveryDeadline, // Use delivery deadline as expiry
-          responsesCount: 0,
-          createdDate: now.split('T')[0], // Date only
-          lastModified: now.split('T')[0], // Date only
           status: requirement.isDraft ? 'draft' : 'active'
-        };
+        } as Requirement;
 
         set((state) => ({
           requirements: [...state.requirements, newRequirement]
@@ -140,28 +159,39 @@ export const useRequirements = create<RequirementsState>()(
         const now = new Date().toISOString();
         const originNames: { [key: string]: string } = {
           india: 'India',
-          vietnam: 'Vietnam', 
+          vietnam: 'Vietnam',
           ghana: 'Ghana',
           tanzania: 'Tanzania',
           any: 'Any'
         };
-
+        
         set((state) => ({
-          requirements: state.requirements.map(req =>
-            req.id === id ? {
-              ...req,
-              ...requirement,
-              fixedPrice,
-              lastModified: now.split('T')[0],
-              title: `${requirement.grade} Cashews for ${requirement.deliveryLocation}`,
-              preferredOrigin: originNames[requirement.origin] || requirement.origin,
-              budgetRange: `₹${requirement.expectedPrice}/kg`,
-              requirementExpiry: requirement.deliveryDeadline,
-              productName: `${requirement.grade} Cashews`,
-              message: `Looking for ${requirement.quantity} of ${requirement.grade} cashews from ${requirement.origin}. ${requirement.specifications || 'Standard quality requirements.'}`,
-              status: requirement.isDraft ? 'draft' : 'active'
-            } : req
-          )
+          requirements: state.requirements.map((req) => {
+            if (req.id === id) {
+              const updatedRequirement = {
+                ...req,
+                ...requirement,
+                productName: requirement.grade ? `${requirement.grade} Cashews` : req.productName,
+                fixedPrice,
+                preferredOrigin: requirement.origin ? (originNames[requirement.origin] || requirement.origin) : req.preferredOrigin,
+                budgetRange: requirement.expectedPrice ? `₹${requirement.expectedPrice}/kg` : req.budgetRange,
+                requirementExpiry: requirement.deliveryDeadline || req.requirementExpiry,
+                lastModified: now.split('T')[0],
+                // Ensure required fields are not removed
+                state: requirement.state ?? req.state,
+                city: requirement.city ?? req.city,
+                country: requirement.country ?? req.country,
+                deliveryLocation: requirement.deliveryLocation ?? req.deliveryLocation,
+                specifications: requirement.specifications ?? req.specifications,
+                allowLowerBid: requirement.allowLowerBid ?? req.allowLowerBid,
+                date: requirement.date ?? req.date,
+                isDraft: requirement.isDraft ?? req.isDraft,
+                status: requirement.status ?? req.status
+              };
+              return updatedRequirement;
+            }
+            return req;
+          }),
         }));
       },
 
