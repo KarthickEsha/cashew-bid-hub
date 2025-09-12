@@ -339,8 +339,8 @@ const MyOrders = () => {
                   <p><strong>Product:</strong> {selectedOrder.productName}</p>
                   <p><strong>Quantity:</strong> {selectedOrder.quantity}</p>
                   <p><strong>Unit Price:</strong> {selectedOrder.unitPrice}</p>
-                  <p className="font-bold text-lg flex items-center">
-                    <DollarSign size={16} className="mr-1 text-primary" /> {selectedOrder.totalAmount}
+                  <p>
+                    <strong> Total Amount:</strong> {selectedOrder.totalAmount}
                   </p>
                 </div>
 

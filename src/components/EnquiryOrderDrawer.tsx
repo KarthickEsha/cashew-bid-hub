@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useInventory } from '@/hooks/useInventory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Eye, Check, X } from 'lucide-react';
+import { MessageSquare, Eye, Check, X, Calendar, Clock } from 'lucide-react';
 import ChatModal from './ChatModal';
+import { format, isToday, parseISO, subDays } from 'date-fns';
 
 interface Enquiry {
   id: string;
@@ -13,7 +15,8 @@ interface Enquiry {
   message: string;
   quantity: string;
   date: string;
-  status: 'pending' | 'responded' | 'closed';
+  status: 'Pending' | 'Responded' | 'Closed';
+  productId?: string;
 }
 
 interface Order {
@@ -22,7 +25,7 @@ interface Order {
   quantity: string;
   totalAmount: number;
   date: string;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
+  status: 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered';
 }
 
 interface EnquiryOrderDrawerProps {
@@ -32,29 +35,157 @@ interface EnquiryOrderDrawerProps {
   productId: string;
 }
 
+interface EnquiryCardProps {
+  enquiry: Enquiry;
+  onChatClick: (name: string) => void;
+  isNew: boolean;
+  onStatusChange: (id: string, status: 'Pending' | 'Responded' | 'Closed') => void;
+}
+
+const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange }: EnquiryCardProps) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'destructive';
+      case 'responded': return 'default';
+      case 'closed': return 'outline';
+      default: return 'outline';
+    }
+  };
+
+  return (
+    <Card className="relative overflow-hidden">
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg">{enquiry.customerName}</CardTitle>
+            {isNew && (
+              <Badge variant="default" className="text-xs">New</Badge>
+            )}
+          </div>
+          <Badge variant={getStatusColor(enquiry.status)}>
+            {enquiry.status}
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">{enquiry.quantity} MT</p>
+        <p className="text-sm mt-2">{enquiry.message}</p>
+      </CardHeader>
+
+      <CardContent>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Calendar className="mr-1 h-3.5 w-3.5" />
+            <span>{enquiry.date}</span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onChatClick(enquiry.customerName)}
+            >
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Chat
+            </Button>
+            <div className="flex border rounded-md">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2"
+                onClick={() => onStatusChange(enquiry.id, 'Pending')}
+              >
+                <X
+                  className={`h-4 w-4 ${enquiry.status === 'Pending' ? 'text-destructive' : ''
+                    }`}
+                />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2"
+                onClick={() => onStatusChange(enquiry.id, 'Responded')}
+              >
+                <Check
+                  className={`h-4 w-4 ${enquiry.status === 'Responded' ? 'text-green-500' : ''
+                    }`}
+                />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+  );
+};
+
 const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: EnquiryOrderDrawerProps) => {
-  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
-  
-  // Mock data - in real app, this would come from backend
-  const mockEnquiries: Enquiry[] = [
-    {
-      id: '1',
-      customerName: 'John Smith',
-      message: 'Interested in bulk purchase. What are your best rates for 1000kg?',
-      quantity: '1000kg',
-      date: '2024-01-15',
-      status: 'pending',
-    },
-    {
-      id: '2',
-      customerName: 'Sarah Johnson',
-      message: 'Can you provide samples before bulk order?',
-      quantity: '500kg',
-      date: '2024-01-14',
-      status: 'responded',
-    },
-  ];
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const { incrementBuyerResponseCount } = useInventory();
+
+  // Fetch enquiries from local storage when component mounts or productId changes
+  useEffect(() => {
+    if (isOpen) {
+      const storedEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
+      // Filter enquiries for the current product
+      const productEnquiries = storedEnquiries
+        .filter((e: Enquiry) => e.productId === productId)
+        .map((e: Enquiry) => ({
+          id: e.id,
+          customerName: e.customerName,
+          message: e.message,
+          quantity: e.quantity,
+          date: e.date,
+          status: e.status || 'pending',
+          productId: e.productId
+        }));
+      setEnquiries(productEnquiries);
+    }
+  }, [isOpen, productId]);
+
+  // Group enquiries by date (new and older than 7 days)
+  const { newResponses, oldResponses } = useMemo(() => {
+    const now = new Date();
+    const sevenDaysAgo = subDays(now, 7);
+
+    const sortedEnquiries = [...enquiries].sort((a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    return {
+      newResponses: sortedEnquiries.filter(enquiry =>
+        new Date(enquiry.date) >= sevenDaysAgo
+      ),
+      oldResponses: sortedEnquiries
+    };
+  }, [enquiries]);
+
+  const handleChatOpen = (customerName: string) => {
+    setSelectedCustomer(customerName);
+    setChatModalOpen(true);
+  };
+
+  const updateEnquiryStatus = (id: string, status: 'Pending' | 'Responded' | 'Closed') => {
+    const enquiry = enquiries.find(e => e.id === id);
+    const isNewResponse = enquiry?.status === 'Pending' && status === 'Responded';
+
+    const updatedEnquiries = enquiries.map(enquiry =>
+      enquiry.id === id ? { ...enquiry, status } : enquiry
+    );
+    setEnquiries(updatedEnquiries);
+
+    // Update in local storage
+    const storedEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
+    const updatedStoredEnquiries = storedEnquiries.map((e: Enquiry) =>
+      e.id === id ? { ...e, status } : e
+    );
+    localStorage.setItem('productEnquiries', JSON.stringify(updatedStoredEnquiries));
+
+    // Increment buyer response count if this is a new response
+    if (isNewResponse && productId) {
+      incrementBuyerResponseCount(productId);
+    }
+  };
 
   const mockOrders: Order[] = [
     {
@@ -63,7 +194,7 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
       quantity: '250kg',
       totalAmount: 2125,
       date: '2024-01-16',
-      status: 'confirmed',
+      status: 'Confirmed',
     },
     {
       id: '2',
@@ -71,14 +202,9 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
       quantity: '100kg',
       totalAmount: 850,
       date: '2024-01-15',
-      status: 'shipped',
+      status: 'Shipped',
     },
   ];
-
-  const handleChatOpen = (customerName: string) => {
-    setSelectedCustomer(customerName);
-    setChatModalOpen(true);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -93,125 +219,61 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent side="right" className="w-[600px] sm:w-[700px]">
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Buyer Response</SheetTitle>
-            <p className="text-sm text-muted-foreground">{productName}</p>
           </SheetHeader>
 
-          <div className="mt-6">
-            <Tabs defaultValue="newResponse" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="newResponse" className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  New Response
-                </TabsTrigger>
-                <TabsTrigger value="allResponse" className="flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  All Response
-                </TabsTrigger>
-              </TabsList>
+          <Tabs defaultValue="enquiries" className="mt-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="enquiries">New Response ({newResponses.length})</TabsTrigger>
+              <TabsTrigger value="orders">All Response ({oldResponses.length})</TabsTrigger>
+            </TabsList>
 
-              {/* New Response Tab (previously Enquiries) */}
-              <TabsContent value="newResponse" className="space-y-4 mt-4">
-                {mockEnquiries.map((enquiry) => (
-                  <Card key={enquiry.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-base">{enquiry.customerName}</CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            Quantity: {enquiry.quantity} • {enquiry.date}
-                          </p>
-                        </div>
-                        <Badge variant={getStatusColor(enquiry.status)}>
-                          {enquiry.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm mb-3">{enquiry.message}</p>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleChatOpen(enquiry.customerName)}
-                          className="flex items-center gap-1"
-                        >
-                          <MessageSquare className="h-3 w-3" />
-                          Chat
-                        </Button>
-                        <Button size="sm" variant="outline" className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          View Details
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
+            <TabsContent value="enquiries" className="space-y-4 mt-4">
+              <div className="space-y-4">
+                {newResponses.length > 0 ? (
+                  <div className="space-y-4">
+                    {newResponses.map((enquiry) => (
+                      <EnquiryCard
+                        key={enquiry.id}
+                        enquiry={enquiry}
+                        onChatClick={handleChatOpen}
+                        isNew={true}
+                        onStatusChange={updateEnquiryStatus}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No new enquiries</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
 
-              {/* All Response Tab (previously Orders) */}
-              <TabsContent value="allResponse" className="space-y-4 mt-4">
-                {mockOrders.map((order) => (
-                  <Card key={order.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-base">{order.customerName}</CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            Order #{order.id} • {order.date}
-                          </p>
-                        </div>
-                        <Badge variant={getStatusColor(order.status)}>
-                          {order.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 mb-3">
-                        <div className="flex justify-between text-sm">
-                          <span>Quantity:</span>
-                          <span className="font-medium">{order.quantity}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Total Amount:</span>
-                          <span className="font-medium">${order.totalAmount}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleChatOpen(order.customerName)}
-                          className="flex items-center gap-1"
-                        >
-                          <MessageSquare className="h-3 w-3" />
-                          Chat
-                        </Button>
-                        <Button size="sm" variant="outline" className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          View Order
-                        </Button>
-                        {order.status === 'pending' && (
-                          <>
-                            <Button size="sm" className="flex items-center gap-1">
-                              <Check className="h-3 w-3" />
-                              Confirm
-                            </Button>
-                            <Button size="sm" variant="destructive" className="flex items-center gap-1">
-                              <X className="h-3 w-3" />
-                              Reject
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
-            </Tabs>
-          </div>
+            <TabsContent value="orders" className="mt-4">
+              <div className="space-y-4">
+                {oldResponses.length > 0 ? (
+                  <div className="space-y-4">
+                    {oldResponses.map((enquiry) => (
+                      <EnquiryCard
+                        key={enquiry.id}
+                        enquiry={enquiry}
+                        onChatClick={handleChatOpen}
+                        isNew={false}
+                        onStatusChange={updateEnquiryStatus}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No older enquiries</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </SheetContent>
       </Sheet>
 

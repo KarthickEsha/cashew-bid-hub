@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useParams, useNavigate } from 'react-router-dom';
+import { useInventory } from '@/hooks/useInventory';
+import { Button } from '@/components/ui/button';
+import { useInventory as useInventoryHook } from '@/hooks/useInventory';
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,15 +14,15 @@ import {
 import { useRole } from "@/hooks/useRole";
 import { merchants, products } from "@/data/mockdata";
 import { Product, Location as LocationType } from "@/types/user";
-import { useInventory } from "@/hooks/useInventory";
 import { useUser } from "@clerk/clerk-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useRequirements } from "@/hooks/useRequirements";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ProductDetail = () => {
   // Hooks must be called at the top level
   const { id } = useParams<{ id: string }>();
-  const { products: inventoryProducts } = useInventory();
+  const { products: inventoryProducts, incrementEnquiryCount, incrementBuyerResponseCount } = useInventoryHook();
   const navigate = useNavigate();
   const { role } = useRole();
   const { user } = useUser();
@@ -125,7 +126,7 @@ const ProductDetail = () => {
 
     // Add common specs
     specs.push(
-      ['Stock', `${product.stock} ${product.unit}`],
+      ['Stock', `${product.availableQty} ${product.unit}`],
       ['Minimum Order', product.minOrderQty ? `${product.minOrderQty} ${product.unit}` : 'No minimum'],
       ['Pricing Type', product.pricingType === 'bidding' ? 'Bidding' : 'Fixed Price'],
       ['Origin', product.location || 'N/A']
@@ -165,8 +166,8 @@ const ProductDetail = () => {
     else navigate("/marketplace");
   };
 
-  const handlePlaceBid = () => {
-    if (!bidQuantity || !bidPrice || !product) {
+  const handlePlaceBid = async () => {
+    if ((!bidQuantity || !bidPrice) && product?.pricingType === 'bidding') {
       toast({
         title: "Missing Information",
         description: "Please fill in quantity and expected price.",
@@ -175,29 +176,76 @@ const ProductDetail = () => {
       return;
     }
 
-    // Create requirement from product details
-    addRequirement({
-      customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
-      grade: product.grade || 'N/A',
-      quantity: `${bidQuantity} ${product.unit}`,
-      origin: typeof product.location === 'string' ? product.location.toLowerCase() : 'any',
-      expectedPrice: parseFloat(bidPrice),
-      minSupplyQuantity: bidQuantity,
-      deliveryLocation: profile?.address || 'Not specified',
-      city: profile?.location || 'Not specified',
-      country: 'India',
-      deliveryDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      specifications: bidMessage || 'Standard quality requirements',
-      allowLowerBid: true,
-      date: new Date().toISOString().split('T')[0],
-      status: 'active' as const,
-      isDraft: false,
-    });
+    try {
+      // Create enquiry
+      const enquiry = {
+        id: Date.now().toString(),
+        customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
+        message: bidMessage || `Interested in purchasing ${product.name}`,
+        quantity: bidQuantity ? `${bidQuantity} ${product.unit}` : 'Enquiry only',
+        date: new Date().toISOString(),
+        status: 'pending' as const,
+        productId: product.id,
+        productName: product.name,
+        price: bidPrice ? parseFloat(bidPrice) : 0,
+      };
 
-    toast({
-      title: "Request Sent Successfully",
-      description: "Your request has been sent to the merchant.",
-    });
+      // Save enquiry to local storage
+      const existingEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
+      localStorage.setItem('productEnquiries', JSON.stringify([...existingEnquiries, enquiry]));
+
+      // Update product's enquiry and buyer response counts
+      incrementEnquiryCount(product.id);
+      incrementBuyerResponseCount(product.id);
+
+      // Update the local state to reflect the changes
+      setProduct(prev => prev ? {
+        ...prev,
+        enquiries: (prev.enquiries || 0) + 1,
+        buyerResponses: (prev.buyerResponses || 0) + 1
+      } : null);
+
+      // For bidding products, also create a requirement
+      if (product.pricingType === 'bidding') {
+        addRequirement({
+          customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
+          grade: product.grade || 'N/A',
+          quantity: `${bidQuantity} ${product.unit}`,
+          origin: typeof product.location === 'string' ? product.location.toLowerCase() : 'any',
+          expectedPrice: parseFloat(bidPrice),
+          minSupplyQuantity: bidQuantity,
+          deliveryLocation: profile?.address || 'Not specified',
+          city: profile?.location || 'Not specified',
+          country: 'India',
+          deliveryDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          specifications: bidMessage || 'Standard quality requirements',
+          allowLowerBid: true,
+          date: new Date().toISOString().split('T')[0],
+          status: 'active',
+          isDraft: false,
+        });
+      }
+
+      toast({
+        title: "Enquiry Sent Successfully",
+        description: product.pricingType === 'bidding'
+          ? "Your bid has been placed."
+          : "Your enquiry has been sent to the merchant.",
+      });
+
+      // Reset form
+      setBidQuantity('');
+      setBidPrice('');
+      setBidMessage('');
+
+    } catch (error) {
+      console.error('Error submitting enquiry:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit your enquiry. Please try again.",
+        variant: "destructive",
+      });
+    }
 
     // Clear form
     setBidQuantity("");
@@ -264,7 +312,7 @@ const ProductDetail = () => {
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground font-medium">Available Stock</div>
-                    <div className="font-bold text-lg">{product.stock} {product.unit}</div>
+                    <div className="font-bold text-lg">{product.availableQty} {product.unit}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
@@ -294,7 +342,7 @@ const ProductDetail = () => {
                   </div>
                 </div>
               </div>
-              
+
               {product.pricingType === "bidding" && (
                 <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
                   <div className="p-2 bg-yellow-100 rounded-lg">
@@ -342,8 +390,8 @@ const ProductDetail = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-foreground">Quantity ({product.unit})</label>
-                    <Input 
-                      value={bidQuantity} 
+                    <Input
+                      value={bidQuantity}
                       onChange={(e) => setBidQuantity(e.target.value)}
                       placeholder={`Enter quantity in ${product.unit}`}
                       className="border-primary/20 focus:border-primary"
@@ -351,8 +399,8 @@ const ProductDetail = () => {
                   </div>
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-foreground">Your Expected Price (₹/{product.unit})</label>
-                    <Input 
-                      value={bidPrice} 
+                    <Input
+                      value={bidPrice}
                       onChange={(e) => setBidPrice(e.target.value)}
                       placeholder="Enter your expected price"
                       className="border-primary/20 focus:border-primary"
@@ -361,16 +409,16 @@ const ProductDetail = () => {
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-foreground">Message to Merchant</label>
-                  <Textarea 
-                    value={bidMessage} 
+                  <Textarea
+                    value={bidMessage}
                     onChange={(e) => setBidMessage(e.target.value)}
                     placeholder="Add any specific requirements or questions..."
                     rows={4}
                     className="border-primary/20 focus:border-primary resize-none"
                   />
                 </div>
-                <Button 
-                  onClick={handlePlaceBid} 
+                <Button
+                  onClick={handlePlaceBid}
                   className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white font-semibold py-3 text-lg shadow-warm"
                   size="lg"
                 >
@@ -409,7 +457,7 @@ const ProductDetail = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">{merchant?.description || 'Quality cashew supplier with years of experience'}</p>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center p-2 bg-primary/5 rounded-lg">
                   <MapPin size={16} className="mr-3 text-primary" />
@@ -435,14 +483,14 @@ const ProductDetail = () => {
                   <span className="text-sm font-medium">Response: {merchant?.responseTime || 'Within 24 hours'}</span>
                 </div>
               </div>
-              
+
               <div className="pt-4 space-y-3">
                 <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white shadow-warm">
                   Contact Merchant
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full border-primary/20 hover:bg-primary/5" 
+                <Button
+                  variant="outline"
+                  className="w-full border-primary/20 hover:bg-primary/5"
                   onClick={handleViewAllProducts}
                 >
                   View All Products

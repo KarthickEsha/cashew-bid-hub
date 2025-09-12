@@ -183,7 +183,7 @@ const Marketplace = () => {
                 ].filter(Boolean).join(', '),
             origin: product.origin || 'Not specified',
             grade: product.grade || 'N/A',
-            quantity: product.stock,
+            quantity: product.availableQty,
             quantityUnit: product.unit || 'kg',
             pricePerTon: `$${product.price * 1000}`, // Assuming price is per kg
             pricePerKg: `$${product.price}`,

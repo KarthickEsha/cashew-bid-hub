@@ -84,7 +84,7 @@ const ProductListTable = ({
           {currentProductType === "Kernel" ? (
             <>
               <SortableHeader field="grade">Grade</SortableHeader>
-              <SortableHeader field="stock">Available Stock</SortableHeader>
+              <SortableHeader field="availableQty">Available Stock</SortableHeader>
               <SortableHeader field="price">Offer/kg</SortableHeader>
               <SortableHeader field="location">Origin</SortableHeader>
               <SortableHeader field="expireDate">Expire Date</SortableHeader>
@@ -97,7 +97,8 @@ const ProductListTable = ({
               <SortableHeader field="location">Origin</SortableHeader>
             </>
           )}
-          <TableHead>Buyer Response</TableHead>
+          <TableHead className="w-[100px]">Enquiries</TableHead>
+          {/* <TableHead className="w-[120px]">Buyer Responses</TableHead> */}
           {/* <TableHead>Orders</TableHead> */}
           <TableHead>Actions</TableHead>
         </TableRow>
@@ -113,10 +114,10 @@ const ProductListTable = ({
                   <TableCell>
                     <span
                       className={
-                        product.stock === 0 ? "text-red-600" : "text-green-600"
+                        product.availableQty === 0 ? "text-red-600" : "text-green-600"
                       }
                     >
-                      {product.stock} {product.unit}
+                      {product.availableQty} {product.unit}
                     </span>
                   </TableCell>
                   <TableCell>₹{product.price.toLocaleString("en-IN")}</TableCell>
@@ -142,16 +143,28 @@ const ProductListTable = ({
                 </>
               )}
 
-              {/* Removed Status column */}
+              {/* Enquiries and Buyer Responses */}
               <TableCell>
                 <div
                   onClick={() => onEnquiryClick(product)}
                   className="flex items-center space-x-1 cursor-pointer hover:text-blue-600"
+                  title="Enquiries"
                 >
                   <MessageSquare className="h-4 w-4" />
-                  <span>{product.enquiries}</span>
+                  <span>{product.enquiries || 0}</span>
                 </div>
               </TableCell>
+              {/* <TableCell>
+                <div
+                  className="flex items-center space-x-1"
+                  title="Buyer Responses"
+                >
+                  <MessageSquare className="h-4 w-4 text-green-600" />
+                  <span className={product.buyerResponses ? 'text-green-600 font-medium' : ''}>
+                    {product.buyerResponses || 0}
+                  </span>
+                </div>
+              </TableCell> */}
               {/* <TableCell>
                 <div
                   onClick={() => onOrderClick(product)}

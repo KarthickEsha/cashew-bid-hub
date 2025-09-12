@@ -8,6 +8,8 @@ interface InventoryState {
   updateProduct: (id: string, updates: Partial<Omit<Product, 'id' | 'createdAt'>>) => void;
   deleteProduct: (id: string) => void;
   reduceStock: (id: string, quantity: number) => void;
+  incrementEnquiryCount: (productId: string) => void;
+  incrementBuyerResponseCount: (productId: string) => void;
   getProductsByType: (type: ProductType) => Product[];
   getProductStats: () => {
     totalProducts: number;
@@ -40,6 +42,7 @@ export const useInventory = create<InventoryState>()(
             status: 'active',
             enquiries: 0,
             orders: 0,
+            buyerResponses: 0,
             createdAt: now,
             expireDate: product.expireDate ?? '',
 
@@ -70,15 +73,32 @@ export const useInventory = create<InventoryState>()(
         products: state.products.filter(p => p.id !== id)
       })),
 
-      reduceStock: (id, quantity) => set((state) => ({
-        products: state.products.map(p =>
-          p.id === id ? {
-            ...p,
-            stock: Math.max(0, p.stock - quantity),
-            status: p.stock - quantity <= 0 ? 'out_of_stock' : p.status
-          } : p
-        )
-      })),
+      reduceStock: (id, quantity) =>
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === id && product.stock >= quantity
+              ? { ...product, stock: product.stock - quantity, status: product.stock - quantity <= 0 ? 'out_of_stock' : product.status }
+              : product
+          ),
+        })),
+
+      incrementEnquiryCount: (productId) =>
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === productId
+              ? { ...product, enquiries: (product.enquiries || 0) + 1 }
+              : product
+          ),
+        })),
+
+      incrementBuyerResponseCount: (productId) =>
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === productId
+              ? { ...product, buyerResponses: (product.buyerResponses || 0) + 1 }
+              : product
+          ),
+        })),
 
       getProductsByType: (type) => {
         const { products } = get();
