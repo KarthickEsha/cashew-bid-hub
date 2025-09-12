@@ -39,54 +39,54 @@ const ProductDetailsView = () => {
 
   // Mock products data for this merchant
   const products: Product[] = [
-    {
-      id: '1',
-      name: 'Premium W320 Cashews',
-      type: 'RCN',
-      grade: 'W320',
-      yearOfCrop: '2024',
-      nutCount: '320/lb',
-      outTurn: '48-50 lbs',
-      stock: 150,
-      price: 8200,
-      unit: 'ton',
-      location: 'Mumbai, India',
-      expireDate: '2024-12-15',
-      status: 'active',
-      enquiries: 12,
-      orders: 8
-    },
-    {
-      id: '2',
-      name: 'Export Quality W240',
-      type: 'RCN',
-      grade: 'W240',
-      yearOfCrop: '2024',
-      nutCount: '240/lb',
-      outTurn: '50-52 lbs',
-      stock: 200,
-      price: 8500,
-      unit: 'ton',
-      location: 'Mumbai, India',
-      expireDate: '2024-11-30',
-      status: 'active',
-      enquiries: 18,
-      orders: 15
-    },
-    {
-      id: '3',
-      name: 'Premium Cashew Kernels',
-      type: 'Kernel',
-      grade: 'W320',
-      stock: 85,
-      price: 12500,
-      unit: 'ton',
-      location: 'Mumbai, India',
-      expireDate: '2024-10-20',
-      status: 'active',
-      enquiries: 25,
-      orders: 12
-    }
+    // {
+    //   id: '1',
+    //   name: 'Premium W320 Cashews',
+    //   type: 'RCN',
+    //   grade: 'W320',
+    //   yearOfCrop: '2024',
+    //   nutCount: '320/lb',
+    //   outTurn: '48-50 lbs',
+    //   stock: 150,
+    //   price: 8200,
+    //   unit: 'ton',
+    //   location: 'Mumbai, India',
+    //   expireDate: '2024-12-15',
+    //   status: 'active',
+    //   enquiries: 12,
+    //   orders: 8
+    // },
+    // {
+    //   id: '2',
+    //   name: 'Export Quality W240',
+    //   type: 'RCN',
+    //   grade: 'W240',
+    //   yearOfCrop: '2024',
+    //   nutCount: '240/lb',
+    //   outTurn: '50-52 lbs',
+    //   stock: 200,
+    //   price: 8500,
+    //   unit: 'ton',
+    //   location: 'Mumbai, India',
+    //   expireDate: '2024-11-30',
+    //   status: 'active',
+    //   enquiries: 18,
+    //   orders: 15
+    // },
+    // {
+    //   id: '3',
+    //   name: 'Premium Cashew Kernels',
+    //   type: 'Kernel',
+    //   grade: 'W320',
+    //   stock: 85,
+    //   price: 12500,
+    //   unit: 'ton',
+    //   location: 'Mumbai, India',
+    //   expireDate: '2024-10-20',
+    //   status: 'active',
+    //   enquiries: 25,
+    //   orders: 12
+    // }
   ];
 
   const handleEnquiryClick = (product: Product) => {

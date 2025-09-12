@@ -57,7 +57,7 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType, enqui
     if (message.trim() && enquiry && userType === 'merchant') {
       // Create a response when merchant sends a message
       const merchantName = profile?.name || user?.fullName || 'Anonymous Merchant';
-      const merchantLocation = profile?.location || 'Location not specified';
+      const merchantLocation = profile?.city || 'Location not specified';
       
       addResponse({
         requirementId: enquiry.id.toString(),

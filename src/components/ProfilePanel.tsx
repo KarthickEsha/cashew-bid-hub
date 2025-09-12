@@ -74,10 +74,10 @@ const ProfilePanel = ({ children }: ProfilePanelProps) => {
               </div>
             )}
             
-            {profile?.location && (
+            {profile?.city && (
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{profile.location}</span>
+                <span>{profile.city}</span>
               </div>
             )}
             {profile?.companyName && (

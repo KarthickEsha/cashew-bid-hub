@@ -32,7 +32,7 @@ const ViewAllProducts = () => {
         <CardContent>
           <p>Cashew merchant specializing in high-quality products and reliable service.</p>
           <div className="flex flex-wrap gap-3">
-            <Badge variant="secondary">Location: {merchant.location}</Badge>
+            <Badge variant="secondary">Location: {merchant.city}</Badge>
             <Badge variant="secondary">Established: 2010</Badge>
             <Badge variant="secondary">Rating: ⭐ 4.5</Badge>
             <Badge variant="secondary">Total Products: {merchantProducts.length}</Badge>
@@ -80,7 +80,7 @@ const ViewAllProducts = () => {
                     </div>
                     <div className="flex items-center text-muted-foreground text-sm">
                       <MapPin size={14} className="mr-1" />
-                      {merchant.location}
+                      {merchant.city}
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
