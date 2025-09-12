@@ -428,7 +428,7 @@ const ProfileSetup = () => {
                 />
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="businessType">Business Type *</Label>
                 <Select
                   value={formData.businessType}
@@ -446,7 +446,7 @@ const ProfileSetup = () => {
                     <SelectItem value="retailer">Retailer</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
             </div>
 
             <Button

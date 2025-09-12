@@ -24,6 +24,7 @@ import {
   DollarSign,
   User,
   Inbox,
+  Filter,
 } from "lucide-react";
 import {
   Dialog,
@@ -42,6 +43,9 @@ const MyOrders = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
+
+  // filter visibility state
+  const [filterOpen, setFilterOpen] = useState(false);
 
   // applied filters
   const [appliedFilters, setAppliedFilters] = useState({
@@ -162,68 +166,80 @@ const MyOrders = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <h1 className="text-3xl font-bold mb-4">My Orders</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">My Orders</h1>
+          <p className="text-muted-foreground mt-1">
+            View and manage your orders
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
+          <Filter className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filter Orders</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                placeholder="Search orders..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      {filterOpen && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Filter Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Search */}
+              <div className="relative">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  placeholder="Search orders..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              {/* Status */}
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Location */}
+              <Select value={locationFilter} onValueChange={(value) => setLocationFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {uniqueLocations.map((loc, i) => (
+                    <SelectItem key={i} value={loc}>
+                      {loc}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Buttons */}
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={handleClearFilters}>
+                  Clear Filters
+                </Button>
+                <Button onClick={handleApplyFilters}>Apply Filters</Button>
+              </div>
             </div>
-
-            {/* Status */}
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Location */}
-            <Select value={locationFilter} onValueChange={(value) => setLocationFilter(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {uniqueLocations.map((loc, i) => (
-                  <SelectItem key={i} value={loc}>
-                    {loc}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Buttons */}
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={handleClearFilters}>
-                Clear Filters
-              </Button>
-              <Button onClick={handleApplyFilters}>Apply Filters</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Orders */}
       <div className="space-y-4">

@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   Plus,
   Inbox,
+  Filter,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -45,6 +46,7 @@ const MyRequirements = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [filteredRequirements, setFilteredRequirements] = useState<any[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   // Get requirements from the hook
   const requirements = getMyRequirements();
@@ -136,11 +138,21 @@ const MyRequirements = () => {
             Manage your posted requirements and track responses
           </p>
         </div>
-        <Link to="/post-requirement">
-          <Button size="lg">
-            <Plus size={16} className="mr-2" /> Post New Requirement
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={() => setFilterOpen(!filterOpen)}
+            className="h-10 w-10 p-0 flex items-center justify-center"
+          >
+            <Filter size={18} />
           </Button>
-        </Link>
+          <Link to="/post-requirement">
+            <Button size="lg">
+              <Plus size={16} className="mr-2" /> Post New Requirement
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
@@ -177,52 +189,59 @@ const MyRequirements = () => {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filter Requirements</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                placeholder="Search requirements..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      {filterOpen && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Filter Requirements</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search requirements..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Status</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Grade</label>
+                <Select value={gradeFilter} onValueChange={setGradeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Grades</SelectItem>
+                    <SelectItem value="W180">W180</SelectItem>
+                    <SelectItem value="W210">W210</SelectItem>
+                    <SelectItem value="W240">W240</SelectItem>
+                    <SelectItem value="W320">W320</SelectItem>
+                    <SelectItem value="W450">W450</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Select onValueChange={(value) => setStatusFilter(value)} defaultValue="all">
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select onValueChange={(value) => setGradeFilter(value)} defaultValue="all">
-              <SelectTrigger>
-                <SelectValue placeholder="Grade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Grades</SelectItem>
-                <SelectItem value="W180">W180</SelectItem>
-                <SelectItem value="W240">W240</SelectItem>
-                <SelectItem value="W320">W320</SelectItem>
-                <SelectItem value="SW240">SW240</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={applyFilters}>Apply Filters</Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Requirements Grid */}
       {filteredRequirements.length === 0 ? (
@@ -325,21 +344,19 @@ const MyRequirements = () => {
                     </span>
                   </div>
                   <div className="flex justify-end space-x-2">
-                    {(
-                      <Link to={`/requirement/${requirement.id}`}>
+                    <Link to={`/requirement/${requirement.id}`}>
+                      <Button variant="outline" size="sm">
+                        <Eye size={14} className="mr-2" /> View
+                      </Button>
+                    </Link>
+                    {(requirement.status === "draft" ||
+                      requirement.status === "active") && (
+                      <Link to={`/edit-requirement/${requirement.id}`}>
                         <Button variant="outline" size="sm">
-                          <Eye size={14} className="mr-2" /> View
+                          <Edit size={14} className="mr-2" /> Edit
                         </Button>
                       </Link>
                     )}
-                    {(requirement.status === "draft" ||
-                      requirement.status === "active") && (
-                        <Link to={`/edit-requirement/${requirement.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Edit size={14} className="mr-2" /> Edit
-                          </Button>
-                        </Link>
-                      )}
                     {requirement.status === "draft" && (
                       <Button
                         variant="outline"

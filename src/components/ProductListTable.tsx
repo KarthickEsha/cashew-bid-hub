@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, MessageSquare, ShoppingCart, Trash2, TrendingUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Eye, Edit, MessageSquare, ShoppingCart, Trash2, TrendingUp, ArrowUpDown, ArrowUp, ArrowDown, Package } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Product, Location } from '@/types/user';
 
@@ -60,7 +60,7 @@ const ProductListTable = ({
     if (sortField !== field) {
       return <ArrowUpDown className="h-4 w-4 text-muted-foreground opacity-50" />;
     }
-    return sortDirection === 'asc' 
+    return sortDirection === 'asc'
       ? <ArrowUp className="h-4 w-4 text-primary" />
       : <ArrowDown className="h-4 w-4 text-primary" />;
   };
@@ -122,8 +122,8 @@ const ProductListTable = ({
                   </TableCell>
                   <TableCell>₹{product.price.toLocaleString("en-IN")}</TableCell>
                   <TableCell>
-                    {typeof product.location === 'string' 
-                      ? product.location 
+                    {typeof product.location === 'string'
+                      ? product.location
                       : (product.location as Location).city || (product.location as Location).region || (product.location as Location).country || 'N/A'
                     }
                   </TableCell>
@@ -135,8 +135,8 @@ const ProductListTable = ({
                   <TableCell>{product.nutCount || "-"}</TableCell>
                   <TableCell>{product.outTurn || "-"}</TableCell>
                   <TableCell>
-                    {typeof product.location === 'string' 
-                      ? product.location 
+                    {typeof product.location === 'string'
+                      ? product.location
                       : (product.location as Location).city || (product.location as Location).region || (product.location as Location).country || 'N/A'
                     }
                   </TableCell>
@@ -213,7 +213,10 @@ const ProductListTable = ({
               colSpan={currentProductType === "Kernel" ? 8 : 7} // Kernel: 8 columns, RCN: 7 columns
               className="text-center py-6 text-muted-foreground"
             >
-              No products found for selected filters.
+              <div className="text-center py-8">
+                <Package className="mx-auto h-12 w-12 text-muted-foreground" />
+                No products found for selected filters.
+              </div>
             </TableCell>
           </TableRow>
         )}

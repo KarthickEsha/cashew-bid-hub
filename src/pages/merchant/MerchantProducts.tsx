@@ -292,22 +292,6 @@ const MerchantProducts = () => {
             {/* Table */}
             <Card>
                 <CardHeader className="pb-2">
-                    {isLoading ? (
-                        <div className="flex justify-center p-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        </div>
-                    ) : filteredProducts.length === 0 ? (
-                        <div className="text-center py-8">
-                            <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-                            <h3 className="mt-2 text-sm font-medium">No products found</h3>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                {Object.values(filters).some(Boolean)
-                                    ? 'No products match your filters.'
-                                    : 'You have not added any products yet.'}
-                            </p>
-                        </div>
-                    ) : null}
-
                     <div className="flex">
                         <Button
                             variant="outline"
