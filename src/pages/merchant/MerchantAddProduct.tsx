@@ -48,10 +48,10 @@ const MerchantAddProduct = () => {
 
     // Determine initial product type based on profile
     const getInitialProductType = (): ProductType => {
-        if (profile?.productType === 'Both') {
+        if (profile?.dealingWith === 'Both') {
             return 'RCN';
         }
-        return profile?.productType || 'RCN';
+        return profile?.dealingWith || 'RCN';
     };
 
     const [currentProductType, setCurrentProductType] = useState<ProductType>(
