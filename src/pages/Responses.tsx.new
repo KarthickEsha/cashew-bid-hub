@@ -41,7 +41,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-type ResponseStatus = 'new' | 'viewed' | 'accepted' | 'rejected' | 'skipped';
+type ResponseStatus = 'new' | 'viewed' | 'accepted' | 'rejected';
 
 interface Requirement {
   id: string;
@@ -94,26 +94,21 @@ const Responses = () => {
     searchText: "",
     status: "all" as ResponseStatus | 'all'
   });
-
+  
   // Get requirement title by ID
   const getRequirementTitle = (requirementId: string) => {
     const requirement = requirements.find(req => req.id === requirementId);
     return requirement ? requirement.productName : 'Unknown Requirement';
   };
 
-  // Get all merchant responses with details
+  // Get merchant responses with details
   const getMerchantResponses = (): ResponseWithDetails[] => {
-    return responses.map(response => {
-      const requirement = requirements.find(req => req.id === response.requirementId);
-      return {
-        ...response,
-        requirementTitle: requirement?.productName || 'Unknown Requirement',
-        merchantRating: 4.5, // This would come from merchant data in a real app
-        isStarred: false, // Default value, can be managed in state if needed
-        grade: response.grade || requirement?.grade || 'N/A',
-        quantity: response.quantity || (requirement?.quantity ? `${requirement.quantity} MT` : 'N/A')
-      };
-    });
+    return responses.map(response => ({
+      ...response,
+      requirementTitle: getRequirementTitle(response.requirementId),
+      merchantRating: 4.5, // This would come from merchant data in a real app
+      isStarred: false // Default value, can be managed in state if needed
+    }));
   };
 
   // Get responses with requirement details
@@ -121,18 +116,13 @@ const Responses = () => {
 
   // Filter responses based on search and filters
   const filteredResponses = responsesWithDetails.filter(response => {
-    // Handle search text matching
-    const searchLower = appliedFilters.searchText.toLowerCase();
-    const matchesSearch = appliedFilters.searchText === '' ||
-      (response.merchantName?.toLowerCase().includes(searchLower) ||
-       response.requirementTitle?.toLowerCase().includes(searchLower) ||
-       response.grade?.toLowerCase().includes(searchLower) ||
-       response.origin?.toLowerCase().includes(searchLower));
-
-    // Handle status filtering
+    const matchesSearch = appliedFilters.searchText === '' || 
+      (response.merchantName?.toLowerCase().includes(appliedFilters.searchText.toLowerCase()) ||
+      response.requirementTitle?.toLowerCase().includes(appliedFilters.searchText.toLowerCase()));
+    
     const matchesStatus = appliedFilters.status === 'all' || 
-      (response.status && response.status.toLowerCase() === appliedFilters.status.toLowerCase());
-
+      response.status === appliedFilters.status;
+    
     return matchesSearch && matchesStatus;
   });
 
@@ -256,20 +246,22 @@ const Responses = () => {
       {/* Responses List */}
       <div className="space-y-4">
         {currentResponses.map((response) => (
-          <Card key={response.id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3 bg-muted/50">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-semibold">{response.merchantName}</h3>
+          <Card key={response.id} className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold">{response.requirementTitle}</h3>
                     <Badge 
-                      variant={response.status === 'accepted' ? 'default' : 
-                              response.status === 'rejected' ? 'destructive' : 'outline'}
+                      variant={
+                        response.status === 'accepted' ? 'success' :
+                        response.status === 'rejected' ? 'destructive' :
+                        'secondary'
+                      }
                       className="capitalize"
                     >
                       {response.status}
                     </Badge>
-                    {response.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Response from {response.merchantName}
@@ -288,48 +280,20 @@ const Responses = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div className="space-y-1">
                   <p className="text-muted-foreground">Price</p>
-                  <p className="font-medium">₹{response.price} / kg</p>
+                  <p className="font-medium">{response.price} / kg</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-muted-foreground">Quantity</p>
-                  <p className="font-medium">{response.quantity}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Grade</p>
-                  <p className="font-medium">{response.grade || 'N/A'}</p>
+                  <p className="font-medium">{response.quantity} MT</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-muted-foreground">Delivery Time</p>
-                  <p className="font-medium">{response.deliveryTime || 'N/A'}</p>
+                  <p className="font-medium">{response.deliveryTime}</p>
                 </div>
-                {response.origin && (
-                  <div className="space-y-1">
-                    <p className="text-muted-foreground">Origin</p>
-                    <p className="font-medium">{response.origin}</p>
-                  </div>
-                )}
-                {response.certifications?.length > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-muted-foreground">Certifications</p>
-                    <div className="flex flex-wrap gap-1">
-                      {response.certifications.map((cert, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {cert}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-              {response.message && (
-                <div className="mt-2 text-sm">
-                  <p className="text-muted-foreground">Merchant's Note:</p>
-                  <p className="italic">"{response.message}"</p>
-                </div>
-              )}
             </CardContent>
             <CardFooter className="bg-muted/50 p-4 border-t flex justify-between items-center">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

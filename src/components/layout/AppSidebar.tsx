@@ -24,6 +24,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useClerk } from "@clerk/clerk-react";
+import { useEffect, useState } from "react";
+import { useResponses } from "@/hooks/useResponses";
 import RoleSwitcher from "@/components/RoleSwitcher";
 
 const mainNavItems = [
@@ -34,7 +36,7 @@ const mainNavItems = [
 
 const myActivityItems = [
   // { path: "/my-requests", label: "My Requests", icon: MessageSquare },
-  // { path: "/responses", label: "Responses", icon: Mail },
+  { path: "/responses", label: "Seller Response", icon: Mail },
   // { path: "/my-bids", label: "My Bids", icon: FileText },
   { path: "/my-orders", label: "My Orders", icon: Mail },
   { path: "/my-requirements", label: "My Requirements", icon: FileText }
@@ -44,7 +46,15 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
-    const { signOut } = useClerk();
+  const { signOut } = useClerk();
+  const { responses } = useResponses();
+  const [newResponseCount, setNewResponseCount] = useState(0);
+
+  useEffect(() => {
+    // Count new/unread responses
+    const count = responses.filter(response => response.status === 'new').length;
+    setNewResponseCount(count);
+  }, [responses]);
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -107,9 +117,9 @@ export function AppSidebar() {
                     <NavLink to={item.path} className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span className="text-[15px]">{item.label}</span>}
-                      {item.path === "/responses" && !collapsed && (
+                      {item.path === "/responses" && newResponseCount > 0 && !collapsed && (
                         <Badge variant="destructive" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
-                          7
+                          {newResponseCount}
                         </Badge>
                       )}
                     </NavLink>

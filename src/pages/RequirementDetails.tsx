@@ -135,6 +135,7 @@ const RequirementDetails = () => {
 
   // Place Order functionality
   const handlePlaceOrder = (response: any) => {
+    debugger
     const order = {
       id: Date.now(), // Simple ID generation
       requirementId: requirement.id,
@@ -173,14 +174,16 @@ const RequirementDetails = () => {
   };
 
   // Handle status update for response
-  const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'Accepted' | 'Rejected', remarks: string = '') => {
+  const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected', remarks: string = '') => {
     // Update the response status in the backend
     updateResponseStatus(responseId, status, remarks);
-
-    // Update requirement status when response is Accepted
-    if (status === 'Accepted' && requirement) {
+    // Update requirement status when response is accepted
+    if (status === 'accepted' && requirement) {
       updateRequirementStatus(requirement.id, 'responded');
     }
+
+    // Convert status to lowercase to match the type
+    const normalizedStatus = status as 'new' | 'viewed' | 'accepted' | 'rejected';
 
     // Update the local state to reflect the change
     setResponses(prevResponses =>
@@ -188,7 +191,7 @@ const RequirementDetails = () => {
         response.id === responseId
           ? {
             ...response,
-            status,
+            status: normalizedStatus,
             ...(remarks ? { remarks } : {})
           }
           : response
@@ -396,9 +399,9 @@ const RequirementDetails = () => {
                         <div className="text-right">
                           <Badge
                             variant={response.status === "new" ? "default" : "secondary"}
-                            className="text-xs"
+                            className="text-xs capitalize"
                           >
-                            {response.status}
+                            {response.status.charAt(0).toUpperCase() + response.status.slice(1)}
                           </Badge>
                           <div className="text-xs text-muted-foreground mt-1">
                             {new Date(response.responseDate).toLocaleDateString()}
@@ -439,9 +442,9 @@ const RequirementDetails = () => {
                         <h3 className="font-semibold text-lg">{response.merchantName}</h3>
                         <Badge
                           variant={response.status === "new" ? "default" : "secondary"}
-                          className="text-xs"
+                          className="text-xs capitalize"
                         >
-                          {response.status}
+                          {response.status.charAt(0).toUpperCase() + response.status.slice(1)}
                         </Badge>
                       </div>
                       <div className="flex items-center text-muted-foreground text-sm">
@@ -502,12 +505,23 @@ const RequirementDetails = () => {
                       <div className="space-y-2">
                         <Button
                           className="w-full"
-                          onClick={() => {
-                            updateResponseStatus(response.id, 'Accepted');
-                            toast({
-                              title: "Order Placed",
-                              description: `Order placed with ${response.merchantName}`,
-                            });
+                          onClick={async () => {
+                            console.log('Placing order for response:', response.id);
+                            try {
+                              await updateResponseStatus(response.id, 'accepted');
+                              console.log('Order placed successfully');
+                              toast({
+                                title: "Order Placed",
+                                description: `Order placed with ${response.merchantName}`,
+                              });
+                            } catch (error) {
+                              console.error('Error placing order:', error);
+                              toast({
+                                title: "Error",
+                                description: "Failed to place order. Please try again.",
+                                variant: "destructive"
+                              });
+                            }
                           }}
                         >
                           Place Order
@@ -573,8 +587,8 @@ const RequirementDetails = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="new">Selected</SelectItem>
-                    <SelectItem value="Accepted">Confirmation</SelectItem>
-                    <SelectItem value="Rejected">Rejected</SelectItem>
+                    <SelectItem value="accepted">Confirmation</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -672,8 +686,8 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="new">Selected</SelectItem>
-                  <SelectItem value="Accepted">Confirmation</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
+                  <SelectItem value="accepted">Confirmation</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>

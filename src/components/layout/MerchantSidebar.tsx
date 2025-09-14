@@ -88,9 +88,24 @@ export function MerchantSidebar() {
   const { responses } = useResponses();
   const { orders } = useOrders();
 
-  const enquiriesCount = getRequirementsAsEnquiries().length;
-  const confirmedCount = responses.filter(r => r.status === 'Accepted').length;
-  const rejectedCount = responses.filter(r => r.status === 'Rejected').length;
+  // Filter out skipped responses and get counts
+  const activeResponses = responses.filter(r => r.status !== 'skipped');
+  
+  // Only show active enquiries (not expired and not completed)
+  const activeEnquiries = getRequirementsAsEnquiries().filter(enquiry => {
+    const expiryDate = new Date(enquiry.expiryDate || 0);
+    const now = new Date();
+    return expiryDate > now && enquiry.status === 'active' || enquiry.status === 'responded' || enquiry.status === 'selected';
+  });
+  
+  // Only show selected (accepted) responses
+  const selectedResponses = activeResponses.filter(r => r.status === 'accepted');
+
+  const selectedRejectedResponses = activeResponses.filter(r => r.status === 'rejected');
+  
+  const enquiriesCount = activeEnquiries.length;
+  const confirmedCount = selectedResponses.length;
+  const rejectedCount = selectedRejectedResponses.length; // Don't show rejected count in sidebar
   const ordersCount = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length;
 
   const isActive = (path: string) => currentPath === path;

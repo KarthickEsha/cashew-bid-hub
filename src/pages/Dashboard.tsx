@@ -55,6 +55,7 @@ const Dashboard = () => {
       icon: MessageSquare,
       color: "text-green-500",
       trend: `From ${requirements.length} requirements`,
+      path: "/responses"
     },
     {
       title: "Total Orders",
@@ -62,6 +63,7 @@ const Dashboard = () => {
       icon: Clock,
       color: "text-orange-500",
       trend: `${confirmedOrders} confirmed, ${pendingOrders} pending`,
+      
     },
     {
       title: "Total Value",
@@ -164,9 +166,9 @@ const Dashboard = () => {
                       <span className="text-xs text-muted-foreground">{activity.time}</span>
                       <Badge
                         variant={activity.status === 'confirmed' ? 'default' : 'secondary'}
-                        className="text-xs"
+                        className="text-xs capitalize"
                       >
-                        {activity.status}
+                        {activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}
                       </Badge>
                     </div>
                   </div>

@@ -117,8 +117,8 @@ const MerchantEnquiries = () => {
   const [enquiries, setEnquiries] = useState(() => {
     const storedEnquiries = getRequirementsAsEnquiries().map(enquiry => {
       const responses = getResponsesByRequirementId(enquiry.id);
-      const hasAcceptedResponse = responses.some(r => r.status === 'Accepted');
-      const hasRejectedResponse = responses.some(r => r.status === 'Rejected');
+      const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
+      const hasRejectedResponse = responses.some(r => r.status === 'rejected');
 
       let status = enquiry.status;
       if (hasAcceptedResponse) {
@@ -143,26 +143,126 @@ const MerchantEnquiries = () => {
 
   // Function to refresh enquiries
   const refreshEnquiries = () => {
-    const updatedStoredEnquiries = getRequirementsAsEnquiries().map(enquiry => {
-      const responses = getResponsesByRequirementId(enquiry.id);
-      const hasAcceptedResponse = responses.some(r => r.status === 'Accepted');
-      const hasRejectedResponse = responses.some(r => r.status === 'Rejected');
+    console.group('=== REFRESH ENQUIRIES START ===');
+    console.log('Fetching all requirements as enquiries...');
+    const allEnquiries = getRequirementsAsEnquiries();
+    console.log('Raw enquiries from store:', allEnquiries);
+    
+    const updatedStoredEnquiries = allEnquiries
+      .filter(enquiry => {
+        const isClosed = enquiry.status === 'closed';
+        console.log(`Enquiry ${enquiry.id} status: ${enquiry.status}, isClosed: ${isClosed}`);
+        return !isClosed; // Filter out closed enquiries
+      })
+      .map(enquiry => {
+        console.group(`Processing enquiry ${enquiry.id}`);
+        console.log('Current enquiry data:', {
+          id: enquiry.id,
+          currentStatus: enquiry.status,
+          hasCreatedAt: !!enquiry.createdAt,
+          hasLastModified: !!enquiry.lastModified
+        });
+        
+        const responses = getResponsesByRequirementId(enquiry.id);
+        console.log('Associated responses:', responses);
+        
+        // Start with current status or default to 'active'
+        let status = enquiry.status || 'active';
+        console.log('Initial status:', status);
+        
+        // Only update status if it's not already 'selected' (highest priority)
+        if (status !== 'selected') {
+          const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
+          const hasRejectedResponse = responses.some(r => r.status === 'rejected');
+          const responseStatuses = responses.map(r => r.status);
+          
+          console.log('Response analysis:', {
+            responseCount: responses.length,
+            responseStatuses,
+            hasAcceptedResponse,
+            hasRejectedResponse
+          });
+          
+          // Status priority: selected > Rejected > responded > active
+          if (hasAcceptedResponse) {
+            status = 'selected';
+            console.log('Status updated to: selected (has accepted response)');
+          } else if (hasRejectedResponse) {
+            status = 'Rejected';
+            console.log('Status updated to: Rejected (has rejected response)');
+          } else if (responses.length > 0) {
+            status = 'responded';
+            console.log('Status updated to: responded (has responses)');
+          } else if (!status) {
+            status = 'active';
+            console.log('Status set to: active (no status and no responses)');
+          }
+        } else {
+          console.log('Keeping status as selected (highest priority)');
+        }
 
-      let status = enquiry.status;
-      if (hasAcceptedResponse) {
-        status = 'confirmed';
-      } else if (hasRejectedResponse && !hasAcceptedResponse) {
-        status = 'Rejected';
+        const updatedEnquiry = {
+          ...enquiry,
+          status,
+          buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined,
+          lastModified: enquiry.lastModified || enquiry.createdAt,
+          // Ensure we have a created date for sorting
+          createdAt: enquiry.createdAt || new Date().toISOString()
+        };
+        
+        console.log('Final enquiry data:', updatedEnquiry);
+        console.groupEnd();
+        return updatedEnquiry;
+      })
+      // Sort by created date (newest first)
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+    // Only update if there are actual changes to prevent infinite loops
+    console.log('Checking if state update is needed...');
+    setEnquiries(prevEnquiries => {
+      const prevIds = new Set(prevEnquiries.map(e => e.id));
+      const newIds = new Set(updatedStoredEnquiries.map(e => e.id));
+      
+      // Check for added/removed enquiries
+      const hasDifferentIds = prevIds.size !== newIds.size || 
+                            !Array.from(prevIds).every(id => newIds.has(id));
+      
+      // Check for status changes
+      const statusChanges = updatedStoredEnquiries
+        .map(e => {
+          const prev = prevEnquiries.find(p => p.id === e.id);
+          return prev ? { id: e.id, from: prev.status, to: e.status } : null;
+        })
+        .filter(change => change && change.from !== change.to);
+      
+      const hasStatusChanges = statusChanges.length > 0;
+      const shouldUpdate = hasDifferentIds || hasStatusChanges;
+      
+      console.log('State update check:', {
+        prevEnquiryCount: prevEnquiries.length,
+        newEnquiryCount: updatedStoredEnquiries.length,
+        hasDifferentIds,
+        hasStatusChanges,
+        statusChanges,
+        shouldUpdate
+      });
+      
+      if (shouldUpdate) {
+        console.log('Updating enquiries state with new data');
+        console.log('Previous enquiries:', prevEnquiries);
+        console.log('New enquiries:', updatedStoredEnquiries);
+        return updatedStoredEnquiries;
       }
-
-      return {
-        ...enquiry,
-        status,
-        buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined
-      };
+      
+      console.log('No changes detected, skipping state update');
+      return prevEnquiries;
     });
-
-    setEnquiries([...mockEnquiries, ...updatedStoredEnquiries]);
+    
+    console.groupEnd(); // End of REFRESH ENQUIRIES group
   };
 
   // Filter enquiries only when Apply clicked (excluding expired and skipped ones)
@@ -266,24 +366,48 @@ const MerchantEnquiries = () => {
     return true;
   };
 
+  const resetForm = () => {
+    setSelectedEnquiry(null);
+    setMerchantPrice('');
+    setAvailableQuantity('');
+    setRemarks('');
+    setResponseModalOpen(false);
+  };
+
   const handleSubmitResponse = async () => {
+    console.group('=== HANDLE SUBMIT RESPONSE ===');
+    console.log('Action type:', actionType);
+    console.log('Selected enquiry:', selectedEnquiry);
+    
     if (actionType === 'skip') {
       try {
+        console.log('Processing skip action...');
+        
+        // Add the skipped response
+        
         // Update the requirement status to 'closed' for the skipped enquiry
-        updateRequirementStatus(selectedEnquiry.id, 'closed');
+        console.log(`Updating requirement ${selectedEnquiry.id} status to 'closed'`);
+        await updateRequirementStatus(selectedEnquiry.id.toString(), 'closed');
         
         // Get fresh list of enquiries after update
+        console.log('Fetching updated enquiries after status update...');
         const updatedEnquiries = getRequirementsAsEnquiries();
+        console.log('Updated enquiries:', updatedEnquiries);
         
         // Filter out the skipped enquiry from the current list
         const filteredEnquiries = updatedEnquiries.filter(
           (enquiry) => enquiry.id !== selectedEnquiry.id
         );
+        console.log('Filtered enquiries (after removing skipped):', filteredEnquiries);
         
         // Update the state with filtered enquiries
-        setEnquiries(prevEnquiries => 
-          prevEnquiries.filter(enquiry => enquiry.id !== selectedEnquiry.id)
-        );
+        console.log('Updating local state to remove skipped enquiry');
+        setEnquiries(prevEnquiries => {
+          const filtered = prevEnquiries.filter(enquiry => enquiry.id !== selectedEnquiry.id);
+          console.log('Previous enquiries:', prevEnquiries);
+          console.log('After removing skipped enquiry:', filtered);
+          return filtered;
+        });
 
         toast({
           title: 'Skipped',
@@ -291,6 +415,7 @@ const MerchantEnquiries = () => {
         });
 
         // Close the modal and reset form
+        console.log('Closing modal and resetting form');
         setResponseModalOpen(false);
         resetForm();
       } catch (error) {
@@ -318,63 +443,195 @@ const MerchantEnquiries = () => {
       return;
     }
 
-    // Prepare response data
-    const responseData = {
-      requirementId: selectedEnquiry.id,
-      merchantId: 'current-merchant-id', // This should be replaced with actual merchant ID
-      merchantName: 'Current Merchant', // This should be replaced with actual merchant name
-      merchantLocation: 'Location', // This should be replaced with actual location
-      price: merchantPrice,
-      responseDate: new Date().toISOString(),
-      status: 'new' as const,
-      grade: selectedEnquiry.grade || '',
-      quantity: availableQuantity,
-      origin: selectedEnquiry.origin || '',
-      certifications: [], // Add certifications if available
-      deliveryTime: 'TBD', // Add actual delivery time if available
-      contact: '', // Add contact info if available
-      message: remarks,
-      remarks: remarks,
-    };
+    try {
+      // Prepare response data
+      if(actionType === 'quotes'){
+        const responseData = {
+        requirementId: selectedEnquiry.id.toString(),
+        merchantId: 'current-merchant-id',
+        merchantName: 'Current Merchant',
+        merchantLocation: 'Location',
+        price: merchantPrice,
+        responseDate: new Date().toISOString(),
+        status: 'new' as const,
+        grade: selectedEnquiry.grade || '',
+        quantity: availableQuantity,
+        origin: selectedEnquiry.origin || '',
+        certifications: [],
+        deliveryTime: 'TBD',
+        contact: '',
+        message: remarks,
+        remarks: remarks,
+        requirementTitle: selectedEnquiry.productName,
+        requirementQuantity: selectedEnquiry.quantity,
+        requirementGrade: selectedEnquiry.grade,
+        requirementOrigin: selectedEnquiry.origin,
+      };
 
-    // Add response to the system
-    addResponse(responseData);
+      // Add response to the system
+      addResponse(responseData);
+      }
+      debugger
+      // Determine the new status based on action
+      const newStatus = actionType === 'selected' ? 'selected' : 
+        actionType === 'quotes' ? 'responded' : 'closed';
+      console.log('=== STATUS UPDATE START ===');
+      console.log('Action type:', actionType);
+      console.log('New status to set:', newStatus);
+      console.log('Current enquiry status:', selectedEnquiry.status);
+      console.log('Enquiry ID:', selectedEnquiry.id);
+      
+      try {
+        console.log('Calling updateRequirementStatus with:', { 
+          id: selectedEnquiry.id, 
+          status: newStatus 
+        });
+        
+        // Update the status in the store
+        await updateRequirementStatus(selectedEnquiry.id.toString(), newStatus);
+        
+        // Force a refresh of the enquiries list to ensure UI is up to date
+        console.log('Refreshing enquiries after status update...');
+        refreshEnquiries();
+        
+        // Also update the selected enquiry in the modal if it's open
+        if (selectedEnquiry) {
+          console.log('Updating selected enquiry in modal...');
+          setSelectedEnquiry(prev => ({
+            ...prev!,
+            status: newStatus === 'selected' ? 'selected' : prev?.status
+          }));
+        }
+        console.log('updateRequirementStatus completed');
+        
+        // Refresh the enquiries to get the latest data
+        console.log('Refreshing enquiries...');
+        refreshEnquiries();
+        
+        // Also update the local state for immediate UI update
+        if (newStatus === 'closed') {
+          console.log('Removing closed enquiry from UI');
+          setEnquiries(prevEnquiries => 
+            prevEnquiries.filter(e => e.id !== selectedEnquiry.id)
+          );
+        } else {
+          console.log('Updating status in local state to:', newStatus);
+          setEnquiries(prevEnquiries => 
+            prevEnquiries.map(e => 
+              e.id === selectedEnquiry.id 
+                ? { ...e, status: newStatus } 
+                : e
+            )
+          );
+        }
+        
+        toast({
+          title: 'Success',
+          description: 
+            actionType === 'selected' 
+              ? 'Enquiry has been marked as selected' 
+              : 'Enquiry has been skipped and removed from the list',
+        });
 
-    // Update requirement status based on action
-    const newStatus = actionType === 'selected' ? 'active' : 'responded';
-    updateRequirementStatus(selectedEnquiry.id, newStatus);
-
-    toast({
-      title: 'Success',
-      description: `Enquiry has been marked as ${newStatus}`,
-    });
-
-    // Reset form and close modal
-    resetForm();
-    setResponseModalOpen(false);
+        // Reset form and close modal
+        resetForm();
+        setResponseModalOpen(false);
+        
+        // If we didn't remove the item, refresh the list to ensure consistency
+        if (newStatus !== 'closed') {
+          refreshEnquiries();
+        }
+      } catch (error) {
+        console.error('Error updating status:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update enquiry status',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting response:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to submit response. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const resetForm = () => {
-    setSelectedEnquiry(null);
-    setMerchantPrice('');
-    setAvailableQuantity('');
-    setRemarks('');
-    setResponseModalOpen(false);
-  };
-
-  type ResponseStatus = 'new' | 'viewed' | 'Accepted' | 'Rejected';
+  type ResponseStatus = 'new' | 'viewed' | 'accepted' | 'rejected' | 'skipped';
 
   const handleStatusChange = async (responseId: string, newStatus: ResponseStatus) => {
+    console.log('=== HANDLE STATUS CHANGE START ===');
+    console.log('Response ID:', responseId);
+    console.log('New status:', newStatus);
+    console.log('Selected enquiry:', selectedEnquiry);
+    
     try {
+      console.log('Updating response status...');
       await updateResponseStatus(responseId, newStatus);
-      // Refresh the responses to show the updated status
-      const updatedResponses = getResponsesByRequirementId(selectedEnquiry?.id?.toString() || '');
-      // You might want to update the local state here if needed
+      console.log('Response status updated');
       
+      // If we have a selected enquiry
+      if (selectedEnquiry) {
+        console.log('Selected enquiry ID:', selectedEnquiry.id);
+        console.log('Current enquiry status:', selectedEnquiry.status);
+        
+        if (newStatus === 'accepted') {
+          console.log('Updating requirement status to "selected"...');
+          await updateRequirementStatus(selectedEnquiry.id, 'selected');
+          console.log('Requirement status updated to "selected"');
+          
+          // Update the selected enquiry in the list
+          console.log('Updating local enquiries list...');
+          setEnquiries(prevEnquiries => {
+            const updated = prevEnquiries.map(e => 
+              e.id === selectedEnquiry.id 
+                ? { ...e, status: 'selected' } 
+                : e
+            );
+            console.log('Updated enquiries list:', updated);
+            return updated;
+          });
+        } else if (newStatus === 'skipped') {
+          console.log('Skipping enquiry, removing from list...');
+          // Remove the skipped enquiry from the list
+          setEnquiries(prevEnquiries => 
+            prevEnquiries.filter(e => e.id !== selectedEnquiry.id)
+          );
+          
+          // Show success message
+          toast({
+            title: 'Skipped',
+            description: 'The enquiry has been skipped and removed from your list',
+          });
+          
+          // Close any open modals
+          setViewModalOpen(false);
+          setResponseModalOpen(false);
+          return; // Exit early since we've handled the skip
+        }
+        
+        // Update the selected enquiry in the modal
+        console.log('Updating selected enquiry in modal...');
+        setSelectedEnquiry(prev => {
+          const updated = {
+            ...prev!,
+            status: newStatus === 'accepted' ? 'selected' : prev?.status
+          };
+          console.log('Updated selected enquiry:', updated);
+          return updated;
+        });
+      }
+      
+      // Show success message
       toast({
         title: 'Status updated',
-        description: `Response status has been updated to ${newStatus}`,
+        description: `Response has been ${newStatus.toLowerCase()}`,
       });
+      
+      // Refresh the enquiries to ensure everything is in sync
+      refreshEnquiries();
     } catch (error) {
       console.error('Error updating response status:', error);
       toast({
@@ -541,15 +798,19 @@ const MerchantEnquiries = () => {
                         ? 'default'
                         : enquiry.status === 'active'
                           ? 'secondary'
-                          : enquiry.status === 'confirmed'
-                            ? 'outline'
-                            : enquiry.status === 'closed'
-                              ? 'destructive'
-                              : 'default'
+                          : enquiry.status === 'selected'
+                            ? 'outline'  // You can use a different variant like 'success' if available
+                            : enquiry.status === 'confirmed'
+                              ? 'outline'
+                              : enquiry.status === 'closed'
+                                ? 'destructive'
+                                : 'default'
                     }>
                       {enquiry.status === 'closed'
                         ? 'Skipped'
-                        : enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+                        : enquiry.status === 'selected'
+                          ? 'Selected'  // Explicitly show 'Selected' with capital 'S'
+                          : enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -818,18 +1079,18 @@ const MerchantEnquiries = () => {
                           New
                         </Button>
                         <Button
-                          variant={response.status === 'Accepted' ? 'default' : 'outline'}
+                          variant={response.status === 'accepted' ? 'default' : 'outline'}
                           size="sm"
                           className="flex-1"
-                          onClick={() => handleStatusChange(response.id, 'Accepted')}
+                          onClick={() => handleStatusChange(response.id, 'accepted')}
                         >
                           Accept
                         </Button>
                         <Button
-                          variant={response.status === 'Rejected' ? 'destructive' : 'outline'}
+                          variant={response.status === 'rejected' ? 'destructive' : 'outline'}
                           size="sm"
                           className="flex-1"
-                          onClick={() => handleStatusChange(response.id, 'Rejected')}
+                          onClick={() => handleStatusChange(response.id, 'rejected')}
                         >
                           Reject
                         </Button>

@@ -20,7 +20,7 @@ export interface Requirement {
   allowLowerBid: boolean;
   message: string;
   date: string;
-  status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed';
+  status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed' | 'selected';
   fixedPrice: number;
   isDraft: boolean;
   createdAt: string;
@@ -39,7 +39,7 @@ interface RequirementsState {
   requirements: Requirement[];
   addRequirement: (requirement: Omit<Requirement, 'id' | 'createdAt' | 'productName' | 'message' | 'fixedPrice'>) => void;
   updateRequirement: (id: string, requirement: Omit<Requirement, 'id' | 'createdAt' | 'customerName' | 'productName' | 'message' | 'fixedPrice'>) => void;
-  updateRequirementStatus: (id: string, status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed') => void;
+  updateRequirementStatus: (id: string, status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed' | 'selected') => void;
   getRequirementById: (id: string) => Requirement | undefined;
   getRequirementsAsEnquiries: () => any[];
   getMyRequirements: () => any[];
@@ -196,11 +196,28 @@ export const useRequirements = create<RequirementsState>()(
       },
 
       updateRequirementStatus: (id, status) => {
-        set((state) => ({
-          requirements: state.requirements.map(req =>
-            req.id === id ? { ...req, status } : req
-          )
-        }));
+        debugger
+        console.log('Updating requirement status:', { id, status });
+        set((state) => {
+          const updatedRequirements = state.requirements.map(req => {
+            if (req.id === id) {
+              console.log('Updating requirement:', { 
+                id, 
+                oldStatus: req.status, 
+                newStatus: status 
+              });
+              return { 
+                ...req, 
+                status, 
+                lastModified: new Date().toISOString() 
+              };
+            }
+            return req;
+          });
+          
+          console.log('Updated requirements:', updatedRequirements);
+          return { requirements: updatedRequirements };
+        });
       },
 
       getRequirementById: (id) => {
@@ -210,28 +227,38 @@ export const useRequirements = create<RequirementsState>()(
 
       getRequirementsAsEnquiries: () => {
         const { requirements } = get();
+        console.log('Current requirements in store:', requirements);
+        
         return requirements
-          .filter(req => !req.isDraft) // Only show non-draft requirements
-          .map(req => ({
-            id: parseInt(req.id),
-            customerName: req.customerName,
-            productName: req.productName,
-            quantity: req.quantity,
-            message: req.message,
-            date: req.date,
-            status: req.status,
-            expectedPrice: req.expectedPrice,
-            fixedPrice: req.fixedPrice,
-            origin: req.origin,
-            grade: req.grade,
-            deliveryLocation: req.deliveryLocation,
-            city: req.city,
-            country: req.country,
-            deliveryDeadline: req.deliveryDeadline,
-            specifications: req.specifications,
-            allowLowerBid: req.allowLowerBid,
-            minSupplyQuantity: req.minSupplyQuantity
-          }));
+          .filter(req => {
+            console.log('Checking requirement:', { id: req.id, isDraft: req.isDraft, status: req.status });
+            return !req.isDraft;
+          })
+          .map(req => {
+            console.log('Mapping requirement to enquiry:', { id: req.id, status: req.status });
+            return {
+              id: parseInt(req.id),
+              customerName: req.customerName,
+              productName: req.productName,
+              quantity: req.quantity,
+              message: req.message,
+              date: req.date,
+              status: req.status,
+              expectedPrice: req.expectedPrice,
+              fixedPrice: req.fixedPrice,
+              origin: req.origin,
+              grade: req.grade,
+              deliveryLocation: req.deliveryLocation,
+              city: req.city,
+              country: req.country,
+              deliveryDeadline: req.deliveryDeadline,
+              specifications: req.specifications,
+              allowLowerBid: req.allowLowerBid,
+              minSupplyQuantity: req.minSupplyQuantity,
+              createdAt: req.createdAt,
+              lastModified: req.lastModified || req.createdAt
+            };
+          });
       },
 
       getMyRequirements: () => {

@@ -22,7 +22,7 @@ const MerchantConfirmedOrders = () => {
   const confirmedOrders = useMemo(() => {
     const enquiries = getRequirementsAsEnquiries();
     return responses
-      .filter(response => response.status === 'Accepted')
+      .filter(response => response.status === 'accepted')
       .map(response => {
         const enquiry = enquiries.find(e => e.id.toString() === response.requirementId);
         return {

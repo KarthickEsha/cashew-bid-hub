@@ -10,7 +10,7 @@ export interface MerchantResponse {
   merchantLocation: string;
   price: string;
   responseDate: string;
-  status: 'new' | 'viewed' | 'Accepted' | 'Rejected';
+  status: 'new' | 'viewed' | 'accepted' | 'rejected' | 'skipped';
   grade: string;
   quantity: string;
   origin: string;
@@ -27,7 +27,7 @@ interface ResponsesState {
   addResponse: (response: Omit<MerchantResponse, 'id' | 'createdAt'>) => void;
   getResponsesByRequirementId: (requirementId: string) => MerchantResponse[];
   getResponsesByProductId: (productId: string) => MerchantResponse[];
-  updateResponseStatus: (responseId: string, status: 'new' | 'viewed' | 'Accepted' | 'Rejected', remarks?: string) => void;
+  updateResponseStatus: (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected' | 'skipped', remarks?: string) => void;
   getResponseCount: (requirementId: string) => number;
   deleteResponse: (responseId: string) => void;
 }
@@ -52,23 +52,40 @@ export const useResponses = create<ResponsesState>()(
 
       getResponsesByRequirementId: (requirementId) => {
         const { responses } = get();
-        return responses.filter(response => response.requirementId === requirementId);
+        return responses.filter(response => 
+          response.requirementId === requirementId && 
+          response.status !== 'skipped'
+        );
       },
 
       updateResponseStatus: (responseId, status, remarks) => {
-        set((state) => ({
-          responses: state.responses.map(response => {
+        console.log('=== UPDATE RESPONSE STATUS START ===');
+        console.log('Response ID:', responseId);
+        console.log('New status:', status);
+        console.log('Remarks:', remarks);
+        
+        set((state) => {
+          console.log('Current responses in state:', state.responses);
+          
+          const updatedResponses = state.responses.map(response => {
             if (response.id === responseId) {
+              console.log('Found response to update:', { 
+                id: response.id, 
+                oldStatus: response.status, 
+                newStatus: status 
+              });
+              
               const updatedResponse = {
                 ...response,
                 status,
                 ...(remarks !== undefined ? { remarks } : {})
               };
-
-              const now = new Date().toISOString();
-
-              // Handle both Accepted and Rejected statuses
-              if (status === 'Accepted' || status === 'Rejected') {
+              
+              console.log('Updated response:', updatedResponse);
+              
+              // Handle order creation/update for accepted/rejected statuses
+              if (status === 'accepted' || status === 'rejected') {
+                const now = new Date().toISOString();
                 const { addOrder, updateOrderStatus, getOrderByResponseId } = useOrders.getState();
 
                 // Check if order already exists for this response
@@ -78,11 +95,11 @@ export const useResponses = create<ResponsesState>()(
                   // Update existing order status
                   updateOrderStatus(
                     existingOrder.id,
-                    status === 'Accepted' ? 'Processing' : 'Cancelled',
-                    remarks || `Response ${status.toLowerCase()} by buyer`
+                    status === 'accepted' ? 'Processing' : 'Cancelled',
+                    remarks || `Response ${status} by buyer`
                   );
-                } else if (status === 'Accepted') {
-                  // Only create new order for Accepted status
+                } else if (status === 'accepted') {
+                  // Only create new order for accepted status
                   const statusHistory = [{
                     status: 'Processing',
                     timestamp: now,
@@ -92,7 +109,7 @@ export const useResponses = create<ResponsesState>()(
 
                   if (remarks) {
                     statusHistory.push({
-                      status: status.toLowerCase(),
+                      status: status,
                       timestamp: now,
                       remarks: remarks,
                       updatedBy: 'Buyer'
@@ -120,12 +137,15 @@ export const useResponses = create<ResponsesState>()(
                   });
                 }
               }
-
+              
               return updatedResponse;
             }
             return response;
-          })
-        }));
+          });
+          
+          console.log('All responses after update:', updatedResponses);
+          return { responses: updatedResponses };
+        });
       },
 
       getResponsesByProductId: (productId) => {

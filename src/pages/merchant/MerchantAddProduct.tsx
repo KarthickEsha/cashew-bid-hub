@@ -16,6 +16,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useInventory } from "@/hooks/useInventory";
 import ProductTypeToggle from "@/components/ProductTypeToggle";
 import { ProductType, Location } from "@/types/user";
+import { toast } from "@/hooks/use-toast";
 
 interface ProductFormData {
     name: string;
@@ -49,9 +50,9 @@ const MerchantAddProduct = () => {
     // Determine initial product type based on profile
     const getInitialProductType = (): ProductType => {
         if (profile?.dealingWith === 'Both') {
-            return 'RCN';
+            return profile?.productType;
         }
-        return profile?.dealingWith || 'RCN';
+        return profile?.productType || 'RCN';
     };
 
     const [currentProductType, setCurrentProductType] = useState<ProductType>(
@@ -191,8 +192,11 @@ const MerchantAddProduct = () => {
             }
 
             // Show success message
-            alert(`Product ${isEditMode ? 'updated' : 'added'} successfully!`);
-
+            // alert(`Product ${isEditMode ? 'updated' : 'added'} successfully!`);
+            toast({
+                title: 'Product',
+                description: `Product ${isEditMode ? 'updated' : 'added'} successfully!`,
+            });
             // Navigate to products list
             navigate('/merchant/products');
 
@@ -200,6 +204,46 @@ const MerchantAddProduct = () => {
             console.error('Error saving product:', error);
             alert('Failed to save product. Please try again.');
         }
+    };
+
+    const renderProductTypeSelector = () => {
+        const productTypes = profile?.productType === 'Both'
+            ? ['RCN', 'Kernel']
+            : [profile?.productType || 'RCN'];
+
+        return (
+            <div className="flex justify-center items-center mb-6">
+                <div className="flex w-64 bg-gray-100 rounded-full shadow-md border border-gray-200 overflow-hidden">
+                    {productTypes.map((type) => (
+                        <button
+                            key={type}
+                            type="button"
+                            onClick={() => setCurrentProductType(type as ProductType)}
+                            className={`flex-1 py-2 flex items-center justify-center gap-2 font-semibold transition-colors duration-300 ${currentProductType === type
+                                    ? type === 'RCN'
+                                        ? 'bg-amber-500 text-white'
+                                        : 'bg-orange-500 text-white'
+                                    : 'bg-transparent text-gray-600 hover:bg-gray-200'
+                                }`}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="w-5 h-5"
+                                fill="currentColor"
+                                viewBox={type === 'RCN' ? '0 0 512 512' : '0 0 24 24'}
+                            >
+                                {type === 'RCN' ? (
+                                    <path d="M256 32c-97 0-176 79-176 176s79 176 176 176 176-79 176-176S353 32 256 32z" />
+                                ) : (
+                                    <path d="M12 2c-4 0-7 3-7 7 0 3 1.5 5.5 4 6.5V22h6v-6.5c2.5-1 4-3.5 4-6.5 0-4-3-7-7-7z" />
+                                )}
+                            </svg>
+                            {type}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
     };
 
     return (

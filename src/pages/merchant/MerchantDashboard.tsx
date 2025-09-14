@@ -23,8 +23,8 @@ const MerchantDashboard = () => {
     const enquiries = getRequirementsAsEnquiries();
     return enquiries.filter(enquiry => {
       const responses = getResponsesByRequirementId(enquiry.id);
-      const hasAcceptedResponse = responses.some(r => r.status === 'Accepted');
-      const hasRejectedResponse = responses.some(r => r.status === 'Rejected');
+      const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
+      const hasRejectedResponse = responses.some(r => r.status === 'rejected');
 
       // Consider an enquiry as 'new' if it doesn't have any responses yet
       // or if it only has rejected responses (no accepted ones)
@@ -167,8 +167,8 @@ const MerchantDashboard = () => {
                   <p className="text-sm font-medium">{activity.message}</p>
                   <p className="text-xs text-muted-foreground">{activity.time}</p>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {activity.type}
+                <Badge variant="outline" className="text-xs capitalize">
+                   {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
                 </Badge>
               </div>
             ))}

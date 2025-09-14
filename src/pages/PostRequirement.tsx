@@ -14,6 +14,7 @@ import { useRequirements } from "@/hooks/useRequirements";
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
 import { useUser } from "@clerk/clerk-react";
+import { toast } from "@/hooks/use-toast";
 
 // Origin countries
 const origins = [
@@ -191,9 +192,15 @@ const PostRequirement = () => {
 
     // Show success message and redirect
     if (isDraft) {
-      alert('Requirement saved as draft successfully!');
+      toast({
+        title: 'Requirement',
+        description: 'Requirement saved as draft successfully!',
+      });
     } else {
-      alert('Requirement posted successfully! Merchants will be able to see your requirement.');
+      toast({
+        title: 'Requirement',
+        description: 'Requirement posted successfully! Merchants will be able to see your requirement.',
+      });
       navigate('/my-requirements'); // Redirect to dashboard after successful submission
     }
   };
