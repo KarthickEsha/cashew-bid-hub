@@ -15,6 +15,7 @@ const MerchantDashboard = () => {
   const { getProductStats } = useInventory();
   const { profile } = useProfile();
   const { user } = useUser();
+  const { responses } = useResponses();
   const { getRequirementsAsEnquiries } = useRequirements();
   const { getResponsesByRequirementId, getSubmittedQuotesCount } = useResponses();
   const stats = getProductStats();
@@ -38,7 +39,9 @@ const MerchantDashboard = () => {
       return responses.length === 0 || (hasRejectedResponse && !hasAcceptedResponse);
     }).length;
   }, [getRequirementsAsEnquiries, getResponsesByRequirementId]);
-
+  // Filter out skipped responses and get counts
+  const activeResponses = responses.filter(r => r.status !== 'skipped');
+  const selectedResponses = activeResponses.filter(r => r.status === 'accepted');
   // State for product type toggle (only for "Both" users)
   const getInitialProductType = (): ProductType => {
     if (profile?.productType === 'Both') {
@@ -67,9 +70,18 @@ const MerchantDashboard = () => {
 
   const displayStats = getDisplayStats();
 
+  // Calculate confirmed enquiries count (enquiries with at least one accepted response)
+  const confirmedEnquiriesCount = useMemo(() => {
+    const enquiries = getRequirementsAsEnquiries();
+    return enquiries.filter(enquiry => {
+      const responses = getResponsesByRequirementId(enquiry.id);
+      return responses.some(r => r.status === 'accepted');
+    }).length;
+  }, [getRequirementsAsEnquiries, getResponsesByRequirementId]);
+
   const mockStats = {
     totalEnquiries: 12,
-    newCustomers: 8
+    newCustomers: selectedResponses.length
   };
 
   const mockRecentActivity = [
