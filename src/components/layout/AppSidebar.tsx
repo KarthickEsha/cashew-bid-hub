@@ -36,9 +36,9 @@ const mainNavItems = [
 
 const myActivityItems = [
   // { path: "/my-requests", label: "My Requests", icon: MessageSquare },
-  { path: "/responses", label: "Seller Response", icon: Mail },
+  { path: "/responses", label: "Seller Response", icon: MessageSquare },
   // { path: "/my-bids", label: "My Bids", icon: FileText },
-  { path: "/my-orders", label: "My Orders", icon: Mail },
+  { path: "/my-orders", label: "My Enquiries", icon: Mail },
   { path: "/my-requirements", label: "My Requirements", icon: FileText }
 ];
 
