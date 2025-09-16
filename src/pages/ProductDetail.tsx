@@ -260,7 +260,7 @@ const ProductDetail = () => {
 
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className={`${role === 'processor' ? 'w-full' : 'max-w-7xl'} mx-auto px-4 py-6`}>
       {/* Back Button */}
       <Button
         variant="ghost"
@@ -271,9 +271,9 @@ const ProductDetail = () => {
         {role === "processor" ? "Back to My Product Stocks" : "Back to Marketplace"}
       </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={`grid grid-cols-1 ${role === 'processor' ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-8`}>
         {/* Left Column */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className={`${role === 'processor' ? 'w-full' : 'lg:col-span-2'} space-y-8`}>
           {/* Hero Product Card */}
           <Card className="overflow-hidden shadow-warm border-0 bg-gradient-warm">
             <CardHeader className="pb-4">
@@ -433,6 +433,7 @@ const ProductDetail = () => {
         {/* Enhanced Right Sidebar */}
         <div className="space-y-8">
           {/* Enhanced Merchant Card */}
+         {role !== "processor" && (
           <Card className="sticky top-20 shadow-warm border-0 bg-gradient-warm">
             <CardHeader className="pb-4">
               <div className="flex justify-between items-start">
@@ -498,6 +499,7 @@ const ProductDetail = () => {
               </div>
             </CardContent>
           </Card>
+         )}
 
           {/* Bid Details Card */}
           {product.pricingType === "bidding" && role !== "processor" && (
