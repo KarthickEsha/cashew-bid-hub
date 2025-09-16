@@ -19,6 +19,8 @@ import ChatModal from "@/components/ChatModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
+import { useUser } from "@clerk/clerk-react";
+import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 
 const mockEnquiries = [];
@@ -26,6 +28,8 @@ const mockEnquiries = [];
 const MerchantEnquiries = () => {
   const { getRequirementsAsEnquiries, updateRequirementStatus } = useRequirements();
   const { addResponse, getResponsesByRequirementId, updateResponseStatus } = useResponses();
+  const { user } = useUser();
+  const { profile } = useProfile();
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -446,11 +450,15 @@ const MerchantEnquiries = () => {
     try {
       // Prepare response data
       if(actionType === 'quotes'){
-        const responseData = {
+        // Get merchant details from profile or user
+      const merchantName = profile?.name || user?.fullName || 'Merchant';
+      const merchantLocation = profile?.city || 'Location not specified';
+      
+      const responseData = {
         requirementId: selectedEnquiry.id.toString(),
-        merchantId: 'current-merchant-id',
-        merchantName: 'Current Merchant',
-        merchantLocation: 'Location',
+        merchantId: user?.id || 'unknown',
+        merchantName: merchantName,
+        merchantLocation: merchantLocation,
         price: merchantPrice,
         responseDate: new Date().toISOString(),
         status: 'new' as const,

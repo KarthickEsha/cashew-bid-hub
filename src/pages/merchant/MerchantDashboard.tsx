@@ -4,6 +4,7 @@ import { Package, MessageSquare, Users, FileText } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useInventory } from "@/hooks/useInventory";
 import { useProfile } from "@/hooks/useProfile";
+import { useUser } from "@clerk/clerk-react";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
 import ProductTypeToggle from "@/components/ProductTypeToggle";
@@ -13,10 +14,16 @@ import { ProductType } from "@/types/user";
 const MerchantDashboard = () => {
   const { getProductStats } = useInventory();
   const { profile } = useProfile();
+  const { user } = useUser();
   const { getRequirementsAsEnquiries } = useRequirements();
-  const { getResponsesByRequirementId } = useResponses();
+  const { getResponsesByRequirementId, getSubmittedQuotesCount } = useResponses();
   const stats = getProductStats();
   const navigate = useNavigate();
+
+  // Get count of submitted quotes for the current merchant
+  const submittedQuotesCount = useMemo(() => {
+    return user?.id ? getSubmittedQuotesCount(user.id) : 0;
+  }, [user?.id, getSubmittedQuotesCount]);
 
   // Calculate new enquiries count based on responses
   const newEnquiriesCount = useMemo(() => {
@@ -62,7 +69,6 @@ const MerchantDashboard = () => {
 
   const mockStats = {
     totalEnquiries: 12,
-    quotesSubmitted: 9,
     newCustomers: 8
   };
 
@@ -114,7 +120,7 @@ const MerchantDashboard = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.quotesSubmitted}</div>
+            <div className="text-2xl font-bold">{submittedQuotesCount}</div>
             <p className="text-xs text-muted-foreground">Awaiting response</p>
           </CardContent>
         </Card>

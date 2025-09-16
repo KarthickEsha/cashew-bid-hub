@@ -29,6 +29,7 @@ interface ResponsesState {
   getResponsesByProductId: (productId: string) => MerchantResponse[];
   updateResponseStatus: (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected' | 'skipped', remarks?: string) => void;
   getResponseCount: (requirementId: string) => number;
+  getSubmittedQuotesCount: (merchantId: string) => number;
   deleteResponse: (responseId: string) => void;
 }
 
@@ -157,8 +158,15 @@ export const useResponses = create<ResponsesState>()(
       },
 
       getResponseCount: (requirementId) => {
-        const { responses } = get();
-        return responses.filter(response => response.requirementId === requirementId).length;
+        const responses = get().responses.filter(r => r.requirementId === requirementId);
+        return responses.length;
+      },
+      getSubmittedQuotesCount: (merchantId) => {
+        const responses = get().responses.filter(r => 
+          r.merchantId === merchantId && 
+          (r.status === 'new' || r.status === 'viewed')
+        );
+        return responses.length;
       },
 
       deleteResponse: (responseId) => {

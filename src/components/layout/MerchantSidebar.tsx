@@ -93,7 +93,7 @@ export function MerchantSidebar() {
   
   // Only show active enquiries (not expired and not completed)
   const activeEnquiries = getRequirementsAsEnquiries().filter(enquiry => {
-    const expiryDate = new Date(enquiry.expiryDate || 0);
+    const expiryDate = new Date(enquiry.deliveryDeadline || 0);
     const now = new Date();
     return expiryDate > now && enquiry.status === 'active' || enquiry.status === 'responded' || enquiry.status === 'selected';
   });

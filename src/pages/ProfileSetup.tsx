@@ -154,7 +154,7 @@ const ProfileSetup = () => {
     formData.state &&
     formData.country &&
     formData.pincode &&
-    formData.description;
+    formData.description
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
