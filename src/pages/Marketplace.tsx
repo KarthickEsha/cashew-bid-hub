@@ -836,15 +836,12 @@ const Marketplace = () => {
                             </Table>
 
                             {/* Table Pagination */}
-                            {totalPages > 1 && (
-                                <div className="flex items-center justify-between mt-4">
+                            {totalPages >= 1 && (
+                                <div className="flex items-center justify-between px-4 py-3 border-t">
                                     <div className="text-sm text-muted-foreground">
-                                        Showing {startIndex + 1} to {" "}
-                                        {Math.min(startIndex + pageSize, itemsToShow.length)} of {" "}
-                                        {itemsToShow.length} products
+                                        Showing {startIndex + 1} to {Math.min(startIndex + pageSize, itemsToShow.length)} of {itemsToShow.length} products
                                     </div>
                                     <div className="flex items-center space-x-4">
-                                        {/* Page Size Selector */}
                                         <Select
                                             value={String(pageSize)}
                                             onValueChange={(value) => {
@@ -852,7 +849,7 @@ const Marketplace = () => {
                                                 setCurrentPage(1);
                                             }}
                                         >
-                                            <SelectTrigger className="w-[100px]">
+                                            <SelectTrigger className="w-[100px] h-8">
                                                 <SelectValue placeholder="Page size" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -862,12 +859,11 @@ const Marketplace = () => {
                                                 <SelectItem value="48">48</SelectItem>
                                             </SelectContent>
                                         </Select>
-
-                                        {/* Prev/Next Buttons */}
                                         <div className="flex space-x-2">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
+                                                className="h-8"
                                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                                 disabled={currentPage === 1}
                                             >
@@ -876,6 +872,7 @@ const Marketplace = () => {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
+                                                className="h-8"
                                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                                 disabled={currentPage === totalPages}
                                             >
@@ -890,14 +887,11 @@ const Marketplace = () => {
 
                     {/* Pagination for Card View */}
                     {viewMode === 'card' && itemsToShow.length > 0 && (
-                        <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center justify-between px-4 py-3 border-t">
                             <div className="text-sm text-muted-foreground">
-                                Showing {startIndex + 1} to {" "}
-                                {Math.min(startIndex + pageSize, itemsToShow.length)} of {" "}
-                                {itemsToShow.length} products
+                                Showing {startIndex + 1} to {Math.min(startIndex + pageSize, itemsToShow.length)} of {itemsToShow.length} products
                             </div>
                             <div className="flex items-center space-x-4">
-                                {/* Page Size Selector */}
                                 <Select
                                     value={String(pageSize)}
                                     onValueChange={(value) => {
@@ -905,7 +899,7 @@ const Marketplace = () => {
                                         setCurrentPage(1);
                                     }}
                                 >
-                                    <SelectTrigger className="w-[100px]">
+                                    <SelectTrigger className="w-[100px] h-8">
                                         <SelectValue placeholder="Page size" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -915,12 +909,11 @@ const Marketplace = () => {
                                         <SelectItem value="48">48</SelectItem>
                                     </SelectContent>
                                 </Select>
-
-                                {/* Prev/Next Buttons */}
                                 <div className="flex space-x-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
+                                        className="h-8"
                                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                         disabled={currentPage === 1}
                                     >
@@ -929,6 +922,7 @@ const Marketplace = () => {
                                     <Button
                                         variant="outline"
                                         size="sm"
+                                        className="h-8"
                                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                         disabled={currentPage === totalPages}
                                     >
