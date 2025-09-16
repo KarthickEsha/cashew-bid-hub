@@ -158,8 +158,8 @@ const Responses = () => {
     if (sortField !== field) {
       return <ArrowUpDown className="ml-1 h-4 w-4 text-muted-foreground opacity-50" />;
     }
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="ml-1 h-4 w-4 text-primary" /> 
+    return sortDirection === 'asc'
+      ? <ArrowUp className="ml-1 h-4 w-4 text-primary" />
       : <ArrowDown className="ml-1 h-4 w-4 text-primary" />;
   };
 
@@ -170,19 +170,19 @@ const Responses = () => {
       const searchLower = appliedFilters.searchText.toLowerCase();
       const matchesSearch = appliedFilters.searchText === '' ||
         (response.merchantName?.toLowerCase().includes(searchLower) ||
-         response.requirementTitle?.toLowerCase().includes(searchLower) ||
-         response.grade?.toLowerCase().includes(searchLower) ||
-         response.origin?.toLowerCase().includes(searchLower));
+          response.requirementTitle?.toLowerCase().includes(searchLower) ||
+          response.grade?.toLowerCase().includes(searchLower) ||
+          response.origin?.toLowerCase().includes(searchLower));
 
       // Handle status filtering
-      const matchesStatus = appliedFilters.status === 'all' || 
+      const matchesStatus = appliedFilters.status === 'all' ||
         (response.status && response.status.toLowerCase() === appliedFilters.status.toLowerCase());
 
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
       if (!sortField) return 0;
-      
+
       let aValue = a[sortField as keyof typeof a];
       let bValue = b[sortField as keyof typeof b];
 
@@ -202,8 +202,8 @@ const Responses = () => {
 
       // Handle string comparison
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue) 
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
 
@@ -402,9 +402,9 @@ const Responses = () => {
                 <TableCell>{response.quantity}</TableCell>
                 <TableCell>{response.grade || 'N/A'}</TableCell>
                 <TableCell>
-                  <Badge 
-                    variant={response.status === 'accepted' ? 'default' : 
-                            response.status === 'rejected' ? 'destructive' : 'outline'}
+                  <Badge
+                    variant={response.status === 'accepted' ? 'default' :
+                      response.status === 'rejected' ? 'destructive' : 'outline'}
                     className="capitalize"
                   >
                     {response.status}
@@ -536,7 +536,7 @@ const Responses = () => {
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-medium">Quantity</h4>
-                    <p className="font-medium">{selectedResponse.quantity} MT</p>
+                    <p className="font-medium">{selectedResponse.quantity}</p>
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-medium">Grade</h4>
@@ -548,7 +548,12 @@ const Responses = () => {
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-medium">Origin</h4>
-                    <p className="font-medium">{selectedResponse.origin}</p>
+                    <p className="font-medium">
+                      {selectedResponse.origin
+                        ? selectedResponse.origin.charAt(0).toUpperCase() + selectedResponse.origin.slice(1)
+                        : ''}
+                    </p>
+
                   </div>
                   {/* <div className="space-y-2">
                     <h4 className="font-medium">Certifications</h4>
