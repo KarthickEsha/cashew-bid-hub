@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   MapPin,
   Search,
@@ -40,6 +47,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { profile } from "console";
+import { useProfile } from "@/hooks/useProfile";
 
 type ResponseStatus = 'new' | 'viewed' | 'accepted' | 'rejected' | 'skipped';
 
@@ -80,6 +89,7 @@ interface ResponseWithDetails extends MerchantResponse {
 }
 
 const Responses = () => {
+  const { profile, setProfile } = useProfile();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedResponse, setSelectedResponse] = useState<ResponseWithDetails | null>(null);
@@ -107,6 +117,7 @@ const Responses = () => {
       const requirement = requirements.find(req => req.id === response.requirementId);
       return {
         ...response,
+        status: response.status.toLowerCase() as ResponseStatus,
         requirementTitle: requirement?.productName || 'Unknown Requirement',
         merchantRating: 4.5, // This would come from merchant data in a real app
         isStarred: false, // Default value, can be managed in state if needed
@@ -143,7 +154,7 @@ const Responses = () => {
   const currentResponses = filteredResponses.slice(startIndex, startIndex + itemsPerPage);
 
   // Handle status update
-  const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'rejected') => {
+  const handleStatusUpdate = async (responseId: string, status: 'Accepted' | 'Rejected') => {
     try {
       await updateResponseStatus(responseId, status);
       toast({
@@ -215,158 +226,123 @@ const Responses = () => {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by merchant or requirement..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Select
-                value={statusFilter}
-                onValueChange={(value: ResponseStatus | 'all') => setStatusFilter(value)}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="viewed">Viewed</SelectItem>
-                  <SelectItem value="accepted">Accepted</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={handleApplyFilters} variant="outline">
-                Apply
-              </Button>
-              <Button onClick={resetFilters} variant="ghost">
-                Reset
-              </Button>
-            </div>
+      <div className="flex flex-col space-y-4 rounded-md border p-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex-1">
+            <Input
+              placeholder="Search by merchant or requirement..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="max-w-sm"
+            />
           </div>
-        </CardHeader>
-      </Card>
+          <div className="flex items-center gap-2">
+            <Select
+              value={statusFilter}
+              onValueChange={(value: ResponseStatus | 'all') => setStatusFilter(value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="viewed">Viewed</SelectItem>
+                <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleApplyFilters} variant="outline">
+              Apply
+            </Button>
+            <Button onClick={resetFilters} variant="ghost">
+              Reset
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      {/* Responses List */}
-      <div className="space-y-4">
-        {currentResponses.map((response) => (
-          <Card key={response.id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3 bg-muted/50">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-semibold">{response.merchantName}</h3>
-                    <Badge 
-                      variant={response.status === 'accepted' ? 'default' : 
-                              response.status === 'rejected' ? 'destructive' : 'outline'}
-                      className="capitalize"
-                    >
-                      {response.status}
-                    </Badge>
+      {/* Responses Table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Merchant</TableHead>
+              <TableHead>Requirement</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Grade</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Response Date</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {currentResponses.map((response) => (
+              <TableRow key={response.id} className="hover:bg-muted/50">
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {response.merchantName}
                     {response.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Response from {response.merchantName}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSelectedResponse(response)}
+                </TableCell>
+                <TableCell>{response.requirementTitle}</TableCell>
+                <TableCell>₹{response.price} / kg</TableCell>
+                <TableCell>{response.quantity}</TableCell>
+                <TableCell>{response.grade || 'N/A'}</TableCell>
+                <TableCell>
+                  <Badge 
+                    variant={response.status === 'accepted' ? 'default' : 
+                            response.status === 'rejected' ? 'destructive' : 'outline'}
+                    className="capitalize"
                   >
-                    <Eye className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Price</p>
-                  <p className="font-medium">₹{response.price} / kg</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Quantity</p>
-                  <p className="font-medium">{response.quantity}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Grade</p>
-                  <p className="font-medium">{response.grade || 'N/A'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Delivery Time</p>
-                  <p className="font-medium">{response.deliveryTime || 'N/A'}</p>
-                </div>
-                {response.origin && (
-                  <div className="space-y-1">
-                    <p className="text-muted-foreground">Origin</p>
-                    <p className="font-medium">{response.origin}</p>
-                  </div>
-                )}
-                {response.certifications?.length > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-muted-foreground">Certifications</p>
-                    <div className="flex flex-wrap gap-1">
-                      {response.certifications.map((cert, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {cert}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              {response.message && (
-                <div className="mt-2 text-sm">
-                  <p className="text-muted-foreground">Merchant's Note:</p>
-                  <p className="italic">"{response.message}"</p>
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="bg-muted/50 p-4 border-t flex justify-between items-center">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>Responded on {format(parseISO(response.responseDate), 'MMM d, yyyy')}</span>
-              </div>
-              <div className="flex gap-2">
-                {response.status === 'new' || response.status === 'viewed' ? (
-                  <>
+                    {response.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {format(parseISO(response.responseDate), 'MMM d, yyyy')}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      onClick={() => handleStatusUpdate(response.id, 'rejected')}
-                      className="text-destructive hover:text-destructive"
+                      onClick={() => setSelectedResponse(response)}
+                      className="h-8 w-8 p-0"
+                      title="View details"
                     >
-                      <X className="h-4 w-4 mr-1" /> Reject
+                      <Eye className="h-4 w-4" />
+                      <span className="sr-only">View details</span>
                     </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleStatusUpdate(response.id, 'accepted')}
-                    >
-                      <Check className="h-4 w-4 mr-1" /> Accept
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedResponse(response)}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-1" /> View Details
-                  </Button>
-                )}
-              </div>
-            </CardFooter>
-          </Card>
-        ))}
+                    {(response.status === 'new' || response.status === 'viewed') && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStatusUpdate(response.id, 'Rejected')}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          title="Reject"
+                        >
+                          <X className="h-4 w-4" />
+                          <span className="sr-only">Reject</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleStatusUpdate(response.id, 'Accepted')}
+                          className="h-8 w-8 p-0"
+                          title="Accept"
+                        >
+                          <Check className="h-4 w-4" />
+                          <span className="sr-only">Accept</span>
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Pagination */}
@@ -448,7 +424,7 @@ const Responses = () => {
                   <div className="space-y-2">
                     <h4 className="font-medium">Merchant</h4>
                     <p className="text-muted-foreground">
-                      {selectedResponse.merchantName}
+                      {profile.companyName}
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -471,7 +447,7 @@ const Responses = () => {
                     <h4 className="font-medium">Origin</h4>
                     <p className="font-medium">{selectedResponse.origin}</p>
                   </div>
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <h4 className="font-medium">Certifications</h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedResponse.certifications?.length > 0 ? (
@@ -484,7 +460,7 @@ const Responses = () => {
                         <p className="text-muted-foreground">No certifications</p>
                       )}
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {selectedResponse.message && (
@@ -515,7 +491,7 @@ const Responses = () => {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        handleStatusUpdate(selectedResponse.id, 'rejected');
+                        handleStatusUpdate(selectedResponse.id, 'Rejected');
                         setSelectedResponse(null);
                       }}
                       className="text-destructive hover:text-destructive"
@@ -524,7 +500,7 @@ const Responses = () => {
                     </Button>
                     <Button
                       onClick={() => {
-                        handleStatusUpdate(selectedResponse.id, 'accepted');
+                        handleStatusUpdate(selectedResponse.id, 'Accepted');
                         setSelectedResponse(null);
                       }}
                     >

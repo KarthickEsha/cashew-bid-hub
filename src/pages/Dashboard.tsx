@@ -15,6 +15,7 @@ import { Link, useNavigate } from "react-router-dom"; // ✅ import navigate
 import { useRole } from "@/hooks/useRole";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useOrders } from "@/hooks/useOrders";
+import path from "path";
 
 const Dashboard = () => {
   const { role, setRole } = useRole();
@@ -63,6 +64,7 @@ const Dashboard = () => {
       icon: Clock,
       color: "text-orange-500",
       trend: `${confirmedOrders} confirmed, ${pendingOrders} pending`,
+      path: "/my-orders"
       
     },
     {

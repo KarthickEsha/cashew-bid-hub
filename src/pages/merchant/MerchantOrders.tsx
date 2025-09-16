@@ -537,7 +537,7 @@ const MerchantOrders = () => {
 
               <div className="flex justify-between">
                 <span className="font-medium text-muted-foreground">Customer Name</span>
-                <span className="font-semibold">{selectedOrder.customerName}</span>
+                <span className="font-semibold">{profile.name}</span>
               </div>
 
               <div className="flex justify-between">
@@ -557,7 +557,7 @@ const MerchantOrders = () => {
 
               <div className="flex justify-between">
                 <span className="font-medium text-muted-foreground">Order Date</span>
-                <span className="font-semibold">{new Date(selectedOrder.date).toLocaleDateString()}</span>
+                <span className="font-semibold">{new Date(selectedOrder.orderDate).toLocaleDateString()}</span>
               </div>
 
               {/* <div className="flex justify-between">

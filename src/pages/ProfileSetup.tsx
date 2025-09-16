@@ -147,7 +147,6 @@ const ProfileSetup = () => {
     formData.name &&
     formData.email &&
     formData.companyName &&
-    formData.businessType &&
     formData.officeEmail &&
     formData.registrationType &&
     formData.establishedYear &&

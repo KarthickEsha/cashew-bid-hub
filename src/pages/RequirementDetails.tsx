@@ -267,8 +267,13 @@ const RequirementDetails = () => {
                   <MapPin size={16} className="text-muted-foreground" />
                   <div>
                     <div className="text-sm text-muted-foreground">Preferred Origin</div>
-                    <div className="font-medium">{requirement.preferredOrigin}</div>
+                    <div className="font-medium">
+                      {requirement.preferredOrigin
+                        ? requirement.preferredOrigin.charAt(0).toUpperCase() + requirement.preferredOrigin.slice(1)
+                        : ''}
+                    </div>
                   </div>
+
                 </div>
                 <div className="flex items-center space-x-2">
                   <Calendar size={16} className="text-muted-foreground" />
