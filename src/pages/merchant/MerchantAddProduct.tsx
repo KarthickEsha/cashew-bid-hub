@@ -61,8 +61,10 @@ const MerchantAddProduct = () => {
     const [expireDate, setExpireDate] = useState<Date | undefined>(
         isEditMode && editingProduct ? new Date(editingProduct.expireDate) : undefined
     );
-
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
     const [formData, setFormData] = useState<ProductFormData>({
         name: isEditMode && editingProduct ? editingProduct.name : '',
@@ -129,11 +131,38 @@ const MerchantAddProduct = () => {
         setImages(prev => prev.filter((_, i) => i !== index));
     };
 
+    const validateForm = () => {
+        const errors: {[key: string]: string} = {};
+        const availableQty = parseFloat(formData.availableQty);
+        const minOrderQty = parseFloat(formData.minOrderQty);
+
+        if (isNaN(availableQty) || availableQty <= 0) {
+            errors.availableQty = 'Please enter a valid available quantity';
+        }
+
+        if (isNaN(minOrderQty) || minOrderQty <= 0) {
+            errors.minOrderQty = 'Please enter a valid minimum order quantity';
+        } else if (minOrderQty > availableQty) {
+            errors.minOrderQty = 'Cannot exceed available quantity';
+        }
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!expireDate) {
-            alert('Please select an expiry date');
+            toast({
+                title: 'Error',
+                description: 'Please select an expiry date',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        if (!validateForm()) {
             return;
         }
 
@@ -361,24 +390,74 @@ const MerchantAddProduct = () => {
                                 <Input
                                     id="availableQty"
                                     type="number"
+                                    min="1"
                                     value={formData.availableQty}
-                                    onChange={(e) => setFormData({ ...formData, availableQty: e.target.value })}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setFormData(prev => {
+                                            const newData = {
+                                                ...prev, 
+                                                availableQty: value,
+                                                minOrderQty: value && parseFloat(prev.minOrderQty) > parseFloat(value) ? value : prev.minOrderQty
+                                            };
+                                            
+                                            // Clear error if fixed
+                                            if (formErrors.minOrderQty && parseFloat(prev.minOrderQty) <= parseFloat(value)) {
+                                                setFormErrors(prevErrors => {
+                                                    const newErrors = {...prevErrors};
+                                                    delete newErrors.minOrderQty;
+                                                    return newErrors;
+                                                });
+                                            }
+                                            
+                                            return newData;
+                                        });
+                                    }}
                                     placeholder="e.g., 400"
                                     required
+                                    className={formErrors.availableQty ? 'border-destructive' : ''}
                                 />
+                                {formErrors.availableQty && (
+                                    <p className="text-sm text-destructive">{formErrors.availableQty}</p>
+                                )}
                             </div>
 
-                            {/* NEW FIELD: Minimum Order Quantity */}
+                            {/* Minimum Order Quantity */}
                             <div className="space-y-2">
                                 <Label htmlFor="minOrderQty">Minimum Order Quantity (kg)*</Label>
                                 <Input
                                     id="minOrderQty"
                                     type="number"
+                                    min="1"
                                     value={formData.minOrderQty}
-                                    onChange={(e) => setFormData({ ...formData, minOrderQty: e.target.value })}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        const availableQty = parseFloat(formData.availableQty) || 0;
+                                        const minOrderQty = parseFloat(value) || 0;
+                                        
+                                        setFormData(prev => ({...prev, minOrderQty: value}));
+                                        
+                                        // Validate in real-time
+                                        if (minOrderQty > availableQty) {
+                                            setFormErrors(prev => ({
+                                                ...prev,
+                                                minOrderQty: 'Cannot exceed available quantity'
+                                            }));
+                                        } else {
+                                            setFormErrors(prev => {
+                                                const newErrors = {...prev};
+                                                delete newErrors.minOrderQty;
+                                                return newErrors;
+                                            });
+                                        }
+                                    }}
                                     placeholder="e.g., 50"
                                     required
+                                    className={formErrors.minOrderQty ? 'border-destructive' : ''}
                                 />
+                                {formErrors.minOrderQty && (
+                                    <p className="text-sm text-destructive">{formErrors.minOrderQty}</p>
+                                )}
                             </div>
 
                             {/* <div className="space-y-2">
@@ -448,7 +527,7 @@ const MerchantAddProduct = () => {
 
                             <div className="space-y-2">
                                 <Label>Expire Date *</Label>
-                                <Popover>
+                                <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
@@ -465,7 +544,10 @@ const MerchantAddProduct = () => {
                                         <Calendar
                                             mode="single"
                                             selected={expireDate}
-                                            onSelect={setExpireDate}
+                                            onSelect={(date) => {
+                                                setExpireDate(date);
+                                                setIsDatePickerOpen(false);
+                                            }}
                                             initialFocus
                                             className={cn("p-3 pointer-events-auto")}
                                             disabled={(date) => date < new Date()}

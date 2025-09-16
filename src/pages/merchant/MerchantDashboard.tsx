@@ -67,9 +67,18 @@ const MerchantDashboard = () => {
 
   const displayStats = getDisplayStats();
 
+  // Calculate confirmed enquiries count (enquiries with at least one accepted response)
+  const confirmedEnquiriesCount = useMemo(() => {
+    const enquiries = getRequirementsAsEnquiries();
+    return enquiries.filter(enquiry => {
+      const responses = getResponsesByRequirementId(enquiry.id);
+      return responses.some(r => r.status === 'accepted');
+    }).length;
+  }, [getRequirementsAsEnquiries, getResponsesByRequirementId]);
+
   const mockStats = {
     totalEnquiries: 12,
-    newCustomers: 8
+    newCustomers: confirmedEnquiriesCount
   };
 
   const mockRecentActivity = [
@@ -104,7 +113,7 @@ const MerchantDashboard = () => {
           className="cursor-pointer hover:shadow-md transition"
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Buyer New Enquiries</CardTitle>
+            <CardTitle className="text-sm font-medium">New Enquiries</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -130,7 +139,7 @@ const MerchantDashboard = () => {
           <Card className="cursor-pointer hover:shadow-md transition">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                My Posting
+                My Stocks
                 {/* My {profile?.productType} Products */}
               </CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
@@ -145,9 +154,10 @@ const MerchantDashboard = () => {
         </Link>
 
         {/* Card 4 - New Customer */}
+        <Link to="/merchant/confirmed-orders">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Buyers</CardTitle>
+            <CardTitle className="text-sm font-medium">Confirm Enquiries</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -155,6 +165,7 @@ const MerchantDashboard = () => {
             <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
+        </Link>
       </div>
 
 

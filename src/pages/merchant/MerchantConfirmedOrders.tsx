@@ -66,9 +66,9 @@ const MerchantConfirmedOrders = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Confirmed Orders</h1>
+          <h1 className="text-3xl font-bold text-primary">Confirmed Enquiries</h1>
           <p className="text-muted-foreground mt-2">
-            View all confirmed orders from buyers
+            View all confirmed enquiries from buyers
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
@@ -149,7 +149,7 @@ const MerchantConfirmedOrders = () => {
               {filteredOrders.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
-                    No confirmed orders found.
+                    No confirmed enquiries found.
                   </TableCell>
                 </TableRow>
               )}
