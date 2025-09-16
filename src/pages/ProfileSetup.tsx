@@ -372,12 +372,27 @@ const ProfileSetup = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="country">Country *</Label>
-                    <Input
-                      id="country"
+                    <Select
                       value={formData.country}
-                      onChange={(e) => handleInputChange('country', e.target.value)}
-                      disabled
-                    />
+                      onValueChange={(value) => handleInputChange('country', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="India">India</SelectItem>
+                        <SelectItem value="United States">United States</SelectItem>
+                        <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                        <SelectItem value="Canada">Canada</SelectItem>
+                        <SelectItem value="Australia">Australia</SelectItem>
+                        <SelectItem value="Germany">Germany</SelectItem>
+                        <SelectItem value="France">France</SelectItem>
+                        <SelectItem value="Japan">Japan</SelectItem>
+                        <SelectItem value="China">China</SelectItem>
+                        <SelectItem value="Brazil">Brazil</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pincode">Pincode *</Label>
@@ -453,7 +468,7 @@ const ProfileSetup = () => {
               size="lg"
               disabled={!isFormValid}
             >
-              Complete Profile & Continue
+            Save
             </Button>
           </CardContent>
         </Card>
