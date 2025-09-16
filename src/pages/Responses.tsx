@@ -215,6 +215,7 @@ const Responses = () => {
 
   // Pagination
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [filterOpen, setFilterOpen] = useState(false);
   const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentResponses = filteredResponses.slice(startIndex, startIndex + itemsPerPage);
@@ -241,6 +242,7 @@ const Responses = () => {
   const resetFilters = () => {
     setSearchText('');
     setStatusFilter('all');
+    setFilterOpen(false);
     setAppliedFilters({
       searchText: '',
       status: 'all'
@@ -253,6 +255,7 @@ const Responses = () => {
       searchText,
       status: statusFilter
     });
+    setFilterOpen(false);
     setCurrentPage(1);
   };
 
@@ -282,17 +285,22 @@ const Responses = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Merchant Responses</h1>
+      <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">Merchant Responses</h1>
           <p className="text-muted-foreground">
             View and manage responses from merchants for your requirements
           </p>
-        </div>
-      </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
+                <Filter className="h-4 w-4 mr-2" />
+                Filter Enquiries
+              </Button>
+            </div>
 
       {/* Filters */}
-      <div className="flex flex-col space-y-4 rounded-md border p-4">
+      {filterOpen && (
+        <div className="flex flex-col space-y-4 rounded-md border p-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex-1">
             <Input
@@ -327,6 +335,8 @@ const Responses = () => {
           </div>
         </div>
       </div>
+      )}
+     
 
       {/* Responses Table */}
       <div className="rounded-md border">
