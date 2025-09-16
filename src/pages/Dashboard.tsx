@@ -51,7 +51,7 @@ const Dashboard = () => {
       path: "/my-requirements"
     },
      {
-      title: "Total Responses",
+      title: "Seller Responses",
       value: totalResponses.toString(),
       icon: MessageSquare,
       color: "text-green-500",
@@ -59,7 +59,7 @@ const Dashboard = () => {
       path: "/responses"
     },
     {
-      title: "Total Orders",
+      title: "Total Enquiries",
       value: totalOrders.toString(),
       icon: Clock,
       color: "text-orange-500",

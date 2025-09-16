@@ -168,9 +168,9 @@ const MyOrders = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">My Orders</h1>
+          <h1 className="text-3xl font-bold">My Enquiries</h1>
           <p className="text-muted-foreground mt-1">
-            View and manage your orders
+            View and manage your enquiries
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
@@ -182,7 +182,7 @@ const MyOrders = () => {
       {filterOpen && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Filter Orders</CardTitle>
+            <CardTitle>Filter Enquiries</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -321,7 +321,7 @@ const MyOrders = () => {
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Order Details</DialogTitle>
+            <DialogTitle>Enquiries Details</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <Card>
@@ -329,7 +329,7 @@ const MyOrders = () => {
                 {/* Order Info */}
                 <div>
                   <h3 className="font-semibold text-lg mb-2 flex items-center">
-                    <Package className="mr-2 h-5 w-5 text-blue-500" /> Order Information
+                    <Package className="mr-2 h-5 w-5 text-blue-500" /> Enquirie Information
                   </h3>
                   <p><strong>Order ID:</strong> {selectedOrder.id}</p>
                   <p><strong>Status:</strong> {selectedOrder.status}</p>

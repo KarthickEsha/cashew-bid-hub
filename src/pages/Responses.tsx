@@ -220,7 +220,7 @@ const Responses = () => {
     });
 
   // Pagination
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [filterOpen, setFilterOpen] = useState(false);
   const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;

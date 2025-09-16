@@ -33,7 +33,7 @@ const ViewAllProducts = () => {
           <p>Cashew merchant specializing in high-quality products and reliable service.</p>
           <div className="flex flex-wrap gap-3">
             <Badge variant="secondary">Location: {merchant.city}</Badge>
-            <Badge variant="secondary">Established: 2010</Badge>
+            <Badge variant="secondary">Established: {profile.establishedYear}</Badge>
             <Badge variant="secondary">Rating: ⭐ 4.5</Badge>
             <Badge variant="secondary">Total Products: {merchantProducts.length}</Badge>
             <Badge variant="secondary">Total Orders: 150</Badge>
