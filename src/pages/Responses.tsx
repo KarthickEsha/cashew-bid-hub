@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Filter } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -33,6 +39,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { useResponses } from "@/hooks/useResponses";
 import { useRequirements } from "@/hooks/useRequirements";
@@ -96,6 +105,8 @@ const Responses = () => {
   const { responses, updateResponseStatus } = useResponses();
   const { requirements } = useRequirements();
   const [isLoading, setIsLoading] = useState(false);
+  const [sortField, setSortField] = useState<string>('responseDate');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Filter states
   const [searchText, setSearchText] = useState("");
@@ -130,25 +141,80 @@ const Responses = () => {
   // Get responses with requirement details
   const responsesWithDetails = getMerchantResponses();
 
-  // Filter responses based on search and filters
-  const filteredResponses = responsesWithDetails.filter(response => {
-    // Handle search text matching
-    const searchLower = appliedFilters.searchText.toLowerCase();
-    const matchesSearch = appliedFilters.searchText === '' ||
-      (response.merchantName?.toLowerCase().includes(searchLower) ||
-       response.requirementTitle?.toLowerCase().includes(searchLower) ||
-       response.grade?.toLowerCase().includes(searchLower) ||
-       response.origin?.toLowerCase().includes(searchLower));
+  // Handle sorting
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Toggle sort direction if clicking the same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Default to ascending sort when changing fields
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
-    // Handle status filtering
-    const matchesStatus = appliedFilters.status === 'all' || 
-      (response.status && response.status.toLowerCase() === appliedFilters.status.toLowerCase());
+  // Get sort icon for a column
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="ml-1 h-4 w-4 text-muted-foreground opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="ml-1 h-4 w-4 text-primary" /> 
+      : <ArrowDown className="ml-1 h-4 w-4 text-primary" />;
+  };
 
-    return matchesSearch && matchesStatus;
-  });
+  // Filter and sort responses
+  const filteredResponses = responsesWithDetails
+    .filter(response => {
+      // Handle search text matching
+      const searchLower = appliedFilters.searchText.toLowerCase();
+      const matchesSearch = appliedFilters.searchText === '' ||
+        (response.merchantName?.toLowerCase().includes(searchLower) ||
+         response.requirementTitle?.toLowerCase().includes(searchLower) ||
+         response.grade?.toLowerCase().includes(searchLower) ||
+         response.origin?.toLowerCase().includes(searchLower));
+
+      // Handle status filtering
+      const matchesStatus = appliedFilters.status === 'all' || 
+        (response.status && response.status.toLowerCase() === appliedFilters.status.toLowerCase());
+
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (!sortField) return 0;
+      
+      let aValue = a[sortField as keyof typeof a];
+      let bValue = b[sortField as keyof typeof b];
+
+      // Handle different data types
+      if (sortField === 'responseDate' || sortField === 'createdAt') {
+        aValue = new Date(aValue as string).getTime();
+        bValue = new Date(bValue as string).getTime();
+      } else if (sortField === 'price') {
+        // Remove currency symbols and convert to number
+        aValue = parseFloat((aValue as string).replace(/[^0-9.-]+/g, ''));
+        bValue = parseFloat((bValue as string).replace(/[^0-9.-]+/g, ''));
+      } else if (sortField === 'quantity') {
+        // Extract numeric value from quantity string (e.g., "100kg" -> 100)
+        aValue = parseInt((aValue as string).replace(/[^0-9]/g, '')) || 0;
+        bValue = parseInt((bValue as string).replace(/[^0-9]/g, '')) || 0;
+      }
+
+      // Handle string comparison
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue) 
+          : bValue.localeCompare(aValue);
+      }
+
+      // Handle number/date comparison
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
 
   // Pagination
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentResponses = filteredResponses.slice(startIndex, startIndex + itemsPerPage);
@@ -267,13 +333,48 @@ const Responses = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Merchant</TableHead>
-              <TableHead>Requirement</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Grade</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Response Date</TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('merchantName')}>
+                <div className="flex items-center">
+                  Merchant
+                  {getSortIcon('merchantName')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('requirementTitle')}>
+                <div className="flex items-center">
+                  Requirement
+                  {getSortIcon('requirementTitle')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('price')}>
+                <div className="flex items-center">
+                  Price
+                  {getSortIcon('price')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('quantity')}>
+                <div className="flex items-center">
+                  Quantity
+                  {getSortIcon('quantity')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('grade')}>
+                <div className="flex items-center">
+                  Grade
+                  {getSortIcon('grade')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
+                <div className="flex items-center">
+                  Status
+                  {getSortIcon('status')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('responseDate')}>
+                <div className="flex items-center">
+                  Response Date
+                  {getSortIcon('responseDate')}
+                </div>
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -346,55 +447,47 @@ const Responses = () => {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2">
+      {filteredResponses.length > 0 && (
+        <div className="flex items-center justify-between mt-4">
           <div className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-            <span className="font-medium">
-              {Math.min(startIndex + itemsPerPage, filteredResponses.length)}
-            </span>{' '}
-            of <span className="font-medium">{filteredResponses.length}</span> responses
+            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredResponses.length)} of {filteredResponses.length} responses
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
+          <div className="flex items-center space-x-4">
+            <Select
+              value={String(itemsPerPage)}
+              onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1);
+              }}
             >
-              <ChevronsLeft className="h-4 w-4" />
-              <span className="sr-only">First page</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Previous page</span>
-            </Button>
-            <div className="text-sm">
-              Page {currentPage} of {totalPages}
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Page size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-              <span className="sr-only">Next page</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronsRight className="h-4 w-4" />
-              <span className="sr-only">Last page</span>
-            </Button>
           </div>
         </div>
       )}
@@ -469,13 +562,6 @@ const Responses = () => {
                     <p className="text-muted-foreground whitespace-pre-line">
                       {selectedResponse.message}
                     </p>
-                  </div>
-                )}
-
-                {selectedResponse.remarks && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Remarks</h4>
-                    <p className="text-muted-foreground">{selectedResponse.remarks}</p>
                   </div>
                 )}
               </div>
