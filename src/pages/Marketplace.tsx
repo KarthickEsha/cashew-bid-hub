@@ -613,7 +613,7 @@ const Marketplace = () => {
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <div className="flex items-center justify-between mb-1 px-2">
+                                                <div className="flex items-center justify-between mb-1">
                                                     <CardTitle className="text-lg">{profile?.companyName || 'Your Company'}</CardTitle>
                                                     {product.verified && (
                                                         <Badge variant="default" className="text-xs ml-2">
@@ -887,7 +887,7 @@ const Marketplace = () => {
 
                     {/* Pagination for Card View */}
                     {viewMode === 'card' && itemsToShow.length > 0 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t">
+                        <div className="flex items-center justify-between px-4 py-3">
                             <div className="text-sm text-muted-foreground">
                                 Showing {startIndex + 1} to {Math.min(startIndex + pageSize, itemsToShow.length)} of {itemsToShow.length} products
                             </div>
