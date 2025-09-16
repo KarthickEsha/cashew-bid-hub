@@ -154,7 +154,7 @@ const Responses = () => {
   const currentResponses = filteredResponses.slice(startIndex, startIndex + itemsPerPage);
 
   // Handle status update
-  const handleStatusUpdate = async (responseId: string, status: 'Accepted' | 'Rejected') => {
+  const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'rejected') => {
     try {
       await updateResponseStatus(responseId, status);
       toast({
@@ -319,7 +319,7 @@ const Responses = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleStatusUpdate(response.id, 'Rejected')}
+                          onClick={() => handleStatusUpdate(response.id, 'rejected')}
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                           title="Reject"
                         >
@@ -328,7 +328,7 @@ const Responses = () => {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => handleStatusUpdate(response.id, 'Accepted')}
+                          onClick={() => handleStatusUpdate(response.id, 'accepted')}
                           className="h-8 w-8 p-0"
                           title="Accept"
                         >
@@ -491,7 +491,7 @@ const Responses = () => {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        handleStatusUpdate(selectedResponse.id, 'Rejected');
+                        handleStatusUpdate(selectedResponse.id, 'rejected');
                         setSelectedResponse(null);
                       }}
                       className="text-destructive hover:text-destructive"
@@ -500,7 +500,7 @@ const Responses = () => {
                     </Button>
                     <Button
                       onClick={() => {
-                        handleStatusUpdate(selectedResponse.id, 'Accepted');
+                        handleStatusUpdate(selectedResponse.id, 'accepted');
                         setSelectedResponse(null);
                       }}
                     >
