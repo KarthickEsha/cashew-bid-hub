@@ -24,20 +24,19 @@ const RoleSwitcher = () => {
     navigate("/");
   };
   const selectedProduct = profile?.dealingWith || "Both";
+   const selectedProducttype = profile?.productType;
   // Determine which buttons to show
-  const shouldShowRCN = selectedProduct === "Both" || selectedProduct === "RCN";
-  const shouldShowKernel = selectedProduct === "Both" || selectedProduct === "Kernel";
   const buttonWidth = selectedProduct === "Both" ? "w-1/2" : "w-full";
 
   return (
     <div className="flex justify-center items-center">
       <div className="flex w-64 bg-gray-100 rounded-full shadow-md border border-gray-200 overflow-hidden">
         {/* RCN Button */}
-        {shouldShowRCN && (
+        {selectedProduct == "Both"&& (
           <button
             onClick={() => handleProductTypeChange("RCN")}
             className={`${buttonWidth} py-2 flex items-center justify-center gap-2 font-semibold transition-colors duration-300 ${
-              selectedProductType === "RCN"
+              selectedProducttype === "RCN"
                 ? "bg-amber-500 text-white"
                 : "bg-transparent text-gray-600 hover:bg-gray-200"
             }`}
@@ -55,11 +54,11 @@ const RoleSwitcher = () => {
         )}
 
         {/* Kernel Button */}
-        {shouldShowKernel && (
+        {selectedProduct == "Both" && (
           <button
             onClick={() => handleProductTypeChange("Kernel")}
             className={`${buttonWidth} py-2 flex items-center justify-center gap-2 font-semibold transition-colors duration-300 ${
-              selectedProductType === "Kernel"
+              selectedProducttype === "Kernel"
                 ? "bg-orange-500 text-white"
                 : "bg-transparent text-gray-600 hover:bg-gray-200"
             }`}

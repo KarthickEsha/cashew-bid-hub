@@ -13,6 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
+import {
   Table,
   TableBody,
   TableCell,
@@ -284,63 +290,85 @@ const Responses = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">Merchant Responses</h1>
-          <p className="text-muted-foreground">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Seller Responses</h1>
+          <p className="text-muted-foreground mt-1">
             View and manage responses from merchants for your requirements
           </p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
-                <Filter className="h-4 w-4 mr-2" />
-                Filter Enquiries
-              </Button>
-            </div>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
+          <Filter className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Filters */}
       {filterOpen && (
-        <div className="flex flex-col space-y-4 rounded-md border p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex-1">
-            <Input
-              placeholder="Search by merchant or requirement..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Select
-              value={statusFilter}
-              onValueChange={(value: ResponseStatus | 'all') => setStatusFilter(value)}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="viewed">Viewed</SelectItem>
-                <SelectItem value="accepted">Accepted</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleApplyFilters} variant="outline">
-              Apply
-            </Button>
-            <Button onClick={resetFilters} variant="ghost">
-              Reset
-            </Button>
-          </div>
-        </div>
-      </div>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Filter Responses</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search responses..."
+                  className="pl-10"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                />
+              </div>
+              <Select
+                value={statusFilter}
+                onValueChange={(value: ResponseStatus | 'all') => setStatusFilter(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="viewed">Viewed</SelectItem>
+                  <SelectItem value="accepted">Accepted</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2">
+                <Button onClick={handleApplyFilters} className="w-full md:w-auto">
+                  Apply Filters
+                </Button>
+                <Button variant="outline" onClick={resetFilters} className="w-full md:w-auto">
+                  Reset
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
-     
 
       {/* Responses Table */}
       <div className="rounded-md border">
-        <Table>
+        {filteredResponses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <Search className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-medium mb-1">No responses found</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {Object.values(appliedFilters).some(Boolean) 
+                ? 'Try adjusting your filters or search criteria.' 
+                : 'There are no responses available at the moment.'}
+            </p>
+            {Object.values(appliedFilters).some(Boolean) && (
+              <Button variant="outline" onClick={resetFilters}>
+                Clear all filters
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('merchantName')}>
@@ -453,54 +481,61 @@ const Responses = () => {
               </TableRow>
             ))}
           </TableBody>
+          {filteredResponses.length > 0 && (
+            <tfoot>
+              <tr>
+                <td colSpan={8} className="border-t px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredResponses.length)} of {filteredResponses.length} responses
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <Select
+                        value={String(itemsPerPage)}
+                        onValueChange={(value) => {
+                          setItemsPerPage(Number(value));
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <SelectTrigger className="w-[100px] h-8">
+                          <SelectValue placeholder="Page size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8"
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8"
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </Table>
+        )}
       </div>
-
-      {/* Pagination */}
-      {filteredResponses.length > 0 && (
-        <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-muted-foreground">
-            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredResponses.length)} of {filteredResponses.length} responses
-          </div>
-          <div className="flex items-center space-x-4">
-            <Select
-              value={String(itemsPerPage)}
-              onValueChange={(value) => {
-                setItemsPerPage(Number(value));
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Page size" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Response Details Dialog */}
       <Dialog
