@@ -426,14 +426,18 @@ const ProductDetail = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-foreground">Your Expected Price (₹/{product.unit})</label>
+                    <label className="block text-sm font-semibold text-foreground">
+                      Your Expected Price (₹/{product.unit})
+                    </label>
                     <Input
+                      type="number"
                       value={bidPrice}
                       onChange={(e) => setBidPrice(e.target.value)}
                       placeholder="Enter your expected price"
                       className="border-primary/20 focus:border-primary"
                     />
                   </div>
+
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-foreground">Message to Merchant</label>

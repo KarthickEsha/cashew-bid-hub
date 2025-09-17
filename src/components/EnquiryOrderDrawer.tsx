@@ -251,7 +251,7 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
         console.error('Enquiry not found:', id);
         return;
       }
-
+      
       const isNewResponse = enquiry.status === 'Pending' && status === 'Responded';
 
       // Get current responses to update the count
