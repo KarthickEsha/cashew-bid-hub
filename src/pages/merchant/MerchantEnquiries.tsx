@@ -479,7 +479,6 @@ const MerchantEnquiries = () => {
       // Add response to the system
       addResponse(responseData);
       }
-      debugger
       // Determine the new status based on action
       const newStatus = actionType === 'selected' ? 'selected' : 
         actionType === 'quotes' ? 'responded' : 'closed';

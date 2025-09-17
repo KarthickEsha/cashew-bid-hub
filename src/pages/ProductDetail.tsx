@@ -167,6 +167,16 @@ const ProductDetail = () => {
   };
 
   const handlePlaceBid = async () => {
+    // Validate quantity doesn't exceed available stock
+    if (bidQuantity && parseFloat(bidQuantity) > (product?.availableQty || 0)) {
+      toast({
+        title: "Invalid Quantity",
+        description: `Quantity cannot exceed available stock of ${product?.availableQty} ${product?.unit}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if ((!bidQuantity || !bidPrice) && product?.pricingType === 'bidding') {
       toast({
         title: "Missing Information",
@@ -390,12 +400,30 @@ const ProductDetail = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-foreground">Quantity ({product.unit})</label>
-                    <Input
-                      value={bidQuantity}
-                      onChange={(e) => setBidQuantity(e.target.value)}
-                      placeholder={`Enter quantity in ${product.unit}`}
-                      className="border-primary/20 focus:border-primary"
-                    />
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        max={product.availableQty}
+                        value={bidQuantity}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= product.availableQty)) {
+                            setBidQuantity(value);
+                          }
+                        }}
+                        placeholder={`Max ${product.availableQty} ${product.unit}`}
+                        className={`border-primary/20 focus:border-primary ${
+                          bidQuantity && parseFloat(bidQuantity) > product.availableQty ? 'border-red-500' : ''
+                        }`}
+                      />
+                      {bidQuantity && parseFloat(bidQuantity) > product.availableQty && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Cannot exceed {product.availableQty} {product.unit}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-foreground">Your Expected Price (₹/{product.unit})</label>
@@ -444,9 +472,9 @@ const ProductDetail = () => {
                       <Star size={14} className="text-yellow-500 mr-1" />
                       <span className="font-semibold text-sm">{merchant?.rating || 'N/A'}</span>
                     </div>
-                    <span className="text-muted-foreground ml-2 text-sm">
+                    {/* <span className="text-muted-foreground ml-2 text-sm">
                       ({merchant?.totalOrders || 0} {merchant?.totalOrders === 1 ? 'order' : 'orders'})
-                    </span>
+                    </span> */}
                   </div>
                 </div>
                 {merchant.verified && (

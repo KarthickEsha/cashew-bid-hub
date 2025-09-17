@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useInventory } from '@/hooks/useInventory';
+import { useResponses } from '@/hooks/useResponses';
+import { useProfile } from '@/hooks/useProfile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Eye, Check, X, Calendar, Clock } from 'lucide-react';
 import ChatModal from './ChatModal';
 import { format, isToday, parseISO, subDays } from 'date-fns';
+import { toast } from '@/components/ui/use-toast';
 
 interface Enquiry {
   id: string;
@@ -122,6 +125,8 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const { incrementBuyerResponseCount } = useInventory();
+  const { addResponse } = useResponses();
+  const { profile } = useProfile();
 
   // Fetch enquiries from local storage when component mounts or productId changes
   useEffect(() => {
@@ -181,9 +186,33 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
     );
     localStorage.setItem('productEnquiries', JSON.stringify(updatedStoredEnquiries));
 
-    // Increment buyer response count if this is a new response
+    // If this is a new response, add it to the responses and increment buyer response count
     if (isNewResponse && productId) {
       incrementBuyerResponseCount(productId);
+      
+      // Add a new merchant response
+      addResponse({
+        requirementId: productId,
+        merchantId: profile?.id || 'merchant-id',
+        merchantName: profile?.companyName || profile?.name || 'Your Company',
+        merchantLocation: [profile?.city, profile?.state, profile?.country].filter(Boolean).join(', ') || 'Your Location',
+        price: '0.00', // Default price, can be updated later
+        responseDate: new Date().toISOString(),
+        status: 'new',
+        grade: 'W320', // Default grade, can be updated based on product
+        quantity: enquiry?.quantity || '0 MT',
+        origin: 'Vietnam', // Default origin, can be updated
+        certifications: ['Organic', 'Fair Trade'], // Default certifications
+        deliveryTime: '30 days', // Default delivery time
+        contact: profile?.email || 'contact@yourcompany.com',
+        message: `Response to enquiry from ${enquiry?.customerName} regarding ${enquiry?.quantity} MT`,
+      });
+      
+      // Show success message
+      toast({
+        title: 'Response submitted',
+        description: 'Your response has been recorded and will be visible to the buyer.',
+      });
     }
   };
 

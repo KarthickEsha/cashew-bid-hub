@@ -196,7 +196,6 @@ export const useRequirements = create<RequirementsState>()(
       },
 
       updateRequirementStatus: (id, status) => {
-        debugger
         console.log('Updating requirement status:', { id, status });
         set((state) => {
           const updatedRequirements = state.requirements.map(req => {

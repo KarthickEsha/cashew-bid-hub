@@ -135,7 +135,6 @@ const RequirementDetails = () => {
 
   // Place Order functionality
   const handlePlaceOrder = (response: any) => {
-    debugger
     const order = {
       id: Date.now(), // Simple ID generation
       requirementId: requirement.id,
