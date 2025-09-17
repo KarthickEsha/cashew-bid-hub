@@ -16,31 +16,39 @@ import { useRole } from "@/hooks/useRole";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useOrders } from "@/hooks/useOrders";
 import path from "path";
+import { useResponses } from "@/hooks/useResponses";
+import { useEffect, useState } from "react";
 
 const Dashboard = () => {
   const { role, setRole } = useRole();
   const navigate = useNavigate(); // ✅ initialize navigate
   const { getMyRequirements } = useRequirements();
   const { orders } = useOrders();
-  
+  const [newResponseCount, setNewResponseCount] = useState(0);
+  const { responses } = useResponses();
+
   // Get dynamic data from requirements
   const requirements = getMyRequirements();
   const activeRequirements = requirements.filter(req => req.status === 'active').length;
   const draftRequirements = requirements.filter(req => req.status === 'draft').length;
-  const totalResponses = requirements.reduce((acc, req) => acc + (req.responsesCount || 0), 0);
-  
+  const totalResponses = newResponseCount
+
   // Get dynamic order counts
   const totalOrders = orders.length;
   const confirmedOrders = orders.filter(order => order.status === 'Confirmed').length;
   const pendingOrders = orders.filter(order => order.status === 'Processing').length;
-  
+
   // Calculate total value (mock calculation - in real app this would come from orders)
   const totalValue = requirements.reduce((acc, req) => {
     const price = parseFloat(req.budgetRange?.replace(/[₹,]/g, '') || '0');
     const quantity = parseFloat(req.quantity?.replace(/[kg,]/g, '') || '0');
     return acc + (price * quantity / 1000); // Convert to tons for calculation
   }, 0);
-
+  useEffect(() => {
+    // Count new/unread responses
+    const count = responses.filter(response => response.status === 'new').length;
+    setNewResponseCount(count);
+  }, [responses]);
   const stats = [
     {
       title: "My Requirements",
@@ -50,7 +58,7 @@ const Dashboard = () => {
       trend: `${activeRequirements} active, ${draftRequirements} draft`,
       path: "/my-requirements"
     },
-     {
+    {
       title: "Seller Responses",
       value: totalResponses.toString(),
       icon: MessageSquare,
@@ -65,7 +73,7 @@ const Dashboard = () => {
       color: "text-orange-500",
       trend: `${confirmedOrders} confirmed, ${pendingOrders} pending`,
       path: "/my-orders"
-      
+
     },
     {
       title: "Total Value",

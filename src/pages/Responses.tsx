@@ -91,6 +91,7 @@ interface MerchantResponse {
   origin: string;
   certifications: string[];
   deliveryTime: string;
+  productName: string;
   contact: string;
   message: string;
   remarks?: string;
@@ -135,7 +136,7 @@ const Responses = () => {
       return {
         ...response,
         status: response.status.toLowerCase() as ResponseStatus,
-        requirementTitle: requirement?.productName || 'Unknown Requirement',
+        requirementTitle: requirement?.productName || response.productName || 'Unknown Requirement',
         merchantRating: 4.5, // This would come from merchant data in a real app
         isStarred: false, // Default value, can be managed in state if needed
         grade: response.grade || requirement?.grade || 'N/A',
@@ -357,8 +358,8 @@ const Responses = () => {
             </div>
             <h3 className="text-lg font-medium mb-1">No responses found</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              {Object.values(appliedFilters).some(Boolean) 
-                ? 'Try adjusting your filters or search criteria.' 
+              {Object.values(appliedFilters).some(Boolean)
+                ? 'Try adjusting your filters or search criteria.'
                 : 'There are no responses available at the moment.'}
             </p>
             {Object.values(appliedFilters).some(Boolean) && (
@@ -369,171 +370,171 @@ const Responses = () => {
           </div>
         ) : (
           <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('merchantName')}>
-                <div className="flex items-center">
-                  Merchant
-                  {getSortIcon('merchantName')}
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('requirementTitle')}>
-                <div className="flex items-center">
-                  Requirement
-                  {getSortIcon('requirementTitle')}
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('price')}>
-                <div className="flex items-center">
-                  Price
-                  {getSortIcon('price')}
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('quantity')}>
-                <div className="flex items-center">
-                  Quantity
-                  {getSortIcon('quantity')}
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('grade')}>
-                <div className="flex items-center">
-                  Grade
-                  {getSortIcon('grade')}
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
-                <div className="flex items-center">
-                  Status
-                  {getSortIcon('status')}
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('responseDate')}>
-                <div className="flex items-center">
-                  Response Date
-                  {getSortIcon('responseDate')}
-                </div>
-              </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentResponses.map((response) => (
-              <TableRow key={response.id} className="hover:bg-muted/50">
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    {response.merchantName}
-                    {response.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+            <TableHeader>
+              <TableRow>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('merchantName')}>
+                  <div className="flex items-center">
+                    Merchant
+                    {getSortIcon('merchantName')}
                   </div>
-                </TableCell>
-                <TableCell>{response.requirementTitle}</TableCell>
-                <TableCell>₹{response.price} / kg</TableCell>
-                <TableCell>{response.quantity}</TableCell>
-                <TableCell>{response.grade || 'N/A'}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={response.status === 'accepted' ? 'default' :
-                      response.status === 'rejected' ? 'destructive' : 'outline'}
-                    className="capitalize"
-                  >
-                    {response.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {format(parseISO(response.responseDate), 'MMM d, yyyy')}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedResponse(response)}
-                      className="h-8 w-8 p-0"
-                      title="View details"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span className="sr-only">View details</span>
-                    </Button>
-                    {(response.status === 'new' || response.status === 'viewed') && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleStatusUpdate(response.id, 'rejected')}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          title="Reject"
-                        >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Reject</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleStatusUpdate(response.id, 'accepted')}
-                          className="h-8 w-8 p-0"
-                          title="Accept"
-                        >
-                          <Check className="h-4 w-4" />
-                          <span className="sr-only">Accept</span>
-                        </Button>
-                      </>
-                    )}
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('requirementTitle')}>
+                  <div className="flex items-center">
+                    Requirement
+                    {getSortIcon('requirementTitle')}
                   </div>
-                </TableCell>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('price')}>
+                  <div className="flex items-center">
+                    Price
+                    {getSortIcon('price')}
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('quantity')}>
+                  <div className="flex items-center">
+                    Quantity
+                    {getSortIcon('quantity')}
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('grade')}>
+                  <div className="flex items-center">
+                    Grade
+                    {getSortIcon('grade')}
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
+                  <div className="flex items-center">
+                    Status
+                    {getSortIcon('status')}
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('responseDate')}>
+                  <div className="flex items-center">
+                    Response Date
+                    {getSortIcon('responseDate')}
+                  </div>
+                </TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-          {filteredResponses.length > 0 && (
-            <tfoot>
-              <tr>
-                <td colSpan={8} className="border-t px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredResponses.length)} of {filteredResponses.length} responses
+            </TableHeader>
+            <TableBody>
+              {currentResponses.map((response) => (
+                <TableRow key={response.id} className="hover:bg-muted/50">
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {response.merchantName}
+                      {response.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <Select
-                        value={String(itemsPerPage)}
-                        onValueChange={(value) => {
-                          setItemsPerPage(Number(value));
-                          setCurrentPage(1);
-                        }}
+                  </TableCell>
+                  <TableCell>{response.requirementTitle}</TableCell>
+                  <TableCell>₹{response.price} / kg</TableCell>
+                  <TableCell>{response.quantity}</TableCell>
+                  <TableCell>{response.grade || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={response.status === 'accepted' ? 'default' :
+                        response.status === 'rejected' ? 'destructive' : 'outline'}
+                      className="capitalize"
+                    >
+                      {response.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {format(parseISO(response.responseDate), 'MMM d, yyyy')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedResponse(response)}
+                        className="h-8 w-8 p-0"
+                        title="View details"
                       >
-                        <SelectTrigger className="w-[100px] h-8">
-                          <SelectValue placeholder="Page size" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="5">5</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="20">20</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8"
-                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                          disabled={currentPage === 1}
+                        <Eye className="h-4 w-4" />
+                        <span className="sr-only">View details</span>
+                      </Button>
+                      {(response.status === 'new' || response.status === 'viewed') && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStatusUpdate(response.id, 'rejected')}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            title="Reject"
+                          >
+                            <X className="h-4 w-4" />
+                            <span className="sr-only">Reject</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleStatusUpdate(response.id, 'accepted')}
+                            className="h-8 w-8 p-0"
+                            title="Accept"
+                          >
+                            <Check className="h-4 w-4" />
+                            <span className="sr-only">Accept</span>
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            {filteredResponses.length > 0 && (
+              <tfoot>
+                <tr>
+                  <td colSpan={8} className="border-t px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredResponses.length)} of {filteredResponses.length} responses
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <Select
+                          value={String(itemsPerPage)}
+                          onValueChange={(value) => {
+                            setItemsPerPage(Number(value));
+                            setCurrentPage(1);
+                          }}
                         >
-                          Previous
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8"
-                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                          disabled={currentPage === totalPages}
-                        >
-                          Next
-                        </Button>
+                          <SelectTrigger className="w-[100px] h-8">
+                            <SelectValue placeholder="Page size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">5</SelectItem>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-            </tfoot>
-          )}
-        </Table>
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </Table>
         )}
       </div>
 
@@ -591,19 +592,19 @@ const Responses = () => {
 
                   </div>
                   {/* <div className="space-y-2">
-                    <h4 className="font-medium">Certifications</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedResponse.certifications?.length > 0 ? (
-                        selectedResponse.certifications.map((cert, i) => (
-                          <Badge key={i} variant="secondary">
-                            {cert}
-                          </Badge>
-                        ))
-                      ) : (
-                        <p className="text-muted-foreground">No certifications</p>
-                      )}
-                    </div>
-                  </div> */}
+ <h4 className="font-medium">Certifications</h4>
+ <div className="flex flex-wrap gap-2">
+ {selectedResponse.certifications?.length > 0 ? (
+ selectedResponse.certifications.map((cert, i) => (
+ <Badge key={i} variant="secondary">
+ {cert}
+ </Badge>
+ ))
+ ) : (
+ <p className="text-muted-foreground">No certifications</p>
+ )}
+ </div>
+ </div> */}
                 </div>
 
                 {selectedResponse.message && (

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Eye, MessageSquare, Search, Filter } from "lucide-react";
+import { Eye, MessageSquare, Search, Filter, Package } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
@@ -149,6 +149,7 @@ const MerchantRejectedOrders = () => {
               {filteredOrders.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
+                  <Package className="mx-auto h-12 w-12 text-muted-foreground" />
                     No rejected orders found.
                   </TableCell>
                 </TableRow>

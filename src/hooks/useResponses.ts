@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { useOrders } from './useOrders';
 
 export interface MerchantResponse {
+  productName: string;
   id: string;
   requirementId: string;
   merchantId: string;

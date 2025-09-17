@@ -194,9 +194,10 @@ const ProductDetail = () => {
         message: bidMessage || `Interested in purchasing ${product.name}`,
         quantity: bidQuantity ? `${bidQuantity} ${product.unit}` : 'Enquiry only',
         date: new Date().toISOString(),
-        status: 'pending' as const,
+        status: 'Pending' as const,
         productId: product.id,
-        productName: product.name,
+        productName: product.grade != null && product.grade != "" ? `${product.grade} Cashews` : `Raw Cashews`,
+        grade: product.grade || 'N/A',
         price: bidPrice ? parseFloat(bidPrice) : 0,
       };
 
@@ -414,9 +415,8 @@ const ProductDetail = () => {
                           }
                         }}
                         placeholder={`Max ${product.availableQty} ${product.unit}`}
-                        className={`border-primary/20 focus:border-primary ${
-                          bidQuantity && parseFloat(bidQuantity) > product.availableQty ? 'border-red-500' : ''
-                        }`}
+                        className={`border-primary/20 focus:border-primary ${bidQuantity && parseFloat(bidQuantity) > product.availableQty ? 'border-red-500' : ''
+                          }`}
                       />
                       {bidQuantity && parseFloat(bidQuantity) > product.availableQty && (
                         <p className="text-xs text-red-500 mt-1">
@@ -461,73 +461,73 @@ const ProductDetail = () => {
         {/* Enhanced Right Sidebar */}
         <div className="space-y-8">
           {/* Enhanced Merchant Card */}
-         {role !== "processor" && (
-          <Card className="sticky top-20 shadow-warm border-0 bg-gradient-warm">
-            <CardHeader className="pb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-xl font-bold text-primary">{merchant.name}</CardTitle>
-                  <div className="flex items-center mt-2">
-                    <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-full border border-yellow-200">
-                      <Star size={14} className="text-yellow-500 mr-1" />
-                      <span className="font-semibold text-sm">{merchant?.rating || 'N/A'}</span>
+          {role !== "processor" && (
+            <Card className="sticky top-20 shadow-warm border-0 bg-gradient-warm">
+              <CardHeader className="pb-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-xl font-bold text-primary">{merchant.name}</CardTitle>
+                    <div className="flex items-center mt-2">
+                      <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-full border border-yellow-200">
+                        <Star size={14} className="text-yellow-500 mr-1" />
+                        <span className="font-semibold text-sm">{merchant?.rating || 'N/A'}</span>
+                      </div>
+                      {/* <span className="text-muted-foreground ml-2 text-sm">
+ ({merchant?.totalOrders || 0} {merchant?.totalOrders === 1 ? 'order' : 'orders'})
+ </span> */}
                     </div>
-                    {/* <span className="text-muted-foreground ml-2 text-sm">
-                      ({merchant?.totalOrders || 0} {merchant?.totalOrders === 1 ? 'order' : 'orders'})
-                    </span> */}
+                  </div>
+                  {merchant.verified && (
+                    <Badge className="bg-green-100 text-green-800 border-green-200">
+                      <Shield size={12} className="mr-1" /> Verified
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground leading-relaxed">{merchant?.description || 'Quality cashew supplier with years of experience'}</p>
+
+                <div className="space-y-3">
+                  <div className="flex items-center p-2 bg-primary/5 rounded-lg">
+                    <MapPin size={16} className="mr-3 text-primary" />
+                    <span className="text-sm font-medium">
+                      {typeof merchant?.location === 'string'
+                        ? merchant.location
+                        : [
+                          (merchant?.location as LocationType)?.city,
+                          (merchant?.location as LocationType)?.country
+                        ].filter(Boolean).join(', ') || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex items-center p-2 bg-primary/5 rounded-lg">
+                    <Phone size={16} className="mr-3 text-primary" />
+                    <span className="text-sm font-medium">{merchant?.phone || 'Contact via platform'}</span>
+                  </div>
+                  <div className="flex items-center p-2 bg-primary/5 rounded-lg">
+                    <Mail size={16} className="mr-3 text-primary" />
+                    <span className="text-sm font-medium">{merchant?.email || 'Available on request'}</span>
+                  </div>
+                  <div className="flex items-center p-2 bg-primary/5 rounded-lg">
+                    <Clock size={16} className="mr-3 text-primary" />
+                    <span className="text-sm font-medium">Response: {merchant?.responseTime || 'Within 24 hours'}</span>
                   </div>
                 </div>
-                {merchant.verified && (
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    <Shield size={12} className="mr-1" /> Verified
-                  </Badge>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground leading-relaxed">{merchant?.description || 'Quality cashew supplier with years of experience'}</p>
 
-              <div className="space-y-3">
-                <div className="flex items-center p-2 bg-primary/5 rounded-lg">
-                  <MapPin size={16} className="mr-3 text-primary" />
-                  <span className="text-sm font-medium">
-                    {typeof merchant?.location === 'string'
-                      ? merchant.location
-                      : [
-                        (merchant?.location as LocationType)?.city,
-                        (merchant?.location as LocationType)?.country
-                      ].filter(Boolean).join(', ') || 'N/A'}
-                  </span>
+                <div className="pt-4 space-y-3">
+                  <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white shadow-warm">
+                    Contact Merchant
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full border-primary/20 hover:bg-primary/5"
+                    onClick={handleViewAllProducts}
+                  >
+                    View All Products
+                  </Button>
                 </div>
-                <div className="flex items-center p-2 bg-primary/5 rounded-lg">
-                  <Phone size={16} className="mr-3 text-primary" />
-                  <span className="text-sm font-medium">{merchant?.phone || 'Contact via platform'}</span>
-                </div>
-                <div className="flex items-center p-2 bg-primary/5 rounded-lg">
-                  <Mail size={16} className="mr-3 text-primary" />
-                  <span className="text-sm font-medium">{merchant?.email || 'Available on request'}</span>
-                </div>
-                <div className="flex items-center p-2 bg-primary/5 rounded-lg">
-                  <Clock size={16} className="mr-3 text-primary" />
-                  <span className="text-sm font-medium">Response: {merchant?.responseTime || 'Within 24 hours'}</span>
-                </div>
-              </div>
-
-              <div className="pt-4 space-y-3">
-                <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white shadow-warm">
-                  Contact Merchant
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full border-primary/20 hover:bg-primary/5"
-                  onClick={handleViewAllProducts}
-                >
-                  View All Products
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-         )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Bid Details Card */}
           {product.pricingType === "bidding" && role !== "processor" && (

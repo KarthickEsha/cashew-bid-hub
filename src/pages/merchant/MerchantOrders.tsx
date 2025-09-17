@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Check, X, Filter, ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { Eye, Check, X, Filter, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -459,7 +459,8 @@ const MerchantOrders = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
-                      {merchantOrders.length === 0 ? 'No orders found' : 'No orders match the current filters'}
+                      <Package className="mx-auto h-12 w-12 text-muted-foreground" />
+                      {merchantOrders.length === 0 ? 'No buyer response found' : 'No orders match the current filters'}
                     </TableCell>
                   </TableRow>
                 )}

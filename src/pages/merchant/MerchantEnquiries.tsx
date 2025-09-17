@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Eye, MessageSquare, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Eye, MessageSquare, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, Package } from "lucide-react";
 import ChatModal from "@/components/ChatModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useRequirements } from "@/hooks/useRequirements";
@@ -151,7 +151,7 @@ const MerchantEnquiries = () => {
     console.log('Fetching all requirements as enquiries...');
     const allEnquiries = getRequirementsAsEnquiries();
     console.log('Raw enquiries from store:', allEnquiries);
-    
+
     const updatedStoredEnquiries = allEnquiries
       .filter(enquiry => {
         const isClosed = enquiry.status === 'closed';
@@ -166,27 +166,27 @@ const MerchantEnquiries = () => {
           hasCreatedAt: !!enquiry.createdAt,
           hasLastModified: !!enquiry.lastModified
         });
-        
+
         const responses = getResponsesByRequirementId(enquiry.id);
         console.log('Associated responses:', responses);
-        
+
         // Start with current status or default to 'active'
         let status = enquiry.status || 'active';
         console.log('Initial status:', status);
-        
+
         // Only update status if it's not already 'selected' (highest priority)
         if (status !== 'selected') {
           const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
           const hasRejectedResponse = responses.some(r => r.status === 'rejected');
           const responseStatuses = responses.map(r => r.status);
-          
+
           console.log('Response analysis:', {
             responseCount: responses.length,
             responseStatuses,
             hasAcceptedResponse,
             hasRejectedResponse
           });
-          
+
           // Status priority: selected > Rejected > responded > active
           if (hasAcceptedResponse) {
             status = 'selected';
@@ -213,7 +213,7 @@ const MerchantEnquiries = () => {
           // Ensure we have a created date for sorting
           createdAt: enquiry.createdAt || new Date().toISOString()
         };
-        
+
         console.log('Final enquiry data:', updatedEnquiry);
         console.groupEnd();
         return updatedEnquiry;
@@ -230,11 +230,11 @@ const MerchantEnquiries = () => {
     setEnquiries(prevEnquiries => {
       const prevIds = new Set(prevEnquiries.map(e => e.id));
       const newIds = new Set(updatedStoredEnquiries.map(e => e.id));
-      
+
       // Check for added/removed enquiries
-      const hasDifferentIds = prevIds.size !== newIds.size || 
-                            !Array.from(prevIds).every(id => newIds.has(id));
-      
+      const hasDifferentIds = prevIds.size !== newIds.size ||
+        !Array.from(prevIds).every(id => newIds.has(id));
+
       // Check for status changes
       const statusChanges = updatedStoredEnquiries
         .map(e => {
@@ -242,10 +242,10 @@ const MerchantEnquiries = () => {
           return prev ? { id: e.id, from: prev.status, to: e.status } : null;
         })
         .filter(change => change && change.from !== change.to);
-      
+
       const hasStatusChanges = statusChanges.length > 0;
       const shouldUpdate = hasDifferentIds || hasStatusChanges;
-      
+
       console.log('State update check:', {
         prevEnquiryCount: prevEnquiries.length,
         newEnquiryCount: updatedStoredEnquiries.length,
@@ -254,18 +254,18 @@ const MerchantEnquiries = () => {
         statusChanges,
         shouldUpdate
       });
-      
+
       if (shouldUpdate) {
         console.log('Updating enquiries state with new data');
         console.log('Previous enquiries:', prevEnquiries);
         console.log('New enquiries:', updatedStoredEnquiries);
         return updatedStoredEnquiries;
       }
-      
+
       console.log('No changes detected, skipping state update');
       return prevEnquiries;
     });
-    
+
     console.groupEnd(); // End of REFRESH ENQUIRIES group
   };
 
@@ -382,28 +382,28 @@ const MerchantEnquiries = () => {
     console.group('=== HANDLE SUBMIT RESPONSE ===');
     console.log('Action type:', actionType);
     console.log('Selected enquiry:', selectedEnquiry);
-    
+
     if (actionType === 'skip') {
       try {
         console.log('Processing skip action...');
-        
+
         // Add the skipped response
-        
+
         // Update the requirement status to 'closed' for the skipped enquiry
         console.log(`Updating requirement ${selectedEnquiry.id} status to 'closed'`);
         await updateRequirementStatus(selectedEnquiry.id.toString(), 'closed');
-        
+
         // Get fresh list of enquiries after update
         console.log('Fetching updated enquiries after status update...');
         const updatedEnquiries = getRequirementsAsEnquiries();
         console.log('Updated enquiries:', updatedEnquiries);
-        
+
         // Filter out the skipped enquiry from the current list
         const filteredEnquiries = updatedEnquiries.filter(
           (enquiry) => enquiry.id !== selectedEnquiry.id
         );
         console.log('Filtered enquiries (after removing skipped):', filteredEnquiries);
-        
+
         // Update the state with filtered enquiries
         console.log('Updating local state to remove skipped enquiry');
         setEnquiries(prevEnquiries => {
@@ -449,58 +449,59 @@ const MerchantEnquiries = () => {
 
     try {
       // Prepare response data
-      if(actionType === 'quotes'){
+      if (actionType === 'quotes') {
         // Get merchant details from profile or user
-      const merchantName = profile?.name || user?.fullName || 'Merchant';
-      const merchantLocation = profile?.city || 'Location not specified';
-      
-      const responseData = {
-        requirementId: selectedEnquiry.id.toString(),
-        merchantId: user?.id || 'unknown',
-        merchantName: merchantName,
-        merchantLocation: merchantLocation,
-        price: merchantPrice,
-        responseDate: new Date().toISOString(),
-        status: 'new' as const,
-        grade: selectedEnquiry.grade || '',
-        quantity: availableQuantity,
-        origin: selectedEnquiry.origin || '',
-        certifications: [],
-        deliveryTime: 'TBD',
-        contact: '',
-        message: remarks,
-        remarks: remarks,
-        requirementTitle: selectedEnquiry.productName,
-        requirementQuantity: selectedEnquiry.quantity,
-        requirementGrade: selectedEnquiry.grade,
-        requirementOrigin: selectedEnquiry.origin,
-      };
+        const merchantName = profile?.name || user?.fullName || 'Merchant';
+        const merchantLocation = profile?.city || 'Location not specified';
 
-      // Add response to the system
-      addResponse(responseData);
+        const responseData = {
+          requirementId: selectedEnquiry.id.toString(),
+          merchantId: user?.id || 'unknown',
+          merchantName: merchantName,
+          merchantLocation: merchantLocation,
+          price: merchantPrice,
+          responseDate: new Date().toISOString(),
+          status: 'new' as const,
+          grade: selectedEnquiry.grade || '',
+          quantity: availableQuantity,
+          origin: selectedEnquiry.origin || '',
+          certifications: [],
+          deliveryTime: 'TBD',
+          contact: '',
+          message: remarks,
+          remarks: remarks,
+          productName: selectedEnquiry.productName || '', // <-- Added this line
+          requirementTitle: selectedEnquiry.productName,
+          requirementQuantity: selectedEnquiry.quantity,
+          requirementGrade: selectedEnquiry.grade,
+          requirementOrigin: selectedEnquiry.origin,
+        };
+
+        // Add response to the system
+        addResponse(responseData);
       }
       // Determine the new status based on action
-      const newStatus = actionType === 'selected' ? 'selected' : 
+      const newStatus = actionType === 'selected' ? 'selected' :
         actionType === 'quotes' ? 'responded' : 'closed';
       console.log('=== STATUS UPDATE START ===');
       console.log('Action type:', actionType);
       console.log('New status to set:', newStatus);
       console.log('Current enquiry status:', selectedEnquiry.status);
       console.log('Enquiry ID:', selectedEnquiry.id);
-      
+
       try {
-        console.log('Calling updateRequirementStatus with:', { 
-          id: selectedEnquiry.id, 
-          status: newStatus 
+        console.log('Calling updateRequirementStatus with:', {
+          id: selectedEnquiry.id,
+          status: newStatus
         });
-        
+
         // Update the status in the store
         await updateRequirementStatus(selectedEnquiry.id.toString(), newStatus);
-        
+
         // Force a refresh of the enquiries list to ensure UI is up to date
         console.log('Refreshing enquiries after status update...');
         refreshEnquiries();
-        
+
         // Also update the selected enquiry in the modal if it's open
         if (selectedEnquiry) {
           console.log('Updating selected enquiry in modal...');
@@ -510,40 +511,40 @@ const MerchantEnquiries = () => {
           }));
         }
         console.log('updateRequirementStatus completed');
-        
+
         // Refresh the enquiries to get the latest data
         console.log('Refreshing enquiries...');
         refreshEnquiries();
-        
+
         // Also update the local state for immediate UI update
         if (newStatus === 'closed') {
           console.log('Removing closed enquiry from UI');
-          setEnquiries(prevEnquiries => 
+          setEnquiries(prevEnquiries =>
             prevEnquiries.filter(e => e.id !== selectedEnquiry.id)
           );
         } else {
           console.log('Updating status in local state to:', newStatus);
-          setEnquiries(prevEnquiries => 
-            prevEnquiries.map(e => 
-              e.id === selectedEnquiry.id 
-                ? { ...e, status: newStatus } 
+          setEnquiries(prevEnquiries =>
+            prevEnquiries.map(e =>
+              e.id === selectedEnquiry.id
+                ? { ...e, status: newStatus }
                 : e
             )
           );
         }
-        
+
         toast({
           title: 'Success',
-          description: 
-            actionType === 'selected' 
-              ? 'Enquiry has been marked as selected' 
+          description:
+            actionType === 'selected'
+              ? 'Enquiry has been marked as selected'
               : 'Enquiry has been skipped and removed from the list',
         });
 
         // Reset form and close modal
         resetForm();
         setResponseModalOpen(false);
-        
+
         // If we didn't remove the item, refresh the list to ensure consistency
         if (newStatus !== 'closed') {
           refreshEnquiries();
@@ -573,28 +574,28 @@ const MerchantEnquiries = () => {
     console.log('Response ID:', responseId);
     console.log('New status:', newStatus);
     console.log('Selected enquiry:', selectedEnquiry);
-    
+
     try {
       console.log('Updating response status...');
       await updateResponseStatus(responseId, newStatus);
       console.log('Response status updated');
-      
+
       // If we have a selected enquiry
       if (selectedEnquiry) {
         console.log('Selected enquiry ID:', selectedEnquiry.id);
         console.log('Current enquiry status:', selectedEnquiry.status);
-        
+
         if (newStatus === 'accepted') {
           console.log('Updating requirement status to "selected"...');
           await updateRequirementStatus(selectedEnquiry.id, 'selected');
           console.log('Requirement status updated to "selected"');
-          
+
           // Update the selected enquiry in the list
           console.log('Updating local enquiries list...');
           setEnquiries(prevEnquiries => {
-            const updated = prevEnquiries.map(e => 
-              e.id === selectedEnquiry.id 
-                ? { ...e, status: 'selected' } 
+            const updated = prevEnquiries.map(e =>
+              e.id === selectedEnquiry.id
+                ? { ...e, status: 'selected' }
                 : e
             );
             console.log('Updated enquiries list:', updated);
@@ -603,22 +604,22 @@ const MerchantEnquiries = () => {
         } else if (newStatus === 'skipped') {
           console.log('Skipping enquiry, removing from list...');
           // Remove the skipped enquiry from the list
-          setEnquiries(prevEnquiries => 
+          setEnquiries(prevEnquiries =>
             prevEnquiries.filter(e => e.id !== selectedEnquiry.id)
           );
-          
+
           // Show success message
           toast({
             title: 'Skipped',
             description: 'The enquiry has been skipped and removed from your list',
           });
-          
+
           // Close any open modals
           setViewModalOpen(false);
           setResponseModalOpen(false);
           return; // Exit early since we've handled the skip
         }
-        
+
         // Update the selected enquiry in the modal
         console.log('Updating selected enquiry in modal...');
         setSelectedEnquiry(prev => {
@@ -630,13 +631,13 @@ const MerchantEnquiries = () => {
           return updated;
         });
       }
-      
+
       // Show success message
       toast({
         title: 'Status updated',
         description: `Response has been ${newStatus.toLowerCase()}`,
       });
-      
+
       // Refresh the enquiries to ensure everything is in sync
       refreshEnquiries();
     } catch (error) {
@@ -775,7 +776,7 @@ const MerchantEnquiries = () => {
                   onClick={() => handleSort('status')}
                 >
                   <div className="flex items-center justify-between">
-                     Status
+                    Status
                     {getSortIcon('status')}
                   </div>
                 </TableHead>
@@ -806,7 +807,7 @@ const MerchantEnquiries = () => {
                         : enquiry.status === 'active'
                           ? 'secondary'
                           : enquiry.status === 'selected'
-                            ? 'outline'  // You can use a different variant like 'success' if available
+                            ? 'outline' // You can use a different variant like 'success' if available
                             : enquiry.status === 'confirmed'
                               ? 'outline'
                               : enquiry.status === 'closed'
@@ -816,7 +817,7 @@ const MerchantEnquiries = () => {
                       {enquiry.status === 'closed'
                         ? 'Skipped'
                         : enquiry.status === 'selected'
-                          ? 'Selected'  // Explicitly show 'Selected' with capital 'S'
+                          ? 'Selected' // Explicitly show 'Selected' with capital 'S'
                           : enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
                     </Badge>
                   </TableCell>
@@ -835,6 +836,7 @@ const MerchantEnquiries = () => {
               {filteredEnquiries.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                    <Package className="mx-auto h-12 w-12 text-muted-foreground" />
                     No enquiries found for selected filters.
                   </TableCell>
                 </TableRow>
@@ -906,36 +908,33 @@ const MerchantEnquiries = () => {
                 </div>
               </div>
 
-               <div className="flex border rounded-md p-0.5 bg-muted/50 mt-2">
+              <div className="flex border rounded-md p-0.5 bg-muted/50 mt-2">
                 <button
                   onClick={() => handleActionChange('skip')}
-                  className={`flex-1 py-1.5 text-sm font-medium transition-colors rounded-sm ${
-                    actionType === 'skip' 
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                      : 'text-muted-foreground hover:text-foreground/80'
-                  }`}
+                  className={`flex-1 py-1.5 text-sm font-medium transition-colors rounded-sm ${actionType === 'skip'
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                    : 'text-muted-foreground hover:text-foreground/80'
+                    }`}
                 >
                   Skip
                 </button>
                 <div className="w-px bg-border my-1.5" />
                 <button
                   onClick={() => handleActionChange('selected')}
-                  className={`flex-1 py-1.5 text-sm font-medium transition-colors rounded-sm ${
-                    actionType === 'selected' 
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                      : 'text-muted-foreground hover:text-foreground/80'
-                  }`}
+                  className={`flex-1 py-1.5 text-sm font-medium transition-colors rounded-sm ${actionType === 'selected'
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                    : 'text-muted-foreground hover:text-foreground/80'
+                    }`}
                 >
                   Selected
                 </button>
                 <div className="w-px bg-border my-1.5" />
                 <button
                   onClick={() => handleActionChange('quotes')}
-                  className={`flex-1 py-1.5 text-sm font-medium transition-colors rounded-sm ${
-                    actionType === 'quotes' 
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                      : 'text-muted-foreground hover:text-foreground/80'
-                  }`}
+                  className={`flex-1 py-1.5 text-sm font-medium transition-colors rounded-sm ${actionType === 'quotes'
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                    : 'text-muted-foreground hover:text-foreground/80'
+                    }`}
                 >
                   Send Quote
                 </button>

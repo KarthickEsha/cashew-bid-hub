@@ -8,7 +8,7 @@ import { useRole } from "@/hooks/useRole";
 import Login from "@/pages/Login";
 import { SignedIn, SignedOut, useClerk, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import NotificationPanel from "@/components/NotificationPanel"; 
+import NotificationPanel from "@/components/NotificationPanel";
 import ProfilePanel from "@/components/ProfilePanel";
 import { useProfile } from "@/hooks/useProfile";
 
@@ -25,18 +25,18 @@ const Layout = ({ children }: LayoutProps) => {
 
   // Get display name (prefer firstName, else fall back to email)
   const displayName = user?.firstName || user?.primaryEmailAddress?.emailAddress || "User";
-  
+
   // Type assertion for user metadata
   type UserMetadata = {
     roles?: string[];
   };
-  
+
   const userMetadata = (user?.publicMetadata || {}) as UserMetadata;
   const userRoles = userMetadata.roles || [];
-  
+
   // Check if user has both roles
   const hasBothRoles = profile.role === 'both';
-  const currentRole = role || 'buyer'; // Default to buyer if no role is set
+  const currentRole = role == "both" ? "buyer" : role; // Default to buyer if no role is set
 
   const handleSwitch = () => {
     const newRole = currentRole === "buyer" ? "processor" : "buyer";
@@ -71,25 +71,25 @@ const Layout = ({ children }: LayoutProps) => {
                 {/* Right side icons */}
                 <div className="flex items-center space-x-4">
                   {/* Role Switcher - Only show if user has both roles or is in a specific role */}
-                  
-                    <div className="flex items-center gap-4">
-                      <Badge variant="secondary" className="px-3 py-1 hidden sm:inline-flex">
-                        {currentRole === "buyer" ? "Buyer Mode" : "Merchant Mode"}
-                      </Badge>
-                      {(hasBothRoles) && (
-                         <Button
-                         onClick={handleSwitch}
-                         variant="outline"
-                         className="flex items-center gap-2"
-                       >
-                         <ArrowRightLeft className="h-4 w-4" />
-                         Switch to {currentRole === "buyer" ? "Merchant" : "Buyer"}
-                       </Button> 
-                      )
 
-                      }
-                     
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <Badge variant="secondary" className="px-3 py-1 hidden sm:inline-flex">
+                      {currentRole === "buyer" ? "Buyer Mode" : "Merchant Mode"}
+                    </Badge>
+                    {(hasBothRoles) && (
+                      <Button
+                        onClick={handleSwitch}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <ArrowRightLeft className="h-4 w-4" />
+                        Switch to {currentRole === "buyer" ? "Merchant" : "Buyer"}
+                      </Button>
+                    )
+
+                    }
+
+                  </div>
 
                   {/* Notifications */}
                   <NotificationPanel>

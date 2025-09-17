@@ -2,12 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useInventory } from '@/hooks/useInventory';
 import { useResponses } from '@/hooks/useResponses';
 import { useProfile } from '@/hooks/useProfile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Eye, Check, X, Calendar, Clock } from 'lucide-react';
+import { MessageSquare, Eye, Check, X, Calendar, Clock, MessageCircle } from 'lucide-react';
 import ChatModal from './ChatModal';
 import { format, isToday, parseISO, subDays } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -20,6 +20,12 @@ interface Enquiry {
   date: string;
   status: 'Pending' | 'Responded' | 'Closed';
   productId?: string;
+  productName?: string;
+  responseCount?: number;
+  lastUpdated?: string;
+  grade?: string;
+  origin?: string;
+  expectedPrice?: string | number;
 }
 
 interface Order {
@@ -65,11 +71,23 @@ const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange }: EnquiryCar
               <Badge variant="default" className="text-xs">New</Badge>
             )}
           </div>
-          <Badge variant={getStatusColor(enquiry.status)}>
-            {enquiry.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {enquiry.responseCount > 0 && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <MessageCircle className="h-4 w-4 mr-1" />
+                {enquiry.responseCount}
+              </div>
+            )}
+            <Badge variant={getStatusColor(enquiry.status)}>
+              {enquiry.status}
+            </Badge>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground">{enquiry.quantity} MT</p>
+        <p className="text-sm text-muted-foreground">
+          {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(enquiry.expectedPrice))}
+        </p>
+
         <p className="text-sm mt-2">{enquiry.message}</p>
       </CardHeader>
 
@@ -125,44 +143,100 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const { incrementBuyerResponseCount } = useInventory();
-  const { addResponse } = useResponses();
+  const { addResponse, getResponsesByRequirementId } = useResponses();
   const { profile } = useProfile();
 
   // Fetch enquiries from local storage when component mounts or productId changes
   useEffect(() => {
     if (isOpen) {
-      const storedEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
-      // Filter enquiries for the current product
-      const productEnquiries = storedEnquiries
-        .filter((e: Enquiry) => e.productId === productId)
-        .map((e: Enquiry) => ({
-          id: e.id,
-          customerName: e.customerName,
-          message: e.message,
-          quantity: e.quantity,
-          date: e.date,
-          status: e.status || 'pending',
-          productId: e.productId
-        }));
-      setEnquiries(productEnquiries);
+      try {
+        const storedEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
+        console.log('Stored enquiries:', storedEnquiries);
+
+        // Filter enquiries for the current product and add response count
+        const productEnquiries = storedEnquiries
+          .filter((e: any) => e.productId === productId)
+          .map((e: any) => {
+            const responses = getResponsesByRequirementId(e.id);
+            console.log(`Enquiry ${e.id} responses:`, responses);
+
+            return {
+              id: e.id,
+              customerName: e.customerName || 'Unknown Buyer',
+              message: e.message || 'No message provided',
+              quantity: e.quantity || '0',
+              date: e.date || new Date().toISOString(),
+              status: e.status || 'Pending',
+              productId: e.productId,
+              grade: e.grade || 'N/A',
+              expectedPrice: e.price || 'N/A',
+              responseCount: responses.length,
+              productName: e.productName || productName
+            };
+          });
+
+        console.log('Processed product enquiries:', productEnquiries);
+        setEnquiries(productEnquiries);
+      } catch (error) {
+        console.error('Error loading enquiries:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load enquiries. Please try again.',
+          variant: 'destructive',
+        });
+      }
     }
-  }, [isOpen, productId]);
+  }, [isOpen, productId, getResponsesByRequirementId, productName]);
 
   // Group enquiries by date (new and older than 7 days)
   const { newResponses, oldResponses } = useMemo(() => {
-    const now = new Date();
-    const sevenDaysAgo = subDays(now, 7);
+    try {
+      const now = new Date();
+      const sevenDaysAgo = subDays(now, 7);
 
-    const sortedEnquiries = [...enquiries].sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+      // Create a safe copy and filter out any invalid entries
+      const validEnquiries = enquiries.filter(e => e && e.date);
 
-    return {
-      newResponses: sortedEnquiries.filter(enquiry =>
-        new Date(enquiry.date) >= sevenDaysAgo
-      ),
-      oldResponses: sortedEnquiries
-    };
+      const sortedEnquiries = [...validEnquiries].sort((a, b) => {
+        // Handle potential invalid dates
+        const dateA = new Date(a.date).getTime() || 0;
+        const dateB = new Date(b.date).getTime() || 0;
+        return dateB - dateA;
+      });
+
+      // Split into new and old responses
+      const newResponses = sortedEnquiries.filter(enquiry => {
+        try {
+          const enquiryDate = new Date(enquiry.date);
+          return !isNaN(enquiryDate.getTime()) && enquiryDate >= sevenDaysAgo;
+        } catch (e) {
+          console.error('Error processing enquiry date:', enquiry.date, e);
+          return false;
+        }
+      });
+
+      // Sort old responses by response count (highest first) then by date (newest first)
+      const oldResponses = [...sortedEnquiries]
+        .filter(enquiry => !newResponses.some(nr => nr.id === enquiry.id))
+        .sort((a, b) => {
+          // First sort by response count (descending)
+          const countDiff = (b.responseCount || 0) - (a.responseCount || 0);
+          if (countDiff !== 0) return countDiff;
+
+          // If counts are equal, sort by date (newest first)
+          const dateA = new Date(a.date).getTime() || 0;
+          const dateB = new Date(b.date).getTime() || 0;
+          return dateB - dateA;
+        });
+
+      return {
+        newResponses: newResponses || [],
+        oldResponses: oldResponses || []
+      };
+    } catch (error) {
+      console.error('Error grouping enquiries:', error);
+      return { newResponses: [], oldResponses: [] };
+    }
   }, [enquiries]);
 
   const handleChatOpen = (customerName: string) => {
@@ -170,48 +244,89 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
     setChatModalOpen(true);
   };
 
-  const updateEnquiryStatus = (id: string, status: 'Pending' | 'Responded' | 'Closed') => {
-    const enquiry = enquiries.find(e => e.id === id);
-    const isNewResponse = enquiry?.status === 'Pending' && status === 'Responded';
+  const updateEnquiryStatus = async (id: string, status: 'Pending' | 'Responded' | 'Closed') => {
+    try {
+      const enquiry = enquiries.find(e => e.id === id);
+      if (!enquiry) {
+        console.error('Enquiry not found:', id);
+        return;
+      }
 
-    const updatedEnquiries = enquiries.map(enquiry =>
-      enquiry.id === id ? { ...enquiry, status } : enquiry
-    );
-    setEnquiries(updatedEnquiries);
+      const isNewResponse = enquiry.status === 'Pending' && status === 'Responded';
 
-    // Update in local storage
-    const storedEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
-    const updatedStoredEnquiries = storedEnquiries.map((e: Enquiry) =>
-      e.id === id ? { ...e, status } : e
-    );
-    localStorage.setItem('productEnquiries', JSON.stringify(updatedStoredEnquiries));
+      // Get current responses to update the count
+      const responses = getResponsesByRequirementId(id);
+      const updatedResponseCount = isNewResponse ? responses.length + 1 : responses.length;
 
-    // If this is a new response, add it to the responses and increment buyer response count
-    if (isNewResponse && productId) {
-      incrementBuyerResponseCount(productId);
-      
-      // Add a new merchant response
-      addResponse({
-        requirementId: productId,
-        merchantId: profile?.id || 'merchant-id',
-        merchantName: profile?.companyName || profile?.name || 'Your Company',
-        merchantLocation: [profile?.city, profile?.state, profile?.country].filter(Boolean).join(', ') || 'Your Location',
-        price: '0.00', // Default price, can be updated later
-        responseDate: new Date().toISOString(),
-        status: 'new',
-        grade: 'W320', // Default grade, can be updated based on product
-        quantity: enquiry?.quantity || '0 MT',
-        origin: 'Vietnam', // Default origin, can be updated
-        certifications: ['Organic', 'Fair Trade'], // Default certifications
-        deliveryTime: '30 days', // Default delivery time
-        contact: profile?.email || 'contact@yourcompany.com',
-        message: `Response to enquiry from ${enquiry?.customerName} regarding ${enquiry?.quantity} MT`,
-      });
-      
-      // Show success message
+      // Update local state
+      const updatedEnquiries = enquiries.map(e =>
+        e.id === id
+          ? {
+            ...e,
+            status,
+            responseCount: updatedResponseCount,
+            lastUpdated: new Date().toISOString()
+          }
+          : e
+      );
+
+      setEnquiries(updatedEnquiries);
+
+      // Update in local storage
+      const storedEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
+      const updatedStoredEnquiries = storedEnquiries.map((e: Enquiry) =>
+        e.id === id
+          ? {
+            ...e,
+            status,
+            responseCount: responses.length,
+            lastUpdated: new Date().toISOString()
+          }
+          : e
+      );
+
+      localStorage.setItem('productEnquiries', JSON.stringify(updatedStoredEnquiries));
+
+      // If this is a new response, add it to the responses and increment buyer response count
+      if (isNewResponse && productId) {
+        // Increment the response count
+        incrementBuyerResponseCount(productId);
+        const responseData = {
+          requirementId: productId.toString(),
+          merchantId: profile?.id || 'merchant-id',
+          merchantName: profile?.companyName || profile?.name || 'Your Company',
+          merchantLocation: [profile?.city, profile?.state, profile?.country].filter(Boolean).join(', ') || 'Your Location',
+          price: enquiry.expectedPrice ? String(enquiry.expectedPrice) : "0",
+          responseDate: new Date().toISOString(),
+          status: 'new' as const,
+          grade: enquiry.grade || '',
+          quantity: enquiry.quantity || '0',
+          origin: enquiry.origin || '',
+          certifications: ['Organic', 'Fair Trade'], // Default certifications
+          deliveryTime: '30 days', // Default delivery time
+          contact: profile?.email || 'contact@yourcompany.com',
+          message: `Response to enquiry from ${enquiry.customerName} regarding ${enquiry.quantity || 'unknown quantity'}`,
+          remarks: `Response to enquiry from ${enquiry.customerName} regarding ${enquiry.quantity || 'unknown quantity'}`,
+          requirementTitle: enquiry.productName || productName,
+          productName: enquiry.productName || productName,
+        };
+
+        // Add a new merchant response
+        addResponse(responseData);
+
+        // Show success message
+        toast({
+          title: 'Response submitted',
+          description: 'Your response has been recorded and will be visible to the buyer.',
+        });
+      }
+
+    } catch (error) {
+      console.error('Error updating enquiry status:', error);
       toast({
-        title: 'Response submitted',
-        description: 'Your response has been recorded and will be visible to the buyer.',
+        title: 'Error',
+        description: 'Failed to update enquiry status. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -233,7 +348,7 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
       date: '2024-01-15',
       status: 'Shipped',
     },
-  ];
+  ] as Order[];
 
   const getStatusColor = (status: string) => {
     switch (status) {
