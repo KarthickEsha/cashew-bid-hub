@@ -131,6 +131,7 @@ const Responses = () => {
 
   // Get all merchant responses with details
   const getMerchantResponses = (): ResponseWithDetails[] => {
+    debugger
     return responses.map(response => {
       const requirement = requirements.find(req => req.id === response.requirementId);
       return {
@@ -583,14 +584,21 @@ const Responses = () => {
                     <p className="font-medium">{selectedResponse.deliveryTime}</p>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium">Origin</h4>
+                    <h4 className="font-medium">
+                      {selectedResponse.origin
+                        ? "Origin"
+                        : selectedResponse.merchantLocation
+                          ? "Merchant Location"
+                          : ""}
+                    </h4>
+
                     <p className="font-medium">
                       {selectedResponse.origin
                         ? selectedResponse.origin.charAt(0).toUpperCase() + selectedResponse.origin.slice(1)
-                        : ''}
+                        : selectedResponse.merchantLocation || "N/A"}
                     </p>
-
                   </div>
+
                   {/* <div className="space-y-2">
  <h4 className="font-medium">Certifications</h4>
  <div className="flex flex-wrap gap-2">

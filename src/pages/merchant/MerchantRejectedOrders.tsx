@@ -8,18 +8,21 @@ import { Eye, MessageSquare, Search, Filter, Package } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
+import { useProfile } from "@/hooks/useProfile";
 
 const MerchantRejectedOrders = () => {
   const { getRequirementsAsEnquiries } = useRequirements();
   const { responses } = useResponses();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+  const { profile, setProfile } = useProfile();
   const [searchFilter, setSearchFilter] = useState('');
   const [tempSearchFilter, setTempSearchFilter] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Get rejected orders (responses with rejected status)
   const rejectedOrders = useMemo(() => {
+    debugger
     const enquiries = getRequirementsAsEnquiries();
     return responses
       .filter(response => response.status === 'rejected')
@@ -28,9 +31,9 @@ const MerchantRejectedOrders = () => {
         return {
           ...response,
           enquiry,
-          customerName: enquiry?.customerName || 'Unknown',
-          productName: enquiry?.productName || 'Unknown Product',
-          expectedPrice: enquiry?.expectedPrice || 0,
+          customerName: enquiry?.customerName || profile.name ||  'Unknown',
+          productName: enquiry?.productName || response.productName ||  'Unknown Product',
+          expectedPrice: enquiry?.expectedPrice || response.price ||  0,
           deliveryDeadline: enquiry?.deliveryDeadline || '',
         };
       });
@@ -125,7 +128,7 @@ const MerchantRejectedOrders = () => {
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.customerName}</TableCell>
                   <TableCell>{order.productName}</TableCell>
-                  <TableCell>{order.enquiry?.quantity || 'N/A'}</TableCell>
+                  <TableCell>{order.enquiry?.quantity || order.quantity ||  'N/A'}</TableCell>
                   <TableCell>₹{order.expectedPrice}/kg</TableCell>
                   <TableCell className="font-semibold text-primary">{order.price}</TableCell>
                   <TableCell>{order.quantity}</TableCell>

@@ -53,11 +53,21 @@ interface EnquiryCardProps {
 
 const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange }: EnquiryCardProps) => {
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'destructive';
-      case 'responded': return 'default';
-      case 'closed': return 'outline';
-      default: return 'outline';
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'destructive';
+      case 'responded':
+        return 'success';
+      case 'closed':
+        return 'outline';
+      case 'confirmed':
+        return 'default';
+      case 'shipped':
+        return 'secondary';
+      case 'delivered':
+        return 'default';
+      default:
+        return 'outline';
     }
   };
 
@@ -74,8 +84,8 @@ const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange }: EnquiryCar
           <div className="flex items-center gap-2">
             {enquiry.responseCount > 0 && (
               <div className="flex items-center text-sm text-muted-foreground">
-                <MessageCircle className="h-4 w-4 mr-1" />
-                {enquiry.responseCount}
+                {/* <MessageCircle className="h-4 w-4 mr-1" /> */}
+                {/* {enquiry.responseCount} */}
               </div>
             )}
             <Badge variant={getStatusColor(enquiry.status)}>
@@ -95,7 +105,7 @@ const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange }: EnquiryCar
         <div className="flex justify-between items-center">
           <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="mr-1 h-3.5 w-3.5" />
-            <span>{enquiry.date}</span>
+            <span>{format(new Date(enquiry.date), 'MMM d, yyyy h:mm a')}</span>
           </div>
           <div className="flex gap-2">
             <Button
