@@ -2,15 +2,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useInventory } from '@/hooks/useInventory';
 import { useResponses } from '@/hooks/useResponses';
 import { useProfile } from '@/hooks/useProfile';
+import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Eye, Check, X, Calendar, Clock, MessageCircle } from 'lucide-react';
 import ChatModal from './ChatModal';
 import { format, isToday, parseISO, subDays } from 'date-fns';
-import { toast } from '@/components/ui/use-toast';
 
 interface Enquiry {
   id: string;
@@ -71,80 +72,123 @@ const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange }: EnquiryCar
     }
   };
 
+  const handleMarkAsClosed = (id: string) => {
+    onStatusChange(id, 'Closed');
+  };
+
+  const handleMarkAsResponded = (id: string) => {
+    onStatusChange(id, 'Responded');
+  };
+
   return (
     <Card className="relative overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-lg">{enquiry.customerName}</CardTitle>
-            {isNew && (
-              <Badge variant="default" className="text-xs">New</Badge>
-            )}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <CardTitle className="text-lg">{enquiry.customerName}</CardTitle>
+              {isNew && (
+                <Badge variant="default" className="text-xs">New</Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {enquiry.productName || 'Product Name N/A'}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            {enquiry.responseCount > 0 && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                {/* <MessageCircle className="h-4 w-4 mr-1" /> */}
-                {/* {enquiry.responseCount} */}
-              </div>
-            )}
-            <Badge variant={getStatusColor(enquiry.status)}>
-              {enquiry.status}
-            </Badge>
+          <Badge variant={getStatusColor(enquiry.status)}>
+            {enquiry.status}
+          </Badge>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-sm font-medium">Quantity</p>
+              <p className="text-sm text-muted-foreground">{enquiry.quantity} MT</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Expected Price</p>
+              <p className="text-sm text-muted-foreground">
+                {enquiry.expectedPrice ? 
+                  new Intl.NumberFormat("en-IN", { 
+                    style: "currency", 
+                    currency: "INR" 
+                  }).format(Number(enquiry.expectedPrice)) : 'N/A'}
+              </p>
+            </div>
+          </div>
+
+          {enquiry.grade && (
+            <div>
+              <p className="text-sm font-medium">Grade</p>
+              <p className="text-sm text-muted-foreground">{enquiry.grade}</p>
+            </div>
+          )}
+
+          {enquiry.origin && (
+            <div>
+              <p className="text-sm font-medium">Origin</p>
+              <p className="text-sm text-muted-foreground">{enquiry.origin}</p>
+            </div>
+          )}
+
+          <div>
+            <p className="text-sm font-medium">Message</p>
+            <p className="text-sm text-muted-foreground">
+              {enquiry.message || 'No message provided'}
+            </p>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{enquiry.quantity} MT</p>
-        <p className="text-sm text-muted-foreground">
-          {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(enquiry.expectedPrice))}
-        </p>
-
-        <p className="text-sm mt-2">{enquiry.message}</p>
       </CardHeader>
 
       <CardContent>
         <div className="flex justify-between items-center">
           <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="mr-1 h-3.5 w-3.5" />
-            <span>{format(new Date(enquiry.date), 'MMM d, yyyy h:mm a')}</span>
+            <span>
+              {format(new Date(enquiry.date), 'MMM d, yyyy h:mm a')}
+              {enquiry.lastUpdated && ` • Updated: ${format(new Date(enquiry.lastUpdated), 'MMM d, yyyy h:mm a')}`}
+            </span>
           </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onChatClick(enquiry.customerName)}
+              className="gap-1"
             >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Chat
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Chat</span>
+              {enquiry.responseCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 flex items-center justify-center">
+                  {enquiry.responseCount}
+                </Badge>
+              )}
             </Button>
             <div className="flex border rounded-md">
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2"
-                onClick={() => onStatusChange(enquiry.id, 'Pending')}
+                onClick={() => handleMarkAsClosed(enquiry.id)}
+                title="Mark as Closed"
               >
-                <X
-                  className={`h-4 w-4 ${enquiry.status === 'Pending' ? 'text-destructive' : ''
-                    }`}
-                />
+                <X className="h-4 w-4 text-destructive" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2"
-                onClick={() => onStatusChange(enquiry.id, 'Responded')}
+                onClick={() => handleMarkAsResponded(enquiry.id)}
+                title="Mark as Responded"
               >
-                <Check
-                  className={`h-4 w-4 ${enquiry.status === 'Responded' ? 'text-green-500' : ''
-                    }`}
-                />
+                <Check className="h-4 w-4 text-green-500" />
               </Button>
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
-
   );
 };
 
@@ -152,9 +196,40 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [chatModalOpen, setChatModalOpen] = useState(false);
-  const { incrementBuyerResponseCount } = useInventory();
+  const { incrementBuyerResponseCount, reduceStock } = useInventory();
   const { addResponse, getResponsesByRequirementId } = useResponses();
   const { profile } = useProfile();
+  const { toast } = useToast();
+
+  const updateEnquiryStatus = (id: string, status: 'Pending' | 'Responded' | 'Closed') => {
+    try {
+      const storedEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
+      const updatedEnquiries = storedEnquiries.map((enquiry: any) => 
+        enquiry.id === id ? { ...enquiry, status } : enquiry
+      );
+      
+      localStorage.setItem('productEnquiries', JSON.stringify(updatedEnquiries));
+      
+      // Update the local state to reflect the change
+      setEnquiries(prevEnquiries => 
+        prevEnquiries.map(enquiry => 
+          enquiry.id === id ? { ...enquiry, status } : enquiry
+        )
+      );
+      
+      toast({
+        title: 'Status updated',
+        description: `Enquiry status changed to ${status}`,
+      });
+    } catch (error) {
+      console.error('Error updating enquiry status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update enquiry status',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Fetch enquiries from local storage when component mounts or productId changes
   useEffect(() => {
@@ -254,32 +329,34 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
     setChatModalOpen(true);
   };
 
-  const updateEnquiryStatus = async (id: string, status: 'Pending' | 'Responded' | 'Closed') => {
+  const handleStatusChange = async (id: string, status: 'Pending' | 'Responded' | 'Closed') => {
     try {
       const enquiry = enquiries.find(e => e.id === id);
-      if (!enquiry) {
-        console.error('Enquiry not found:', id);
-        return;
-      }
+      if (!enquiry) return;
       
-      const isNewResponse = enquiry.status === 'Pending' && status === 'Responded';
+      // If status is being changed to 'Responded', reduce the stock
+      if (status === 'Responded') {
+        // Extract quantity from the enquiry (e.g., '10 MT' -> 10)
+        const quantity = parseFloat(enquiry.quantity.split(' ')[0]);
+        if (!isNaN(quantity)) {
+          await reduceStock(productId, quantity);
+          toast({
+            title: 'Stock Updated',
+            description: `Reduced stock by ${quantity} MT for ${enquiry.customerName}'s enquiry.`,
+          });
+        }
+      }
 
-      // Get current responses to update the count
-      const responses = getResponsesByRequirementId(id);
-      const updatedResponseCount = isNewResponse ? responses.length + 1 : responses.length;
-
-      // Update local state
-      const updatedEnquiries = enquiries.map(e =>
-        e.id === id
-          ? {
-            ...e,
-            status,
-            responseCount: updatedResponseCount,
-            lastUpdated: new Date().toISOString()
-          }
+      // Update the enquiry status in state
+      const updatedEnquiries = enquiries.map(e => 
+        e.id === id 
+          ? { 
+              ...e, 
+              status,
+              lastUpdated: new Date().toISOString()
+            } 
           : e
       );
-
       setEnquiries(updatedEnquiries);
 
       // Update in local storage
@@ -287,20 +364,20 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
       const updatedStoredEnquiries = storedEnquiries.map((e: Enquiry) =>
         e.id === id
           ? {
-            ...e,
-            status,
-            responseCount: responses.length,
-            lastUpdated: new Date().toISOString()
-          }
+              ...e,
+              status,
+              lastUpdated: new Date().toISOString()
+            }
           : e
       );
 
       localStorage.setItem('productEnquiries', JSON.stringify(updatedStoredEnquiries));
 
       // If this is a new response, add it to the responses and increment buyer response count
-      if (isNewResponse && productId) {
+      if (status === 'Responded' && productId) {
         // Increment the response count
         incrementBuyerResponseCount(productId);
+        
         const responseData = {
           requirementId: productId.toString(),
           merchantId: profile?.id || 'merchant-id',
@@ -312,8 +389,8 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
           grade: enquiry.grade || '',
           quantity: enquiry.quantity || '0',
           origin: enquiry.origin || '',
-          certifications: ['Organic', 'Fair Trade'], // Default certifications
-          deliveryTime: '30 days', // Default delivery time
+          certifications: ['Organic', 'Fair Trade'],
+          deliveryTime: '30 days',
           contact: profile?.email || 'contact@yourcompany.com',
           message: `Response to enquiry from ${enquiry.customerName} regarding ${enquiry.quantity || 'unknown quantity'}`,
           remarks: `Response to enquiry from ${enquiry.customerName} regarding ${enquiry.quantity || 'unknown quantity'}`,
@@ -322,7 +399,7 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
         };
 
         // Add a new merchant response
-        addResponse(responseData);
+        await addResponse(responseData);
 
         // Show success message
         toast({
@@ -330,7 +407,6 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
           description: 'Your response has been recorded and will be visible to the buyer.',
         });
       }
-
     } catch (error) {
       console.error('Error updating enquiry status:', error);
       toast({
@@ -394,7 +470,7 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
                         enquiry={enquiry}
                         onChatClick={handleChatOpen}
                         isNew={true}
-                        onStatusChange={updateEnquiryStatus}
+                        onStatusChange={handleStatusChange}
                       />
                     ))}
                   </div>
