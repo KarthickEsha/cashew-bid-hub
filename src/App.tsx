@@ -26,6 +26,7 @@ import MerchantOrders from "./pages/merchant/MerchantOrders";
 import MerchantRequirements from "./pages/merchant/MerchantRequirements";
 import MerchantConfirmedOrders from "./pages/merchant/MerchantConfirmedOrders";
 import MerchantRejectedOrders from "./pages/merchant/MerchantRejectedOrders";
+import StockResponse from "./pages/merchant/StockResponse";
 import { useRole } from "./hooks/useRole";
 import MerchantDashboard from "./pages/merchant/MerchantDashboard";
 import ProfileSetup from "./pages/ProfileSetup";
@@ -89,6 +90,7 @@ const AppContent = () => {
         <Route path="/merchant/confirmed-orders" element={<MerchantConfirmedOrders />} />
         <Route path="/merchant/rejected-orders" element={<MerchantRejectedOrders />} />
         <Route path="/merchant/buyer-response" element={<MerchantOrders />} />
+        <Route path="/merchant/stock-response" element={<StockResponse />} />
         <Route path="/merchant/requirements" element={<MerchantRequirements />} />
         
         {/* Catch-all route */}

@@ -1,6 +1,7 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
+  Boxes,
   ShoppingCart,
   MessageSquare,
   Package,
@@ -35,10 +36,10 @@ const navItems = [
     url: "/",
     icon: Home,
   },
-  {
+   {
     title: "My Stocks",
     url: "/merchant/products",
-    icon: Package,
+    icon: Package,   // 👈 changed from Package to Boxes
   },
   // {
   //   title: "Add Product",
@@ -46,9 +47,14 @@ const navItems = [
   //   icon: Plus,
   // },
   {
+    title: "Stock Enquiries",
+    url: "/merchant/stock-response",
+    icon: Boxes,
+  },
+  {
     title: "Buyer Response",
     url: "/merchant/buyer-response",
-    icon: MessageSquare, // or another relevant icon
+    icon: MessageSquare,
   }
 
   // {
@@ -60,7 +66,7 @@ const navItems = [
 
 const buyerNavItems = [
   {
-    title: "Enquiries",
+    title: "Buyer Enquiries",
     url: "/merchant/enquiries",
     icon: MessageSquare,
   },

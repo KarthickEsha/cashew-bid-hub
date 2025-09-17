@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Eye, MessageSquare, Search, Filter, Package } from "lucide-react";
+import { Eye, MessageSquare, Search, Filter, Package, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
@@ -19,6 +19,8 @@ const MerchantConfirmedOrders = () => {
   const [searchFilter, setSearchFilter] = useState('');
   const [tempSearchFilter, setTempSearchFilter] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Get confirmed orders (responses with accepted status)
   const confirmedOrders = useMemo(() => {
@@ -38,12 +40,43 @@ const MerchantConfirmedOrders = () => {
       });
   }, [responses, getRequirementsAsEnquiries]);
 
+  // Sort confirmed orders
+  const sortOrders = (orders: typeof confirmedOrders) => {
+    if (!sortField) return orders;
+
+    return [...orders].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+
+      // Handle different data types
+      if (sortField === 'deliveryDeadline') {
+        aValue = aValue ? new Date(aValue).getTime() : 0;
+        bValue = bValue ? new Date(bValue).getTime() : 0;
+      } else if (sortField === 'quantity' || sortField === 'price' || sortField === 'expectedPrice') {
+        // Extract numeric value from quantity/price strings if needed
+        aValue = typeof aValue === 'string' ? parseFloat(aValue.replace(/[^0-9.]/g, '')) || 0 : aValue || 0;
+        bValue = typeof bValue === 'string' ? parseFloat(bValue.replace(/[^0-9.]/g, '')) || 0 : bValue || 0;
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue?.toLowerCase?.() || '';
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
   // Filter confirmed orders
-  const filteredOrders = confirmedOrders.filter(order => 
-    searchFilter === '' ||
-    order.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
-    order.productName.toLowerCase().includes(searchFilter.toLowerCase())
-  );
+  const filteredOrders = useMemo(() => {
+    const filtered = confirmedOrders.filter(order => 
+      searchFilter === '' ||
+      order.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      order.productName.toLowerCase().includes(searchFilter.toLowerCase())
+    );
+    
+    return sortOrders(filtered);
+  }, [confirmedOrders, searchFilter, sortField, sortDirection]);
 
   const totalPages = Math.ceil(filteredOrders.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -61,6 +94,25 @@ const MerchantConfirmedOrders = () => {
     setTempSearchFilter('');
     setFilterOpen(false);
     setCurrentPage(1);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Toggle direction if clicking the same field
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting changes
+  };
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-1 h-3 w-3 inline" />;
+    return sortDirection === 'asc' ? 
+      <ArrowUp className="ml-1 h-3 w-3 inline" /> : 
+      <ArrowDown className="ml-1 h-3 w-3 inline" />;
   };
 
   return (
@@ -112,11 +164,36 @@ const MerchantConfirmedOrders = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Buyer Name</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Required Qty (kg)</TableHead>
-                <TableHead>Expected Price</TableHead>
-                <TableHead>Your Price</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => handleSort('customerName')}
+                >
+                  Buyer Name <SortIcon field="customerName" />
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => handleSort('productName')}
+                >
+                  Product <SortIcon field="productName" />
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => handleSort('quantity')}
+                >
+                  Required Qty (kg) <SortIcon field="quantity" />
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => handleSort('expectedPrice')}
+                >
+                  Expected Price <SortIcon field="expectedPrice" />
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => handleSort('price')}
+                >
+                  Your Price <SortIcon field="price" />
+                </TableHead>
                 <TableHead>Available Qty</TableHead>
                 <TableHead>Status</TableHead>
                 {/* <TableHead>Actions</TableHead> */}
