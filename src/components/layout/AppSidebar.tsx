@@ -27,45 +27,62 @@ import { useClerk } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import { useResponses } from "@/hooks/useResponses";
 import RoleSwitcher from "@/components/RoleSwitcher";
+import { useTranslation } from "react-i18next";
 
-const mainNavItems = [
-  { path: "/", label: "Dashboard", icon: Home },
-  { path: "/marketplace", label: "Marketplace", icon: Store },
-  { path: "/post-requirement", label: "Post Requirement", icon: Plus },
-];
-
-const myActivityItems = [
-  // { path: "/my-requests", label: "My Requests", icon: MessageSquare },
-  { path: "/responses", label: "Seller Response", icon: MessageSquare },
-  // { path: "/my-bids", label: "My Bids", icon: FileText },
-  { path: "/my-orders", label: "My Enquiries", icon: Mail },
-  { path: "/my-requirements", label: "My Requirements", icon: FileText }
-];
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: number;
+  onClick?: () => void;
+}
 
 export function AppSidebar() {
+  const { t } = useTranslation();
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const { signOut } = useClerk();
   const { responses } = useResponses();
   const [newResponseCount, setNewResponseCount] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Count new/unread responses
-    const count = responses.filter(response => response.status === 'new').length;
+    const count = responses.filter((response: { status: string }) => response.status === 'new').length;
     setNewResponseCount(count);
   }, [responses]);
 
+  const mainNavItems: NavItem[] = [
+    { path: "/", label: t('sidebar.mainNav.dashboard'), icon: Home },
+    { path: "/marketplace", label: t('sidebar.mainNav.marketplace'), icon: Store },
+    { path: "/post-requirement", label: t('sidebar.mainNav.postRequirement'), icon: Plus },
+  ];
+
+  const myActivityItems: NavItem[] = [
+    // { path: "/my-requests", label: t('sidebar.myActivity.myRequests'), icon: MessageSquare, badge: 0 },
+    // { path: "/messages", label: t('sidebar.myActivity.messages'), icon: Mail, badge: 0 },
+    // { path: "/notifications", label: t('sidebar.myActivity.notifications'), icon: Bell, badge: 0 },
+    // { path: "/profile", label: t('sidebar.myActivity.profile'), icon: User },
+    { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: newResponseCount },
+    { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail },
+    { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText }
+  ];
+
+  const accountItems: NavItem[] = [
+    { 
+      path: "#", 
+      label: t('sidebar.account.signOut'), 
+      icon: LogOut, 
+      onClick: () => signOut().then(() => navigate('/login')) 
+    },
+  ];
+
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-primary/10 text-primary font-medium" : "hover:bg-accent/50";
+    `flex items-center gap-2 px-2 py-2 rounded-md ${isActive ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-accent/50'}`;
 
   const collapsed = state === "collapsed";
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    navigate('/login');
-  };
 
 
   return (
@@ -89,7 +106,7 @@ export function AppSidebar() {
 
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.mainNav.title')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => (
@@ -108,18 +125,25 @@ export function AppSidebar() {
 
         {/* My Activity */}
         <SidebarGroup>
-          <SidebarGroupLabel>My Activity</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.myActivity.title')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {myActivityItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.path} className={getNavCls}>
+                    <NavLink 
+                      to={item.path} 
+                      className={getNavCls}
+                      onClick={item.onClick ? (e) => {
+                        e.preventDefault();
+                        item.onClick?.();
+                      } : undefined}
+                    >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span className="text-[15px]">{item.label}</span>}
-                      {item.path === "/responses" && newResponseCount > 0 && !collapsed && (
+                      {!collapsed && <span className="text-[15px] flex-1">{item.label}</span>}
+                      {item.badge !== undefined && item.badge > 0 && !collapsed && (
                         <Badge variant="destructive" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
-                          {newResponseCount}
+                          {item.badge}
                         </Badge>
                       )}
                     </NavLink>
@@ -133,15 +157,18 @@ export function AppSidebar() {
         {/* Bottom Actions */}
         <div className="mt-auto p-4 space-y-2">
           <RoleSwitcher />
-          <Button
-            variant="ghost"
-            size="sm"
-            className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
-            onClick={() => signOut()}
-          >
-            <LogOut size={16} />
-            {!collapsed && <span className="ml-2">Logout</span>}
-          </Button>
+          {accountItems.map((item) => (
+            <Button
+              key={item.path}
+              variant="ghost"
+              size="sm"
+              className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
+              onClick={item.onClick}
+            >
+              <item.icon className="h-4 w-4" />
+              {!collapsed && <span className="ml-2">{item.label}</span>}
+            </Button>
+          ))}
         </div>
 
         {/* <div className="mt-auto p-4 space-y-2">

@@ -1,0 +1,39 @@
+{
+  "common": {
+    "user": "User"
+  },
+  "header": {
+    "greeting": "Hi, {{name}}",
+    "buyerMode": "Buyer Mode",
+    "merchantMode": "Merchant Mode",
+    "switchTo": "Switch to {{role}}",
+    "language": "Language"
+  },
+  "sidebar": {
+    "mainNav": {
+      "title": "Main",
+      "dashboard": "Dashboard",
+      "marketplace": "Marketplace",
+      "postRequirement": "Post Requirement"
+    },
+    "myActivity": {
+      "title": "My Activity",
+      "myRequests": "My Requests",
+      "messages": "Messages",
+      "notifications": "Notifications",
+      "profile": "Profile",
+      "sellerResponse": "Seller Response",
+      "myEnquiries": "My Enquiries",
+      "myRequirements": "My Requirements"
+    },
+    "account": {
+      "title": "Account",
+      "signOut": "Sign Out"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "ta": "தமிழ்",
+    "hi": "हिंदी"
+  }
+}

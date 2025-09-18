@@ -1,0 +1,39 @@
+{
+  "common": {
+    "user": "उपयोगकर्ता"
+  },
+  "header": {
+    "greeting": "नमस्ते, {{name}}",
+    "buyerMode": "खरीदार मोड",
+    "merchantMode": "व्यापारी मोड",
+    "switchTo": "{{role}} पर स्विच करें",
+    "language": "भाषा"
+  },
+  "sidebar": {
+    "mainNav": {
+      "title": "मुख्य",
+      "dashboard": "डैशबोर्ड",
+      "marketplace": "मार्केटप्लेस",
+      "postRequirement": "आवश्यकता पोस्ट करें"
+    },
+    "myActivity": {
+      "title": "मेरी गतिविधि",
+      "myRequests": "मेरे अनुरोध",
+      "messages": "संदेश",
+      "notifications": "सूचनाएं",
+      "profile": "प्रोफ़ाइल",
+      "sellerResponse": "विक्रेता प्रतिक्रिया",
+      "myEnquiries": "मेरी पूछताछ",
+      "myRequirements": "मेरी आवश्यकताएं"
+    },
+    "account": {
+      "title": "खाता",
+      "signOut": "साइन आउट"
+    }
+  },
+  "languages": {
+    "en": "अंग्रेज़ी",
+    "ta": "तमिल",
+    "hi": "हिंदी"
+  }
+}

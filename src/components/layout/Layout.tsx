@@ -3,7 +3,7 @@ import { AppSidebar } from "./AppSidebar";
 import { MerchantSidebar } from "./MerchantSidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, User, ArrowRightLeft } from "lucide-react";
+import { Bell, User, ArrowRightLeft, Globe } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import Login from "@/pages/Login";
 import { SignedIn, SignedOut, useClerk, useUser } from "@clerk/clerk-react";
@@ -11,12 +11,15 @@ import { useNavigate } from "react-router-dom";
 import NotificationPanel from "@/components/NotificationPanel";
 import ProfilePanel from "@/components/ProfilePanel";
 import { useProfile } from "@/hooks/useProfile";
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const { t } = useTranslation();
   const { signOut } = useClerk();
   const { role, setRole } = useRole();
   const navigate = useNavigate();
@@ -24,7 +27,7 @@ const Layout = ({ children }: LayoutProps) => {
   const { profile, updateProfile } = useProfile();
 
   // Get display name (prefer firstName, else fall back to email)
-  const displayName = user?.firstName || user?.primaryEmailAddress?.emailAddress || "User";
+  const displayName = user?.firstName || user?.primaryEmailAddress?.emailAddress || t('common.user', 'User');
 
   // Type assertion for user metadata
   type UserMetadata = {
@@ -64,7 +67,7 @@ const Layout = ({ children }: LayoutProps) => {
                 <div className="flex items-center">
                   <SidebarTrigger />
                   <h1 className="ml-4 font-semibold">
-                    {`Hi, ${displayName}`}
+                    {t('header.greeting', { name: displayName })}
                   </h1>
                 </div>
 
@@ -74,7 +77,7 @@ const Layout = ({ children }: LayoutProps) => {
 
                   <div className="flex items-center gap-4">
                     <Badge variant="secondary" className="px-3 py-1 hidden sm:inline-flex">
-                      {currentRole === "buyer" ? "Buyer Mode" : "Merchant Mode"}
+                      {currentRole === "buyer" ? t('header.buyerMode') : t('header.merchantMode')}
                     </Badge>
                     {(hasBothRoles) && (
                       <Button
@@ -83,7 +86,7 @@ const Layout = ({ children }: LayoutProps) => {
                         className="flex items-center gap-2"
                       >
                         <ArrowRightLeft className="h-4 w-4" />
-                        Switch to {currentRole === "buyer" ? "Merchant" : "Buyer"}
+                        {t('header.switchTo', { role: currentRole === "buyer" ? t('header.merchantMode') : t('header.buyerMode') })}
                       </Button>
                     )
 
@@ -91,6 +94,9 @@ const Layout = ({ children }: LayoutProps) => {
 
                   </div>
 
+                  {/* Language Switcher */}
+                  <LanguageSwitcher />
+                  
                   {/* Notifications */}
                   <NotificationPanel>
                     <Button variant="ghost" size="sm" className="relative p-2">

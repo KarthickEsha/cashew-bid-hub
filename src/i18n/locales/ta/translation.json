@@ -1,0 +1,39 @@
+{
+  "common": {
+    "user": "பயனர்"
+  },
+  "header": {
+    "greeting": "வணக்கம், {{name}}",
+    "buyerMode": "வாங்குபவர் முறை",
+    "merchantMode": "வணிகர் முறை",
+    "switchTo": "{{role}} க்கு மாறவும்",
+    "language": "மொழி"
+  },
+  "sidebar": {
+    "mainNav": {
+      "title": "முதன்மை",
+      "dashboard": "டாஷ்போர்டு",
+      "marketplace": "சந்தை",
+      "postRequirement": "தேவையை வெளியிடு"
+    },
+    "myActivity": {
+      "title": "என் செயல்பாடு",
+      "myRequests": "என் கோரிக்கைகள்",
+      "messages": "செய்திகள்",
+      "notifications": "அறிவிப்புகள்",
+      "profile": "சுயவிவரம்",
+      "sellerResponse": "விற்பனையாளர் பதில்",
+      "myEnquiries": "என் விசாரணைகள்",
+      "myRequirements": "என் தேவைகள்"
+    },
+    "account": {
+      "title": "கணக்கு",
+      "signOut": "வெளியேறு"
+    }
+  },
+  "languages": {
+    "en": "ஆங்கிலம்",
+    "ta": "தமிழ்",
+    "hi": "இந்தி"
+  }
+}
