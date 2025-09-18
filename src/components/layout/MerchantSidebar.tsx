@@ -91,7 +91,7 @@ export function MerchantSidebar() {
 
   // Get dynamic counts
   const { getRequirementsAsEnquiries } = useRequirements();
-  const { responses } = useResponses();
+  const { responses, getStockEnquiriesCount } = useResponses();
   const { orders } = useOrders();
 
   // Filter out skipped responses and get counts
@@ -113,6 +113,7 @@ export function MerchantSidebar() {
   const confirmedCount = selectedResponses.length;
   const rejectedCount = selectedRejectedResponses.length; // Don't show rejected count in sidebar
   const ordersCount = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length;
+  const stockEnquiriesCount = getStockEnquiriesCount();
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -154,6 +155,11 @@ export function MerchantSidebar() {
                     <NavLink to={item.url} end className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span className="text-[15px]">{item.title}</span>}
+                      {item.url === "/merchant/stock-response" && !collapsed && stockEnquiriesCount > 0 && (
+                        <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
+                          {stockEnquiriesCount}
+                        </Badge>
+                      )}
                       {item.url === "/merchant/buyer-response" && !collapsed && ordersCount > 0 && (
                         <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
                           {ordersCount}

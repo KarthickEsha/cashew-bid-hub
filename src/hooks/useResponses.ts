@@ -31,6 +31,7 @@ interface ResponsesState {
   updateResponseStatus: (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected' | 'skipped', remarks?: string) => void;
   getResponseCount: (requirementId: string) => number;
   getSubmittedQuotesCount: (merchantId: string) => number;
+  getStockEnquiriesCount: () => number;
   deleteResponse: (responseId: string) => void;
 }
 
@@ -54,8 +55,8 @@ export const useResponses = create<ResponsesState>()(
 
       getResponsesByRequirementId: (requirementId) => {
         const { responses } = get();
-        return responses.filter(response => 
-          response.requirementId === requirementId && 
+        return responses.filter(response =>
+          response.requirementId === requirementId &&
           response.status !== 'skipped'
         );
       },
@@ -65,26 +66,26 @@ export const useResponses = create<ResponsesState>()(
         console.log('Response ID:', responseId);
         console.log('New status:', status);
         console.log('Remarks:', remarks);
-        
+
         set((state) => {
           console.log('Current responses in state:', state.responses);
-          
+
           const updatedResponses = state.responses.map(response => {
             if (response.id === responseId) {
-              console.log('Found response to update:', { 
-                id: response.id, 
-                oldStatus: response.status, 
-                newStatus: status 
+              console.log('Found response to update:', {
+                id: response.id,
+                oldStatus: response.status,
+                newStatus: status
               });
-              
+
               const updatedResponse = {
                 ...response,
                 status,
                 ...(remarks !== undefined ? { remarks } : {})
               };
-              
+
               console.log('Updated response:', updatedResponse);
-              
+
               // Handle order creation/update for accepted/rejected statuses
               if (status === 'accepted' || status === 'rejected') {
                 const now = new Date().toISOString();
@@ -139,12 +140,12 @@ export const useResponses = create<ResponsesState>()(
                   });
                 }
               }
-              
+
               return updatedResponse;
             }
             return response;
           });
-          
+
           console.log('All responses after update:', updatedResponses);
           return { responses: updatedResponses };
         });
@@ -163,13 +164,14 @@ export const useResponses = create<ResponsesState>()(
         return responses.length;
       },
       getSubmittedQuotesCount: (merchantId) => {
-        const responses = get().responses.filter(r => 
-          r.merchantId === merchantId && 
-          (r.status === 'new' || r.status === 'viewed')
-        );
-        return responses.length;
+        return get().responses.filter(
+          (r) => r.merchantId === merchantId && (r.status === 'new' || r.status === 'viewed')
+        ).length;
       },
-
+      getStockEnquiriesCount: () => {
+        // Count responses that are not skipped
+        return get().responses.filter(r => r.status !== 'skipped').length;
+      },
       deleteResponse: (responseId) => {
         set((state) => ({
           responses: state.responses.filter(response => response.id !== responseId)

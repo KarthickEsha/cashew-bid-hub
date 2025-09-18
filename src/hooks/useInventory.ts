@@ -8,6 +8,7 @@ interface InventoryState {
   updateProduct: (id: string, updates: Partial<Omit<Product, 'id' | 'createdAt'>>) => void;
   deleteProduct: (id: string) => void;
   reduceStock: (id: string, quantity: number) => void;
+  reduceAvailableStock: (id: string, quantity: number) => void;
   incrementEnquiryCount: (productId: string) => void;
   incrementBuyerResponseCount: (productId: string) => void;
   getProductsByType: (type: ProductType) => Product[];
@@ -77,7 +78,24 @@ export const useInventory = create<InventoryState>()(
         set((state) => ({
           products: state.products.map((product) =>
             product.id === id && product.stock >= quantity
-              ? { ...product, stock: product.stock - quantity, status: product.stock - quantity <= 0 ? 'out_of_stock' : product.status }
+              ? { 
+                  ...product, 
+                  stock: product.stock - quantity, 
+                  availableQty: product.availableQty - quantity,
+                  status: product.stock - quantity <= 0 ? 'out_of_stock' : product.status 
+                }
+              : product
+          ),
+        })),
+        
+  reduceAvailableStock: (id, quantity) =>
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === id
+              ? { 
+                  ...product, 
+                  availableQty: Math.max(0, (product.availableQty || product.stock) - quantity)
+                }
               : product
           ),
         })),

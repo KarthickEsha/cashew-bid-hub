@@ -1,14 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Check, X, MessageCircle, Calendar, Clock, Package } from "lucide-react";
+import { Search, Filter, Check, X, Package, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
 import { useResponses, type MerchantResponse } from "@/hooks/useResponses";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "@/components/ui/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format, isToday, parseISO, subDays } from 'date-fns';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface EnquiryWithResponses extends Enquiry {
     responses: MerchantResponse[];
@@ -110,12 +112,88 @@ const StockResponse = (): JSX.Element => {
         }
     };
 
-    // Sort enquiries by date (newest first)
+    // State for sorting and pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(5);
+    const [filters, setFilters] = useState({ product: "", customer: "", status: "all" });
+    const [showFilterCard, setShowFilterCard] = useState(false);
+    const [sortField, setSortField] = useState<string>('');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+    // Handle sorting
+    const handleSort = (field: string) => {
+        if (sortField === field) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+        setCurrentPage(1);
+    };
+
+    // Get sort icon
+    const getSortIcon = (field: string) => {
+        if (sortField !== field) {
+            return <ArrowUpDown className="h-4 w-4 text-muted-foreground opacity-50" />;
+        }
+        return sortDirection === 'asc'
+            ? <ArrowUp className="h-4 w-4 text-primary" />
+            : <ArrowDown className="h-4 w-4 text-primary" />;
+    };
+
+    // Filter and sort enquiries
     const filteredEnquiries = useMemo(() => {
-        return [...enquiries].sort((a, b) =>
-            new Date(b.responseDate || b.createdAt).getTime() - new Date(a.responseDate || a.createdAt).getTime()
-        );
-    }, [enquiries]);
+        let result = [...enquiries];
+
+        // Apply filters
+        if (filters.product || filters.customer || filters.status !== 'all') {
+            result = result.filter(enquiry =>
+                (filters.product ? enquiry.productName?.toLowerCase().includes(filters.product.toLowerCase()) : true) &&
+                (filters.customer ? enquiry.customerName?.toLowerCase().includes(filters.customer.toLowerCase()) : true) &&
+                (filters.status !== 'all' ? enquiry.status?.toLowerCase() === filters.status.toLowerCase() : true)
+            );
+        }
+
+        // Apply sorting
+        if (sortField) {
+            result = [...result].sort((a, b) => {
+                const aValue = a[sortField as keyof typeof a];
+                const bValue = b[sortField as keyof typeof b];
+
+                // Handle different field types for sorting
+                if (sortField === 'createdAt' || sortField === 'responseDate') {
+                    const aDate = new Date(aValue as string || 0).getTime();
+                    const bDate = new Date(bValue as string || 0).getTime();
+                    return sortDirection === 'asc' ? aDate - bDate : bDate - aDate;
+                } else if (sortField === 'quantity' || sortField === 'price') {
+                    const aNum = parseFloat(String(aValue || '0'));
+                    const bNum = parseFloat(String(bValue || '0'));
+                    return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                } else {
+                    // Default string comparison
+                    const aStr = String(aValue || '').toLowerCase();
+                    const bStr = String(bValue || '').toLowerCase();
+                    return sortDirection === 'asc'
+                        ? aStr.localeCompare(bStr)
+                        : bStr.localeCompare(aStr);
+                }
+            });
+        }
+
+        return result;
+    }, [enquiries, filters, sortField, sortDirection]);
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredEnquiries.length / pageSize);
+    const paginatedEnquiries = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredEnquiries.slice(start, start + pageSize);
+    }, [filteredEnquiries, currentPage, pageSize]);
+
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filters, pageSize]);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -264,6 +342,12 @@ const StockResponse = (): JSX.Element => {
         setRemarks("");
         setIsDialogOpen(true);
     };
+
+    const handleViewDetails = (enquiry: Enquiry) => {
+        setSelectedEnquiry(enquiry);
+        // You can implement a details view or modal here
+        console.log('View details:', enquiry);
+    };
     // Helper function to render dialog content based on action type
     const renderDialogContent = () => {
         if (actionType !== 'accept' && actionType !== 'reject') return null;
@@ -300,7 +384,7 @@ const StockResponse = (): JSX.Element => {
     };
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="p-6 space-y-6">
             <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -321,118 +405,284 @@ const StockResponse = (): JSX.Element => {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            {/* Header */}
+            <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">My Stock Enquiries</h2>
-                    <p className="text-sm text-muted-foreground">
-                        View and manage your stock responses to buyer enquiries
+                    <h1 className="text-3xl font-bold text-primary">Stock Enquiries</h1>
+                    <p className="text-muted-foreground mt-2">
+                        Manage buyer enquiries and your responses
                     </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            type="search"
-                            placeholder="Search by product, customer, or grade..."
-                            className="w-full pl-8"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilterCard(prev => !prev)}
+                    className="flex items-center space-x-1"
+                >
+                    <Filter className="h-4 w-4" /> <span>Filter Enquiries</span>
+                </Button>
             </div>
 
-            <div className="rounded-md border">
-                {filteredEnquiries.length > 0 ? (
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 capitalize tracking-wider">
-                                    Product
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 capitalize tracking-wider">
-                                    Buyer Name
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 capitalize tracking-wider">
-                                    Quantity
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 capitalize tracking-wider">
-                                    Price
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 capitalize tracking-wider">
-                                    Status
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 capitalize tracking-wider">
-                                    Date
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 capitalize tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
+            {/* Filter Card */}
+            {showFilterCard && (
+                <Card className="mb-4">
+                    <CardHeader>
+                        <CardTitle>Filter Enquiries</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label className="text-sm font-medium mb-2 block">Product</label>
+                                <Input
+                                    type="text"
+                                    placeholder="Search by product"
+                                    value={filters.product}
+                                    onChange={e => setFilters(prev => ({ ...prev, product: e.target.value }))}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium mb-2 block">Buyer</label>
+                                <Input
+                                    type="text"
+                                    placeholder="Search by buyer name"
+                                    value={filters.customer}
+                                    onChange={e => setFilters(prev => ({ ...prev, customer: e.target.value }))}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium mb-2 block">Status</label>
+                                <Select
+                                    value={filters.status}
+                                    onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Statuses</SelectItem>
+                                        <SelectItem value="pending">Pending</SelectItem>
+                                        <SelectItem value="responded">Responded</SelectItem>
+                                        <SelectItem value="closed">Closed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredEnquiries.map((enquiry) => (
-                                <tr key={enquiry.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">{enquiry.productName || 'N/A'}</div>
-                                        {/* <div className="text-sm text-gray-500">{enquiry.grade || 'N/A'}</div> */}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900">{enquiry.customerName || 'N/A'}</div>
-                                        <div className="text-sm text-gray-500">{enquiry.contact || ''}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {enquiry.quantity || '0'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        ₹{enquiry.price || '0'}/kg
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <Badge variant={getStatusColor(enquiry.status)}>
-                                            {enquiry.status}
-                                        </Badge>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {formatDate(enquiry.responseDate || enquiry.createdAt)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        {enquiry.status === 'Pending' ? (
-                                            <div className="flex space-x-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleActionClick(enquiry, 'reject')}
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleActionClick(enquiry, 'accept')}
-                                                >
-                                                    <Check className="h-4 w-4" />
-                                                </Button>
+            {/* Enquiries Table */}
+            <Card>
+                <CardContent className="p-0">
+                    <div className="w-full overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead
+                                        className="cursor-pointer hover:bg-muted/50 select-none"
+                                        onClick={() => handleSort('productName')}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            Product
+                                            {getSortIcon('productName')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="cursor-pointer hover:bg-muted/50 select-none"
+                                        onClick={() => handleSort('customerName')}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            Buyer Name
+                                            {getSortIcon('customerName')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="cursor-pointer hover:bg-muted/50 select-none"
+                                        onClick={() => handleSort('quantity')}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            Quantity
+                                            {getSortIcon('quantity')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="cursor-pointer hover:bg-muted/50 select-none"
+                                        onClick={() => handleSort('price')}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            Price
+                                            {getSortIcon('price')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="cursor-pointer hover:bg-muted/50 select-none"
+                                        onClick={() => handleSort('status')}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            Status
+                                            {getSortIcon('status')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead
+                                        className="cursor-pointer hover:bg-muted/50 select-none"
+                                        onClick={() => handleSort('createdAt')}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            Date
+                                            {getSortIcon('createdAt')}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead>Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paginatedEnquiries.length > 0 ? (
+                                    paginatedEnquiries.map((enquiry) => (
+                                        <TableRow key={enquiry.id} className="hover:bg-muted/50">
+                                            <TableCell>
+                                                <div className="font-medium">{enquiry.productName || 'N/A'}</div>
+                                                {/* {enquiry.grade && (
+                                                    <div className="text-sm text-muted-foreground">{enquiry.grade}</div>
+                                                )} */}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>{enquiry.customerName || 'N/A'}</div>
+                                                {enquiry.contact && (
+                                                    <div className="text-sm text-muted-foreground">{enquiry.contact}</div>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>{enquiry.quantity || '0'} kg</TableCell>
+                                            <TableCell>₹{enquiry.price || '0'}/kg</TableCell>
+                                            <TableCell>
+                                                <Badge variant={getStatusColor(enquiry.status)}>
+                                                    {enquiry.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>{formatDate(enquiry.responseDate || enquiry.createdAt)}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center space-x-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleViewDetails(enquiry)}
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                    {enquiry.status === 'Pending' && (
+                                                        <>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="text-red-500 hover:text-red-600"
+                                                                onClick={() => handleActionClick(enquiry, 'reject')}
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="text-green-500 hover:text-green-600"
+                                                                onClick={() => handleActionClick(enquiry, 'accept')}
+                                                            >
+                                                                <Check className="h-4 w-4" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="h-24 text-center">
+                                            <div className="flex flex-col items-center justify-center py-6">
+                                                <Package className="h-10 w-10 text-muted-foreground mb-2" />
+                                                <p className="text-sm font-medium">No enquiries found</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {Object.values(filters).some(f => f && f !== 'all')
+                                                        ? 'Try adjusting your filters'
+                                                        : 'You don\'t have any enquiries yet'}
+                                                </p>
                                             </div>
-                                        ) : (
-                                            <span className="text-muted-foreground">
-                                                {enquiry.status}
-                                            </span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                ) : (
-                    <div className="text-center py-12">
-                        <Package className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-2 text-sm font-medium text-gray-900">No responses</h3>
-                        <p className="mt-1 text-sm text-gray-500">
-                            You don't have any stock responses yet.
-                        </p>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
                     </div>
-                )}
-            </div>
+
+                    {/* Pagination */}
+                    {filteredEnquiries.length > 0 && (
+                        <div className="flex items-center justify-between px-6 py-4 border-t">
+                            <div className="text-sm text-muted-foreground">
+                                Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to{' '}
+                                <span className="font-medium">
+                                    {Math.min(currentPage * pageSize, filteredEnquiries.length)}
+                                </span>{' '}
+                                of <span className="font-medium">{filteredEnquiries.length}</span> enquiries
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Select
+                                    value={String(pageSize)}
+                                    onValueChange={(value) => setPageSize(Number(value))}
+                                >
+                                    <SelectTrigger className="w-[80px]">
+                                        <SelectValue placeholder={pageSize} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="5">5</SelectItem>
+                                        <SelectItem value="10">10</SelectItem>
+                                        <SelectItem value="20">20</SelectItem>
+                                        <SelectItem value="50">50</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </Button>
+                                {/* <div className="flex items-center space-x-1">
+                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                        // Show first 2 pages, current page, and last 2 pages
+                                        let pageNum;
+                                        if (currentPage <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage >= totalPages - 2) {
+                                            pageNum = totalPages - 4 + i;
+                                        } else {
+                                            pageNum = currentPage - 2 + i;
+                                        }
+
+                                        if (pageNum < 1 || pageNum > totalPages) return null;
+
+                                        return (
+                                            <Button
+                                                key={pageNum}
+                                                variant={pageNum === currentPage ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() => setCurrentPage(pageNum)}
+                                            >
+                                                {pageNum}
+                                            </Button>
+                                        );
+                                    })}
+                                </div> */}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 };

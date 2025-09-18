@@ -50,9 +50,10 @@ interface EnquiryCardProps {
   onChatClick: (name: string) => void;
   isNew: boolean;
   onStatusChange: (id: string, status: 'Pending' | 'Responded' | 'Closed') => void;
+  responseCounts?: { [key: string]: number };
 }
 
-const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange }: EnquiryCardProps) => {
+const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange, responseCounts = {} }: EnquiryCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -83,6 +84,12 @@ const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange }: EnquiryCar
   return (
     <Card className="relative overflow-hidden">
       <CardHeader className="pb-2">
+        <div className="absolute top-3 right-3 flex items-center gap-1">
+          {/* <MessageCircle className="h-4 w-4 text-muted-foreground" /> */}
+          {/* <span className="text-sm font-medium">
+            {responseCounts[enquiry.id] || 0} {responseCounts[enquiry.id] === 1 ? 'Response' : 'Responses'}
+          </span> */}
+        </div>
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -159,9 +166,9 @@ const EnquiryCard = ({ enquiry, onChatClick, isNew, onStatusChange }: EnquiryCar
             >
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Chat</span>
-              {enquiry.responseCount > 0 && (
+              {(responseCounts[enquiry.id] > 0 || enquiry.responseCount > 0) && (
                 <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 flex items-center justify-center">
-                  {enquiry.responseCount}
+                  {responseCounts[enquiry.id] || enquiry.responseCount}
                 </Badge>
               )}
             </Button>
@@ -196,7 +203,7 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [chatModalOpen, setChatModalOpen] = useState(false);
-  const { incrementBuyerResponseCount, reduceStock } = useInventory();
+  const { incrementBuyerResponseCount, reduceAvailableStock } = useInventory();
   const { addResponse, getResponsesByRequirementId } = useResponses();
   const { profile } = useProfile();
   const { toast } = useToast();
@@ -273,6 +280,15 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
     }
   }, [isOpen, productId, getResponsesByRequirementId, productName]);
 
+  // Get response counts for all enquiries
+  const responseCounts = useMemo(() => {
+    const counts: { [key: string]: number } = {};
+    enquiries.forEach(enquiry => {
+      counts[enquiry.id] = getResponsesByRequirementId(enquiry.id).length;
+    });
+    return counts;
+  }, [enquiries, getResponsesByRequirementId]);
+
   // Group enquiries by date (new and older than 7 days)
   const { newResponses, oldResponses } = useMemo(() => {
     try {
@@ -324,8 +340,11 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
     }
   }, [enquiries]);
 
-  const handleChatOpen = (customerName: string) => {
-    setSelectedCustomer(customerName);
+  const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
+
+  const handleChatOpen = (enquiry: Enquiry) => {
+    setSelectedCustomer(enquiry.customerName);
+    setSelectedEnquiry(enquiry);
     setChatModalOpen(true);
   };
 
@@ -334,15 +353,15 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
       const enquiry = enquiries.find(e => e.id === id);
       if (!enquiry) return;
       
-      // If status is being changed to 'Responded', reduce the stock
+      // If status is being changed to 'Responded', reduce the available stock
       if (status === 'Responded') {
         // Extract quantity from the enquiry (e.g., '10 MT' -> 10)
         const quantity = parseFloat(enquiry.quantity.split(' ')[0]);
         if (!isNaN(quantity)) {
-          await reduceStock(productId, quantity);
+          await reduceAvailableStock(productId, quantity);
           toast({
             title: 'Stock Updated',
-            description: `Reduced stock by ${quantity} MT for ${enquiry.customerName}'s enquiry.`,
+            description: `Reduced available stock by ${quantity} MT for ${enquiry.customerName}'s enquiry.`,
           });
         }
       }
@@ -451,54 +470,52 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
       <Sheet open={isOpen} onOpenChange={onClose}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Buyer Response</SheetTitle>
+            <SheetTitle>Buyer Responses</SheetTitle>
           </SheetHeader>
 
-          <Tabs defaultValue="enquiries" className="mt-6">
+          <Tabs defaultValue="new" className="mt-6">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="enquiries">New Response ({newResponses.length})</TabsTrigger>
-              <TabsTrigger value="orders">All Response ({oldResponses.length})</TabsTrigger>
+              <TabsTrigger value="new">New Responses ({newResponses.length})</TabsTrigger>
+              <TabsTrigger value="all">All Responses ({enquiries.length})</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="enquiries" className="space-y-4 mt-4">
+            <TabsContent value="new" className="mt-4">
               <div className="space-y-4">
                 {newResponses.length > 0 ? (
-                  <div className="space-y-4">
-                    {newResponses.map((enquiry) => (
-                      <EnquiryCard
-                        key={enquiry.id}
-                        enquiry={enquiry}
-                        onChatClick={handleChatOpen}
-                        isNew={true}
-                        onStatusChange={handleStatusChange}
-                      />
-                    ))}
-                  </div>
+                  newResponses.map((enquiry) => (
+                    <EnquiryCard
+                      key={enquiry.id}
+                      enquiry={enquiry}
+                      onChatClick={() => handleChatOpen(enquiry)}
+                      isNew={true}
+                      onStatusChange={handleStatusChange}
+                      responseCounts={responseCounts}
+                    />
+                  ))
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p>No new enquiries</p>
+                    <p>No new responses</p>
                   </div>
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="orders" className="mt-4">
+            <TabsContent value="all" className="mt-4">
               <div className="space-y-4">
-                {oldResponses.length > 0 ? (
-                  <div className="space-y-4">
-                    {oldResponses.map((enquiry) => (
-                      <EnquiryCard
-                        key={enquiry.id}
-                        enquiry={enquiry}
-                        onChatClick={handleChatOpen}
-                        isNew={false}
-                        onStatusChange={updateEnquiryStatus}
-                      />
-                    ))}
-                  </div>
+                {enquiries.length > 0 ? (
+                  enquiries.map((enquiry) => (
+                    <EnquiryCard
+                      key={enquiry.id}
+                      enquiry={enquiry}
+                      onChatClick={() => handleChatOpen(enquiry)}
+                      isNew={new Date(enquiry.date) >= subDays(new Date(), 7)}
+                      onStatusChange={handleStatusChange}
+                      responseCounts={responseCounts}
+                    />
+                  ))
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p>No older enquiries</p>
+                    <p>No responses found</p>
                   </div>
                 )}
               </div>
@@ -506,13 +523,14 @@ const EnquiryOrderDrawer = ({ isOpen, onClose, productName, productId }: Enquiry
           </Tabs>
         </SheetContent>
       </Sheet>
-
-      <ChatModal
+      
+      <ChatModal 
         isOpen={chatModalOpen}
         onClose={() => setChatModalOpen(false)}
         customerName={selectedCustomer}
         productName={productName}
         userType="merchant"
+        enquiry={selectedEnquiry}
       />
     </>
   );
