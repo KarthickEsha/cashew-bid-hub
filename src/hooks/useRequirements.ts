@@ -20,7 +20,7 @@ export interface Requirement {
   allowLowerBid: boolean;
   message: string;
   date: string;
-  status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed' | 'selected';
+  status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed' | 'selected' | 'viewed';
   fixedPrice: number;
   isDraft: boolean;
   createdAt: string;
@@ -39,7 +39,7 @@ interface RequirementsState {
   requirements: Requirement[];
   addRequirement: (requirement: Omit<Requirement, 'id' | 'createdAt' | 'productName' | 'message' | 'fixedPrice'>) => void;
   updateRequirement: (id: string, requirement: Omit<Requirement, 'id' | 'createdAt' | 'customerName' | 'productName' | 'message' | 'fixedPrice'>) => void;
-  updateRequirementStatus: (id: string, status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed' | 'selected') => void;
+  updateRequirementStatus: (id: string, status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed' | 'selected' | 'viewed') => void;
   getRequirementById: (id: string) => Requirement | undefined;
   getRequirementsAsEnquiries: () => any[];
   getMyRequirements: () => any[];
@@ -196,25 +196,69 @@ export const useRequirements = create<RequirementsState>()(
       },
 
       updateRequirementStatus: (id, status) => {
-        console.log('Updating requirement status:', { id, status });
+        console.group('=== updateRequirementStatus ===');
+        console.log('1. Starting update for requirement:', { id, newStatus: status });
+        
+        // First get current state
+        const currentState = get();
+        const requirement = currentState.requirements.find(req => req.id === id);
+        
+        if (!requirement) {
+          console.error('Requirement not found:', id);
+          console.groupEnd();
+          return;
+        }
+        
+        console.log('2. Current requirement data:', {
+          id,
+          oldStatus: requirement.status,
+          currentData: requirement
+        });
+        
+        // Update the state
         set((state) => {
           const updatedRequirements = state.requirements.map(req => {
             if (req.id === id) {
-              console.log('Updating requirement:', { 
-                id, 
-                oldStatus: req.status, 
-                newStatus: status 
-              });
-              return { 
+              const updated = { 
                 ...req, 
-                status, 
-                lastModified: new Date().toISOString() 
+                status,
+                lastModified: new Date().toISOString()
               };
+              
+              console.log('3. Updated requirement data:', updated);
+              return updated;
             }
             return req;
           });
           
-          console.log('Updated requirements:', updatedRequirements);
+          console.log('4. All requirements after update:', updatedRequirements);
+          
+          // Also update localStorage directly to ensure persistence
+          try {
+            const storageKey = 'requirements-storage';
+            const storedData = localStorage.getItem(storageKey);
+            if (storedData) {
+              const parsedData = JSON.parse(storedData);
+              const updatedStoredRequirements = parsedData.state.requirements.map((req: any) => 
+                req.id === id ? { ...req, status, lastModified: new Date().toISOString() } : req
+              );
+              localStorage.setItem(
+                storageKey,
+                JSON.stringify({
+                  ...parsedData,
+                  state: {
+                    ...parsedData.state,
+                    requirements: updatedStoredRequirements
+                  }
+                })
+              );
+              console.log('5. Successfully updated localStorage');
+            }
+          } catch (error) {
+            console.error('Error updating localStorage:', error);
+          }
+          
+          console.groupEnd();
           return { requirements: updatedRequirements };
         });
       },
@@ -226,15 +270,50 @@ export const useRequirements = create<RequirementsState>()(
 
       getRequirementsAsEnquiries: () => {
         const { requirements } = get();
+        console.group('=== getRequirementsAsEnquiries ===');
         console.log('Current requirements in store:', requirements);
+        
+        // Get responses from the responses store
+        const responses = useResponses.getState().responses;
         
         return requirements
           .filter(req => {
-            console.log('Checking requirement:', { id: req.id, isDraft: req.isDraft, status: req.status });
-            return !req.isDraft;
+            const isValid = !req.isDraft;
+            console.log('Checking requirement:', { 
+              id: req.id, 
+              isDraft: req.isDraft, 
+              status: req.status,
+              isValid
+            });
+            return isValid;
           })
           .map(req => {
-            console.log('Mapping requirement to enquiry:', { id: req.id, status: req.status });
+            const requirementResponses = responses.filter(r => r.requirementId === req.id);
+            const hasResponses = requirementResponses.length > 0;
+            
+            console.log('Mapping requirement to enquiry:', { 
+              id: req.id, 
+              originalStatus: req.status,
+              hasResponses,
+              responseCount: requirementResponses.length
+            });
+            
+            // If there are responses but status is still active, update it to responded
+            let status = req.status;
+            if (hasResponses && status === 'active') {
+              status = 'responded';
+              console.log('Updating status from active to responded for requirement:', req.id);
+              
+              // Update the requirement status in the store if it's different
+              if (req.status !== status) {
+                set(state => ({
+                  requirements: state.requirements.map(r => 
+                    r.id === req.id ? { ...r, status } : r
+                  )
+                }));
+              }
+            }
+            
             return {
               id: parseInt(req.id),
               customerName: req.customerName,
@@ -242,7 +321,7 @@ export const useRequirements = create<RequirementsState>()(
               quantity: req.quantity,
               message: req.message,
               date: req.date,
-              status: req.status,
+              status,
               expectedPrice: req.expectedPrice,
               fixedPrice: req.fixedPrice,
               origin: req.origin,

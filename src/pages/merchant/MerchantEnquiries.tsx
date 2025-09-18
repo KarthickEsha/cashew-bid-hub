@@ -59,11 +59,10 @@ const MerchantEnquiries = () => {
   const [quantityError, setQuantityError] = useState('');
 
   // Map UI status values to the underlying enquiry statuses in your data
-  // (adjust as you add real workflow statuses)
   const statusMap: Record<string, string[]> = {
     all: [], // no filter
     '': [], // treat empty like "all"
-    new: ['pending'],
+    new: ['active'],
     viewed: ['responded'],
     contacted: ['responded'],
     negotiating: ['pending'],
@@ -123,12 +122,21 @@ const MerchantEnquiries = () => {
       const responses = getResponsesByRequirementId(enquiry.id);
       const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
       const hasRejectedResponse = responses.some(r => r.status === 'rejected');
+      const hasResponse = responses.length > 0;
 
       let status = enquiry.status;
-      if (hasAcceptedResponse) {
-        status = 'confirmed';
-      } else if (hasRejectedResponse && !hasAcceptedResponse) {
-        status = 'Rejected';
+
+      // Only override status if it's not already set to 'responded'
+      if (status !== 'responded') {
+        if (hasAcceptedResponse) {
+          status = 'confirmed';
+        } else if (hasRejectedResponse && !hasAcceptedResponse) {
+          status = 'Rejected';
+        } else if (hasResponse) {
+          status = 'responded';
+        } else {
+          status = status || 'active';
+        }
       }
 
       return {
@@ -169,6 +177,16 @@ const MerchantEnquiries = () => {
 
         const responses = getResponsesByRequirementId(enquiry.id);
         console.log('Associated responses:', responses);
+
+        // Preserve the existing status if it's already set to 'responded'
+        if (enquiry.status === 'responded') {
+          console.log('Preserving responded status for enquiry:', enquiry.id);
+          return {
+            ...enquiry,
+            status: 'responded',
+            buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined
+          };
+        }
 
         // Start with current status or default to 'active'
         let status = enquiry.status || 'active';
@@ -292,8 +310,70 @@ const MerchantEnquiries = () => {
   const endIndex = Math.min(startIndex + pageSize, filteredEnquiries.length);
   const paginatedEnquiries = filteredEnquiries.slice(startIndex, endIndex);
 
-  const handleViewClick = (enquiry: any) => {
-    setSelectedEnquiry(enquiry);
+  const handleViewClick = async (enquiry: any) => {
+    console.group('=== handleViewClick ===');
+    console.log('Initial enquiry:', {
+      id: enquiry.id,
+      currentStatus: enquiry.status,
+      hasResponses: getResponsesByRequirementId(enquiry.id).length > 0
+    });
+
+    // If status is 'active', update it to 'responded' in the backend
+    if (enquiry.status === 'active') {
+      try {
+        console.log('1. Starting status update from active to responded');
+
+        // First, update in the backend
+        console.log('2. Calling updateRequirementStatus with:', {
+          id: enquiry.id,
+          status: 'responded'
+        });
+
+        await updateRequirementStatus(enquiry.id.toString(), 'viewed');
+        console.log('3. Backend update completed');
+
+        // Get the latest data from the store
+        const allRequirements = getRequirementsAsEnquiries();
+        console.log('4. Latest requirements from store:', allRequirements);
+
+        // Find the updated requirement
+        const updatedRequirement = allRequirements.find(req => req.id === enquiry.id);
+        console.log('5. Updated requirement from store:', updatedRequirement);
+
+        if (updatedRequirement) {
+          // Create the updated enquiry with the latest data
+          const updatedEnquiry = {
+            ...enquiry,
+            status: 'responded',
+            lastModified: new Date().toISOString()
+          };
+
+          console.log('6. Updating local state with:', updatedEnquiry);
+
+          // Update the local state with the latest data
+          setEnquiries(prevEnquiries =>
+            prevEnquiries.map(e =>
+              e.id === enquiry.id ? updatedEnquiry : e
+            )
+          );
+
+          setSelectedEnquiry(updatedEnquiry);
+
+          // Also update the requirement in the store to ensure consistency
+          const updatedRequirements = allRequirements.map(req =>
+            req.id === enquiry.id ? { ...req, status: 'responded' } : req
+          );
+
+          console.log('7. Updated all requirements:', updatedRequirements);
+        }
+      } catch (error) {
+        console.error('Error updating enquiry status:', error);
+        // If update fails, revert the local state
+        setSelectedEnquiry({ ...enquiry, status: 'active' });
+      }
+    } else {
+      setSelectedEnquiry(enquiry);
+    }
     setResponseModalOpen(true);
   };
 
@@ -806,19 +886,25 @@ const MerchantEnquiries = () => {
                         ? 'default'
                         : enquiry.status === 'active'
                           ? 'secondary'
-                          : enquiry.status === 'selected'
-                            ? 'outline' // You can use a different variant like 'success' if available
-                            : enquiry.status === 'confirmed'
+                          : enquiry.status === 'responded' || enquiry.status === 'viewed'
+                            ? 'default'
+                            : enquiry.status === 'selected'
                               ? 'outline'
-                              : enquiry.status === 'closed'
-                                ? 'destructive'
-                                : 'default'
+                              : enquiry.status === 'confirmed'
+                                ? 'outline'
+                                : enquiry.status === 'closed'
+                                  ? 'destructive'
+                                  : 'default'
                     }>
                       {enquiry.status === 'closed'
                         ? 'Skipped'
                         : enquiry.status === 'selected'
-                          ? 'Selected' // Explicitly show 'Selected' with capital 'S'
-                          : enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+                          ? 'Selected'
+                          : enquiry.status === 'active'
+                            ? 'New'
+                            : enquiry.status === 'responded' || enquiry.status === 'viewed'
+                              ? 'Viewed'
+                              : enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell>
