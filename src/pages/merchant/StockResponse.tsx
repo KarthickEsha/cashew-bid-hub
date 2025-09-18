@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Check, X, Package, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { Search, Filter, Check, X, Package, ArrowUpDown, ArrowUp, ArrowDown, Eye, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useResponses, type MerchantResponse } from "@/hooks/useResponses";
 import { useProfile } from "@/hooks/useProfile";
@@ -43,7 +43,7 @@ type ActionType = 'accept' | 'reject';
 
 const StockResponse = (): JSX.Element => {
     const { profile } = useProfile();
-    const { getResponsesByRequirementId, updateResponseStatus, addResponse } = useResponses();
+    const { getResponsesByRequirementId, updateResponseStatus, addResponse, deleteResponse } = useResponses();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
@@ -86,6 +86,31 @@ const StockResponse = (): JSX.Element => {
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
     }, [getResponsesByRequirementId]);
+
+    // Handle delete enquiry
+    const handleDeleteEnquiry = (enquiryId: string) => {
+        try {
+            // First, remove from local storage
+            const updatedEnquiries = enquiries.filter(enquiry => enquiry.id !== enquiryId);
+            localStorage.setItem('productEnquiries', JSON.stringify(updatedEnquiries));
+            setEnquiries(updatedEnquiries);
+            
+            // Then, remove from the responses store to update the count in the sidebar
+            deleteResponse(enquiryId);
+            
+            toast({
+                title: "Success",
+                description: "Enquiry deleted successfully",
+            });
+        } catch (error) {
+            console.error('Error deleting enquiry:', error);
+            toast({
+                title: "Error",
+                description: "Failed to delete enquiry. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
 
     // Format date for display
     const formatDate = (dateString?: string | null) => {
@@ -633,13 +658,28 @@ const StockResponse = (): JSX.Element => {
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-red-500 hover:text-red-600"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteEnquiry(enquiry.id);
+                                                        }}
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
                                                     {enquiry.status === 'Pending' && (
                                                         <>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="text-red-500 hover:text-red-600"
-                                                                onClick={() => handleActionClick(enquiry, 'reject')}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleActionClick(enquiry, 'reject');
+                                                                }}
                                                             >
                                                                 <X className="h-4 w-4" />
                                                             </Button>
@@ -647,7 +687,10 @@ const StockResponse = (): JSX.Element => {
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="text-green-500 hover:text-green-600"
-                                                                onClick={() => handleActionClick(enquiry, 'accept')}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleActionClick(enquiry, 'accept');
+                                                                }}
                                                             >
                                                                 <Check className="h-4 w-4" />
                                                             </Button>
