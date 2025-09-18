@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useOrders } from "@/hooks/useOrders";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
+import { useInventory } from "@/hooks/useInventory";
 
 // Utility function to format currency in Indian Rupees
 const formatINR = (amount: number | string): string => {
@@ -29,9 +30,10 @@ const formatINR = (amount: number | string): string => {
 };
 
 const MerchantOrders = () => {
-  const { orders: allOrders, updateOrderStatus, deleteOrder } = useOrders();
+  const { orders: allOrders, updateOrderStatus, deleteOrder, getOrderById } = useOrders();
   const { toast } = useToast();
   const { profile } = useProfile();
+  const { reduceAvailableStock } = useInventory();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [filters, setFilters] = useState({ orderId: "", customer: "", product: "" });
@@ -128,7 +130,47 @@ const MerchantOrders = () => {
   const paginatedOrders = displayedOrders.slice(startIndex, startIndex + pageSize);
 
   const handleAcceptOrder = async (orderId: string) => {
-    await updateOrderStatus(orderId, "Confirmed");
+    try {
+      // First get the order details
+      const order = getOrderById(orderId);
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      // Extract quantity from order (assuming format like '100kg' or '50 MT')
+      const quantityMatch = order.quantity.match(/\d+/);
+      if (!quantityMatch) {
+        throw new Error('Invalid quantity format');
+      }
+      const quantity = parseFloat(quantityMatch[0]);
+      debugger
+      // Get the product ID from the order
+      // Note: You'll need to ensure the productId is stored in the order when it's created
+      const productId = (order as any).productId; // Cast to any since productId might not be in the type yet
+      
+      if (!productId) {
+        throw new Error('Product ID not found in order');
+      }
+      
+      // First update the order status
+      await updateOrderStatus(orderId, "Confirmed");
+      
+      // Then reduce the stock
+      reduceAvailableStock(productId, quantity);
+      
+      toast({
+        title: "Order Confirmed",
+        description: `Order ${orderId} has been confirmed and stock has been updated.`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error confirming order:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to confirm order',
+        variant: "destructive",
+      });
+    }
   };
 
   const handleRejectOrder = async (orderId: string) => {

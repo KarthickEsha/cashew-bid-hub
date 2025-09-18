@@ -192,11 +192,13 @@ const ProductDetail = () => {
       const now = new Date().toISOString();
       const deliveryDate = new Date();
       deliveryDate.setDate(deliveryDate.getDate() + 7); // 7 days from now
-
+      debugger
       // Create order data
       const orderData = {
-        requirementId: `REQ-${Date.now()}`, // Generate a temporary requirement ID
-        responseId: `RES-${Date.now()}`, // Generate a temporary response ID
+        id: `ORD-${Date.now()}`,
+        requirementId: `REQ-${Date.now()}`,
+        responseId: `RES-${Date.now()}`,
+        productId: product.id,
         productName: product.grade ? `${product.grade} Cashews` : 'Raw Cashews',
         merchantName: merchant?.name || 'Unknown Merchant',
         merchantId: product.merchantId || 'unknown',
@@ -276,8 +278,8 @@ const ProductDetail = () => {
       }
 
       toast({
-        title: "Bid Placed Successfully",
-        description: "Your bid has been placed and an order has been created.",
+        title: "Order Placed Successfully",
+        description: "Your enquiry has been placed and an order has been created.",
       });
 
       // Reset form

@@ -19,12 +19,12 @@ interface InventoryState {
     totalStock: { rcn: number; kernel: number };
   };
 }
-
+debugger
 export const useInventory = create<InventoryState>()(
   persist(
     (set, get) => ({
       products: [],
-
+    
       addProduct: (product) =>
         set((state) => {
           // Required fields with defaults
@@ -73,7 +73,7 @@ export const useInventory = create<InventoryState>()(
       deleteProduct: (id) => set((state) => ({
         products: state.products.filter(p => p.id !== id)
       })),
-
+    
       reduceStock: (id, quantity) =>
         set((state) => ({
           products: state.products.map((product) =>
