@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, Check, X, Package, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useResponses, type MerchantResponse } from "@/hooks/useResponses";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "@/components/ui/use-toast";
@@ -15,7 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface EnquiryWithResponses extends Enquiry {
     responses: MerchantResponse[];
 }
-
 interface Enquiry {
     id: string;
     productName: string;
@@ -35,7 +35,7 @@ interface Enquiry {
     contact: string;
     message: string;
     remarks?: string;
-    createdAt: string;
+    date: string;
     packaging?: string;
 }
 
@@ -51,6 +51,8 @@ const StockResponse = (): JSX.Element => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [remarks, setRemarks] = useState("");
     const [enquiries, setEnquiries] = useState<EnquiryWithResponses[]>([]);
+    const [viewDialogOpen, setViewDialogOpen] = useState(false);
+    const [showFilterCard, setShowFilterCard] = useState(false);
 
     // Load enquiries from localStorage and attach responses
     useEffect(() => {
@@ -112,16 +114,15 @@ const StockResponse = (): JSX.Element => {
         }
     };
 
-    // State for sorting and pagination
+    // State for sorting, filtering and pagination
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(5);
+    const [sortField, setSortField] = useState<keyof Enquiry>('date');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [filters, setFilters] = useState({ product: "", customer: "", status: "all" });
-    const [showFilterCard, setShowFilterCard] = useState(false);
-    const [sortField, setSortField] = useState<string>('');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
     // Handle sorting
-    const handleSort = (field: string) => {
+    const handleSort = (field: keyof Enquiry) => {
         if (sortField === field) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
         } else {
@@ -140,7 +141,7 @@ const StockResponse = (): JSX.Element => {
             ? <ArrowUp className="h-4 w-4 text-primary" />
             : <ArrowDown className="h-4 w-4 text-primary" />;
     };
-
+    debugger
     // Filter and sort enquiries
     const filteredEnquiries = useMemo(() => {
         let result = [...enquiries];
@@ -161,7 +162,7 @@ const StockResponse = (): JSX.Element => {
                 const bValue = b[sortField as keyof typeof b];
 
                 // Handle different field types for sorting
-                if (sortField === 'createdAt' || sortField === 'responseDate') {
+                if (sortField === 'date' || sortField === 'responseDate') {
                     const aDate = new Date(aValue as string || 0).getTime();
                     const bDate = new Date(bValue as string || 0).getTime();
                     return sortDirection === 'asc' ? aDate - bDate : bDate - aDate;
@@ -345,9 +346,9 @@ const StockResponse = (): JSX.Element => {
 
     const handleViewDetails = (enquiry: Enquiry) => {
         setSelectedEnquiry(enquiry);
-        // You can implement a details view or modal here
-        console.log('View details:', enquiry);
+        setViewDialogOpen(true);
     };
+
     // Helper function to render dialog content based on action type
     const renderDialogContent = () => {
         if (actionType !== 'accept' && actionType !== 'reject') return null;
@@ -404,6 +405,75 @@ const StockResponse = (): JSX.Element => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* View Details Dialog */}
+            <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>Enquiry Details</DialogTitle>
+                    </DialogHeader>
+                    {selectedEnquiry && (
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="text-sm font-medium">Product</span>
+                                <span className="col-span-3">{selectedEnquiry.productName || 'N/A'}</span>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="text-sm font-medium">Buyer</span>
+                                <span className="col-span-3">{selectedEnquiry.customerName || 'N/A'}</span>
+                            </div>
+                            {selectedEnquiry.contact && (
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <span className="text-sm font-medium">Contact</span>
+                                    <span className="col-span-3">{selectedEnquiry.contact}</span>
+                                </div>
+                            )}
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="text-sm font-medium">Quantity</span>
+                                <span className="col-span-3">{selectedEnquiry.quantity || '0'} kg</span>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="text-sm font-medium">Price</span>
+                                <span className="col-span-3">₹{selectedEnquiry.price || '0'}/kg</span>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="text-sm font-medium">Status</span>
+                                <span className="col-span-3">
+                                    <Badge variant={getStatusColor(selectedEnquiry.status)}>
+                                        {selectedEnquiry.status}
+                                    </Badge>
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="text-sm font-medium">Date</span>
+                                <span className="col-span-3">
+                                    {selectedEnquiry.date ? format(new Date(selectedEnquiry.date), 'PPpp') : 'N/A'}
+                                </span>
+                            </div>
+                            {selectedEnquiry.grade && (
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <span className="text-sm font-medium">Grade</span>
+                                    <span className="col-span-3">{selectedEnquiry.grade}</span>
+                                </div>
+                            )}
+                            {selectedEnquiry.origin && (
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <span className="text-sm font-medium">Origin</span>
+                                    <span className="col-span-3">{selectedEnquiry.origin}</span>
+                                </div>
+                            )}
+                            {selectedEnquiry.message && (
+                                <div className="grid grid-cols-4 gap-4">
+                                    <span className="text-sm font-medium pt-2">Message</span>
+                                    <p className="col-span-3 text-sm text-muted-foreground">
+                                        {selectedEnquiry.message}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             {/* Header */}
             <div className="flex justify-between items-center">
@@ -523,16 +593,8 @@ const StockResponse = (): JSX.Element => {
                                             {getSortIcon('status')}
                                         </div>
                                     </TableHead>
-                                    <TableHead
-                                        className="cursor-pointer hover:bg-muted/50 select-none"
-                                        onClick={() => handleSort('createdAt')}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            Date
-                                            {getSortIcon('createdAt')}
-                                        </div>
-                                    </TableHead>
-                                    <TableHead>Actions</TableHead>
+                                    <TableHead className="w-[180px]">Date</TableHead>
+                                    <TableHead className="w-[80px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -542,8 +604,8 @@ const StockResponse = (): JSX.Element => {
                                             <TableCell>
                                                 <div className="font-medium">{enquiry.productName || 'N/A'}</div>
                                                 {/* {enquiry.grade && (
-                                                    <div className="text-sm text-muted-foreground">{enquiry.grade}</div>
-                                                )} */}
+ <div className="text-sm text-muted-foreground">{enquiry.grade}</div>
+ )} */}
                                             </TableCell>
                                             <TableCell>
                                                 <div>{enquiry.customerName || 'N/A'}</div>
@@ -558,13 +620,16 @@ const StockResponse = (): JSX.Element => {
                                                     {enquiry.status}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>{formatDate(enquiry.responseDate || enquiry.createdAt)}</TableCell>
                                             <TableCell>
-                                                <div className="flex items-center space-x-2">
+                                                {enquiry.date ? format(new Date(enquiry.date), 'PPp') : 'N/A'}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center space-x-1">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => handleViewDetails(enquiry)}
+                                                        title="View details"
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
@@ -644,32 +709,6 @@ const StockResponse = (): JSX.Element => {
                                 >
                                     Previous
                                 </Button>
-                                {/* <div className="flex items-center space-x-1">
-                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                        // Show first 2 pages, current page, and last 2 pages
-                                        let pageNum;
-                                        if (currentPage <= 3) {
-                                            pageNum = i + 1;
-                                        } else if (currentPage >= totalPages - 2) {
-                                            pageNum = totalPages - 4 + i;
-                                        } else {
-                                            pageNum = currentPage - 2 + i;
-                                        }
-
-                                        if (pageNum < 1 || pageNum > totalPages) return null;
-
-                                        return (
-                                            <Button
-                                                key={pageNum}
-                                                variant={pageNum === currentPage ? 'default' : 'outline'}
-                                                size="sm"
-                                                onClick={() => setCurrentPage(pageNum)}
-                                            >
-                                                {pageNum}
-                                            </Button>
-                                        );
-                                    })}
-                                </div> */}
                                 <Button
                                     variant="outline"
                                     size="sm"

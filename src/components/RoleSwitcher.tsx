@@ -9,8 +9,9 @@ const RoleSwitcher = () => {
   const { profile, updateProfile } = useProfile();
   const navigate = useNavigate();
 
+  // Default to 'RCN' if dealingWith is 'Both' and no productType is set
   const [selectedProductType, setSelectedProductType] = useState<ProductType>(
-    profile?.productType || "Both"
+    profile?.productType || (profile?.dealingWith === 'Both' ? 'RCN' : 'RCN')
   );
 
   // 🔑 Handle product type change
@@ -24,7 +25,7 @@ const RoleSwitcher = () => {
     navigate("/");
   };
   const selectedProduct = profile?.dealingWith || "Both";
-   const selectedProducttype = profile?.productType;
+  const selectedProducttype = profile?.productType || (profile?.dealingWith === 'Both' ? 'RCN' : 'RCN');
   // Determine which buttons to show
   const buttonWidth = selectedProduct === "Both" ? "w-1/2" : "w-full";
 
