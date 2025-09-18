@@ -18,10 +18,12 @@ import { useOrders } from "@/hooks/useOrders";
 import path from "path";
 import { useResponses } from "@/hooks/useResponses";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const { role, setRole } = useRole();
-  const navigate = useNavigate(); // ✅ initialize navigate
+  const navigate = useNavigate();
   const { getMyRequirements } = useRequirements();
   const { orders } = useOrders();
   const [newResponseCount, setNewResponseCount] = useState(0);
@@ -51,36 +53,35 @@ const Dashboard = () => {
   }, [responses]);
   const stats = [
     {
-      title: "My Requirements",
+      title: t('dashboard.myRequirements'),
       value: requirements.length.toString(),
       icon: FileText,
       color: "text-blue-500",
-      trend: `${activeRequirements} active, ${draftRequirements} draft`,
+      trend: t('dashboard.requirementsStats', { active: activeRequirements, draft: draftRequirements }),
       path: "/my-requirements"
     },
     {
-      title: "Seller Responses",
+      title: t('dashboard.sellerResponses'),
       value: totalResponses.toString(),
       icon: MessageSquare,
       color: "text-green-500",
-      trend: `From ${requirements.length} requirements`,
+      trend: t('dashboard.fromRequirements', { count: requirements.length }),
       path: "/responses"
     },
     {
-      title: "Total Enquiries",
+      title: t('dashboard.totalEnquiries'),
       value: totalOrders.toString(),
       icon: Clock,
       color: "text-orange-500",
-      trend: `${confirmedOrders} confirmed, ${pendingOrders} pending`,
+      trend: t('dashboard.orderStats', { confirmed: confirmedOrders, pending: pendingOrders }),
       path: "/my-orders"
-
     },
     {
-      title: "Total Value",
+      title: t('dashboard.totalValue'),
       value: `₹${(totalValue / 100000).toFixed(1)}L`,
       icon: TrendingUp,
       color: "text-primary",
-      trend: "Estimated from requirements",
+      trend: t('dashboard.estimatedFromRequirements'),
     }
   ];
 
@@ -88,20 +89,20 @@ const Dashboard = () => {
   const recentActivity = [
     ...requirements.slice(0, 2).map(req => ({
       type: "requirement",
-      message: `New requirement posted: ${req.grade} Cashews - ${req.quantity}`,
-      time: "Recently",
+      message: t('dashboard.activity.requirementPosted', { grade: req.grade, quantity: req.quantity }),
+      time: t('dashboard.activity.recently'),
       status: req.status
     })),
     {
       type: "order",
-      message: "Order placed for Vietnam Origin Cashews - 1000kg",
-      time: "5 hours ago",
+      message: t('dashboard.activity.orderPlaced', { type: 'Vietnam Origin Cashews', quantity: '1000kg' }),
+      time: t('dashboard.activity.hoursAgo', { hours: 5 }),
       status: "pending"
     },
     {
       type: "response",
-      message: "Supplier responded to requirement inquiry",
-      time: "1 day ago",
+      message: t('dashboard.activity.supplierResponded'),
+      time: t('dashboard.activity.daysAgo', { days: 1 }),
       status: "new"
     }
   ];
@@ -117,11 +118,11 @@ const Dashboard = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary-dark/60 flex items-center">
           <div className="px-6 text-white">
-            <h1 className="text-3xl font-bold mb-2">Welcome to Cashew Marketplace</h1>
-            <p className="text-lg opacity-90 mb-4">Connect with premium cashew suppliers worldwide</p>
+            <h1 className="text-3xl font-bold mb-2">{t('dashboard.welcome')}</h1>
+            <p className="text-lg opacity-90 mb-4">{t('dashboard.subtitle')}</p>
             <Link to="/marketplace">
               <Button size="lg" variant="secondary">
-                Browse Marketplace
+                {t('dashboard.browseMarketplace')}
                 <ArrowRight size={16} className="ml-2" />
               </Button>
             </Link>
@@ -160,10 +161,10 @@ const Dashboard = () => {
         {/* Recent Activity */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Clock size={20} className="mr-2" />
-              Recent Activity
-            </CardTitle>
+              <CardTitle className="flex items-center">
+                <Clock size={20} className="mr-2" />
+                {t('dashboard.recentActivity')}
+              </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -187,7 +188,7 @@ const Dashboard = () => {
             </div>
             <div className="mt-4">
               <Button variant="ghost" size="sm" className="w-full">
-                View All Activity
+                {t('dashboard.viewAllActivity')}
                 <ArrowRight size={14} className="ml-2" />
               </Button>
             </div>
@@ -197,31 +198,31 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>{t('dashboard.quickActions')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Link to="/marketplace" className="block">
               <Button variant="outline" size="sm" className="w-full justify-start">
                 <Eye size={16} className="mr-2" />
-                Browse Products
+                {t('dashboard.browseProducts')}
               </Button>
             </Link>
             <Link to="/post-requirement" className="block">
               <Button variant="outline" size="sm" className="w-full justify-start">
                 <FileText size={16} className="mr-2" />
-                Post Requirement
+                {t('dashboard.postRequirement')}
               </Button>
             </Link>
             <Link to="/my-orders" className="block">
               <Button variant="outline" size="sm" className="w-full justify-start">
                 <MessageSquare size={16} className="mr-2" />
-                View My Orders
+                {t('dashboard.viewMyOrders')}
               </Button>
             </Link>
             <Link to="/my-requirements" className="block">
               <Button variant="outline" size="sm" className="w-full justify-start">
                 <Calendar size={16} className="mr-2" />
-                Manage Requirements
+                {t('dashboard.manageRequirements')}
               </Button>
             </Link>
           </CardContent>

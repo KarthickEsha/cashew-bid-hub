@@ -35,5 +35,37 @@
     "en": "English",
     "ta": "தமிழ்",
     "hi": "हिंदी"
+  },
+  "dashboard": {
+    "welcome": "Welcome to Cashew Marketplace",
+    "subtitle": "Connect with premium cashew suppliers worldwide",
+    "browseMarketplace": "Browse Marketplace",
+    "myRequirements": "My Requirements",
+    "sellerResponses": "Seller Responses",
+    "totalEnquiries": "Total Enquiries",
+    "totalValue": "Total Value (in Lakhs)",
+    "quickStats": "Quick Stats",
+    "quickActions": "Quick Actions",
+    "recentActivity": "Recent Activity",
+    "viewAllActivity": "View All Activity",
+    "browseProducts": "Browse Products",
+    "postRequirement": "Post Requirement",
+    "viewMyOrders": "View My Orders",
+    "manageRequirements": "Manage Requirements",
+    "requirementsStats": "{{active}} active, {{draft}} draft",
+    "fromRequirements": "From {{count}} requirements",
+    "orderStats": "{{confirmed}} confirmed, {{pending}} pending",
+    "estimatedFromRequirements": "Estimated from requirements",
+    "noRecentActivity": "No recent activity found",
+    "activity": {
+      "requirementPosted": "New requirement posted: {{grade}} Cashews - {{quantity}}",
+      "recently": "Recently",
+      "orderPlaced": "Order placed for {{type}} - {{quantity}}",
+      "hoursAgo": "{{count}} hour ago",
+      "hoursAgo_plural": "{{count}} hours ago",
+      "supplierResponded": "Supplier responded to requirement inquiry",
+      "daysAgo": "{{count}} day ago",
+      "daysAgo_plural": "{{count}} days ago"
+    }
   }
 }

@@ -35,5 +35,37 @@
     "en": "अंग्रेज़ी",
     "ta": "तमिल",
     "hi": "हिंदी"
+  },
+  "dashboard": {
+    "welcome": "काजू मार्केटप्लेस में आपका स्वागत है",
+    "subtitle": "दुनिया भर के प्रीमियम काजू आपूर्तिकर्ताओं से जुड़ें",
+    "browseMarketplace": "मार्केटप्लेस ब्राउज़ करें",
+    "myRequirements": "मेरी आवश्यकताएं",
+    "sellerResponses": "विक्रेता प्रतिक्रियाएं",
+    "totalEnquiries": "कुल पूछताछ",
+    "totalValue": "कुल मूल्य (लाखों में)",
+    "quickStats": "त्वरित आँकड़े",
+    "quickActions": "त्वरित कार्य",
+    "recentActivity": "हाल की गतिविधि",
+    "viewAllActivity": "सभी गतिविधियाँ देखें",
+    "browseProducts": "उत्पाद ब्राउज़ करें",
+    "postRequirement": "आवश्यकता पोस्ट करें",
+    "viewMyOrders": "मेरे आदेश देखें",
+    "manageRequirements": "आवश्यकताएं प्रबंधित करें",
+    "requirementsStats": "{{active}} सक्रिय, {{draft}} ड्राफ्ट",
+    "fromRequirements": "{{count}} आवश्यकताओं से",
+    "orderStats": "{{confirmed}} पुष्टि किए गए, {{pending}} लंबित",
+    "estimatedFromRequirements": "आवश्यकताओं से अनुमानित",
+    "noRecentActivity": "कोई हाल की गतिविधि नहीं मिली",
+    "activity": {
+      "requirementPosted": "नई आवश्यकता पोस्ट की गई: {{grade}} काजू - {{quantity}}",
+      "recently": "हाल ही में",
+      "orderPlaced": "{{type}} - {{quantity}} के लिए आदेश दिया गया",
+      "hoursAgo": "{{count}} घंटा पहले",
+      "hoursAgo_plural": "{{count}} घंटे पहले",
+      "supplierResponded": "आपूर्तिकर्ता ने आवश्यकता की पूछताछ का जवाब दिया",
+      "daysAgo": "{{count}} दिन पहले",
+      "daysAgo_plural": "{{count}} दिन पहले"
+    }
   }
 }

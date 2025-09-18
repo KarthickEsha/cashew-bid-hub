@@ -35,5 +35,37 @@
     "en": "ஆங்கிலம்",
     "ta": "தமிழ்",
     "hi": "இந்தி"
+  },
+  "dashboard": {
+    "welcome": "முந்திரி சந்தைக்கு வரவேற்கிறோம்",
+    "subtitle": "உலகம் முழுவதும் உயர்தர முந்திரி சப்ளையர்களுடன் இணைக்கவும்",
+    "browseMarketplace": "சந்தையைப் பார்வையிடவும்",
+    "myRequirements": "என் தேவைகள்",
+    "sellerResponses": "விற்பனையாளர் பதில்கள்",
+    "totalEnquiries": "மொத்த விசாரணைகள்",
+    "totalValue": "மொத்த மதிப்பு (லட்சங்களில்)",
+    "quickStats": "விரைவு புள்ளிவிவரங்கள்",
+    "quickActions": "விரைவு செயல்கள்",
+    "recentActivity": "சமீபத்திய செயல்பாடு",
+    "viewAllActivity": "அனைத்து செயல்பாடுகளையும் காண்க",
+    "browseProducts": "தயாரிப்புகளைப் பார்வையிடவும்",
+    "postRequirement": "தேவையை வெளியிடவும்",
+    "viewMyOrders": "என் ஆர்டர்களைப் பார்க்கவும்",
+    "manageRequirements": "தேவைகளை நிர்வகிக்கவும்",
+    "requirementsStats": "{{active}} செயலில், {{draft}} வரைவு",
+    "fromRequirements": "{{count}} தேவைகளிலிருந்து",
+    "orderStats": "{{confirmed}} உறுதி செய்யப்பட்டது, {{pending}} நிலுவையில் உள்ளது",
+    "estimatedFromRequirements": "தேவைகளிலிருந்து மதிப்பிடப்பட்டது",
+    "noRecentActivity": "சமீபத்திய செயல்பாடு எதுவும் கிடைக்கவில்லை",
+    "activity": {
+      "requirementPosted": "புதிய தேவை வெளியிடப்பட்டது: {{grade}} முந்திரி - {{quantity}}",
+      "recently": "சமீபத்தில்",
+      "orderPlaced": "{{type}} - {{quantity}} க்கான ஆர்டர் செய்யப்பட்டது",
+      "hoursAgo": "{{count}} மணி நேரத்திற்கு முன்பு",
+      "hoursAgo_plural": "{{count}} மணி நேரத்திற்கு முன்பு",
+      "supplierResponded": "சப்ளையர் தேவை விசாரணைக்கு பதிலளித்தார்",
+      "daysAgo": "{{count}} நாளுக்கு முன்பு",
+      "daysAgo_plural": "{{count}} நாட்களுக்கு முன்பு"
+    }
   }
 }
