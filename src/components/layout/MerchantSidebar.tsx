@@ -46,11 +46,11 @@ const navItems = [
   //   url: "/merchant/add-product",
   //   icon: Plus,
   // },
-  {
-    title: "Stock Enquiries",
-    url: "/merchant/stock-response",
-    icon: Boxes,
-  },
+  // {
+  //   title: "Stock Enquiries",
+  //   url: "/merchant/stock-response",
+  //   icon: Boxes,
+  // },
   {
     title: "Buyer Response",
     url: "/merchant/buyer-response",
@@ -101,7 +101,7 @@ export function MerchantSidebar() {
   const activeEnquiries = getRequirementsAsEnquiries().filter(enquiry => {
     const expiryDate = new Date(enquiry.deliveryDeadline || 0);
     const now = new Date();
-    return expiryDate > now && enquiry.status === 'active' || enquiry.status === 'responded' || enquiry.status === 'selected';
+    return expiryDate > now && enquiry.status === 'active' || enquiry.status === 'responded' || enquiry.status === 'selected' || enquiry.status === 'viewed';
   });
   
   // Only show selected (accepted) responses

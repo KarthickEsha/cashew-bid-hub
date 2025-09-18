@@ -27,18 +27,11 @@ const MerchantDashboard = () => {
   }, [user?.id, getSubmittedQuotesCount]);
 
   // Calculate new enquiries count based on responses
-  const newEnquiriesCount = useMemo(() => {
-    const enquiries = getRequirementsAsEnquiries();
-    return enquiries.filter(enquiry => {
-      const responses = getResponsesByRequirementId(enquiry.id);
-      const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
-      const hasRejectedResponse = responses.some(r => r.status === 'rejected');
-
-      // Consider an enquiry as 'new' if it doesn't have any responses yet
-      // or if it only has rejected responses (no accepted ones)
-      return responses.length === 0 || (hasRejectedResponse && !hasAcceptedResponse);
-    }).length;
-  }, [getRequirementsAsEnquiries, getResponsesByRequirementId]);
+ const newEnquiriesCount = getRequirementsAsEnquiries().filter(enquiry => {
+    const expiryDate = new Date(enquiry.deliveryDeadline || 0);
+    const now = new Date();
+    return expiryDate > now && enquiry.status === 'active' || enquiry.status === 'responded' || enquiry.status === 'selected' || enquiry.status === 'viewed';
+  }).length;
   // Filter out skipped responses and get counts
   const activeResponses = responses.filter(r => r.status !== 'skipped');
   const selectedResponses = activeResponses.filter(r => r.status === 'accepted');

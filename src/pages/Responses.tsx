@@ -131,7 +131,6 @@ const Responses = () => {
 
   // Get all merchant responses with details
   const getMerchantResponses = (): ResponseWithDetails[] => {
-    debugger
     return responses.map(response => {
       const requirement = requirements.find(req => req.id === response.requirementId);
       return {

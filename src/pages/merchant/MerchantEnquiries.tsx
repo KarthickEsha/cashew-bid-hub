@@ -326,7 +326,7 @@ const MerchantEnquiries = () => {
         // First, update in the backend
         console.log('2. Calling updateRequirementStatus with:', {
           id: enquiry.id,
-          status: 'responded'
+          status: 'viewed'
         });
 
         await updateRequirementStatus(enquiry.id.toString(), 'viewed');
@@ -344,7 +344,7 @@ const MerchantEnquiries = () => {
           // Create the updated enquiry with the latest data
           const updatedEnquiry = {
             ...enquiry,
-            status: 'responded',
+            status: 'viewed',
             lastModified: new Date().toISOString()
           };
 
@@ -361,7 +361,7 @@ const MerchantEnquiries = () => {
 
           // Also update the requirement in the store to ensure consistency
           const updatedRequirements = allRequirements.map(req =>
-            req.id === enquiry.id ? { ...req, status: 'responded' } : req
+            req.id === enquiry.id ? { ...req, status: 'viewed' } : req
           );
 
           console.log('7. Updated all requirements:', updatedRequirements);
@@ -902,7 +902,7 @@ const MerchantEnquiries = () => {
                           ? 'Selected'
                           : enquiry.status === 'active'
                             ? 'New'
-                            : enquiry.status === 'responded' || enquiry.status === 'viewed'
+                            : enquiry.status === 'responded' ? 'Responded' : enquiry.status === 'viewed'
                               ? 'Viewed'
                               : enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
                     </Badge>

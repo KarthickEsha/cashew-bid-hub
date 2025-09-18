@@ -17,6 +17,7 @@ import { Product, Location as LocationType } from "@/types/user";
 import { useUser } from "@clerk/clerk-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useRequirements } from "@/hooks/useRequirements";
+import { useOrders } from "@/hooks/useOrders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ProductDetail = () => {
@@ -28,6 +29,7 @@ const ProductDetail = () => {
   const { user } = useUser();
   const { profile, setProfile } = useProfile();
   const { addRequirement } = useRequirements();
+  const { addOrder } = useOrders();
   const { toast } = useToast();
 
   // State hooks - all hooks must be called unconditionally at the top level
@@ -187,19 +189,55 @@ const ProductDetail = () => {
     }
 
     try {
+      const now = new Date().toISOString();
+      const deliveryDate = new Date();
+      deliveryDate.setDate(deliveryDate.getDate() + 7); // 7 days from now
+
+      // Create order data
+      const orderData = {
+        requirementId: `REQ-${Date.now()}`, // Generate a temporary requirement ID
+        responseId: `RES-${Date.now()}`, // Generate a temporary response ID
+        productName: product.grade ? `${product.grade} Cashews` : 'Raw Cashews',
+        merchantName: merchant?.name || 'Unknown Merchant',
+        merchantId: product.merchantId || 'unknown',
+        customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
+        quantity: bidQuantity ? `${bidQuantity} ${product.unit}` : 'Enquiry only',
+        unitPrice: bidPrice ? bidPrice : '0',
+        totalAmount: (parseFloat(bidQuantity || '0') * parseFloat(bidPrice || '0')).toFixed(2),
+        status: 'Processing' as const,
+        orderDate: now,
+        deliveryDate: deliveryDate.toISOString().split('T')[0],
+        location: typeof product.location === 'string' ? product.location : 'Unknown Location',
+        grade: product.grade || 'N/A',
+        origin: typeof product.location === 'string' ? product.location : 'Unknown',
+        buyerRemarks: bidMessage || 'Bid placed',
+        statusHistory: [
+          {
+            status: 'Processing',
+            timestamp: now,
+            remarks: 'Order created from bid',
+            updatedBy: user?.fullName || profile?.name || 'System'
+          }
+        ]
+      };
+
       // Create enquiry
       const enquiry = {
         id: Date.now().toString(),
         customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
         message: bidMessage || `Interested in purchasing ${product.name}`,
         quantity: bidQuantity ? `${bidQuantity} ${product.unit}` : 'Enquiry only',
-        date: new Date().toISOString(),
-        status: 'Pending' as const,
+        date: now,
+        status: 'accepted' as const, // Auto-accept the bid
         productId: product.id,
-        productName: product.grade != null && product.grade != "" ? `${product.grade} Cashews` : `Raw Cashews`,
+        productName: product.grade ? `${product.grade} Cashews` : 'Raw Cashews',
         grade: product.grade || 'N/A',
         price: bidPrice ? parseFloat(bidPrice) : 0,
+        orderId: `ORD-${Date.now()}` // Link to the order
       };
+
+      // Save order
+      addOrder(orderData);
 
       // Save enquiry to local storage
       const existingEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
@@ -238,22 +276,19 @@ const ProductDetail = () => {
       }
 
       toast({
-        title: "Enquiry Sent Successfully",
-        description: product.pricingType === 'bidding'
-          ? "Your bid has been placed."
-          : "Your enquiry has been sent to the merchant.",
+        title: "Bid Placed Successfully",
+        description: "Your bid has been placed and an order has been created.",
       });
 
       // Reset form
       setBidQuantity('');
       setBidPrice('');
       setBidMessage('');
-
     } catch (error) {
-      console.error('Error submitting enquiry:', error);
+      console.error('Error submitting bid:', error);
       toast({
         title: "Error",
-        description: "Failed to submit your enquiry. Please try again.",
+        description: "Failed to place your bid. Please try again.",
         variant: "destructive",
       });
     }

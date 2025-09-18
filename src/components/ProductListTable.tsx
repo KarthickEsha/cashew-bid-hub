@@ -97,7 +97,7 @@ const ProductListTable = ({
               <SortableHeader field="location">Origin</SortableHeader>
             </>
           )}
-          <TableHead className="w-[100px]">Enquiries</TableHead>
+          {/* <TableHead className="w-[100px]">Enquiries</TableHead> */}
           {/* <TableHead className="w-[120px]">Buyer Responses</TableHead> */}
           {/* <TableHead>Orders</TableHead> */}
           <TableHead>Actions</TableHead>
@@ -144,7 +144,7 @@ const ProductListTable = ({
               )}
 
               {/* Enquiries and Buyer Responses */}
-              <TableCell>
+              {/* <TableCell>
                 <div
                   onClick={() => onEnquiryClick(product)}
                   className="flex items-center space-x-1 cursor-pointer hover:text-blue-600"
@@ -153,7 +153,7 @@ const ProductListTable = ({
                   <MessageSquare className="h-4 w-4" />
                   <span>{product.enquiries || 0}</span>
                 </div>
-              </TableCell>
+              </TableCell> */}
               {/* <TableCell>
                 <div
                   className="flex items-center space-x-1"

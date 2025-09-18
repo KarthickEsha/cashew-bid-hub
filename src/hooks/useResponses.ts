@@ -129,7 +129,7 @@ export const useResponses = create<ResponsesState>()(
                     quantity: response.quantity,
                     unitPrice: response.price,
                     totalAmount: `$${(parseFloat(response.price.replace(/[^0-9.]/g, '')) * parseFloat(response.quantity.replace(/[^0-9.]/g, ''))).toLocaleString()}`,
-                    status: 'Processing',
+                    status: 'Confirmed',
                     orderDate: now.split('T')[0],
                     location: response.merchantLocation,
                     grade: response.grade,

@@ -322,7 +322,7 @@ const MerchantOrders = () => {
             <Table className="min-w-[1000px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead
+                  {/* <TableHead
                     className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('id')}
                   >
@@ -330,7 +330,7 @@ const MerchantOrders = () => {
                       Order ID
                       {getSortIcon('id')}
                     </div>
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead
                     className="w-[15%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('customerName')}
@@ -372,7 +372,7 @@ const MerchantOrders = () => {
                     onClick={() => handleSort('date')}
                   >
                     <div className="flex items-center justify-between">
-                      Order Date
+                      Date
                       {getSortIcon('date')}
                     </div>
                   </TableHead>
@@ -401,9 +401,9 @@ const MerchantOrders = () => {
                 {paginatedOrders && paginatedOrders.length > 0 ? (
                   paginatedOrders.map(order => (
                     <TableRow key={order.id}>
-                      <TableCell className="font-medium">{order.id}</TableCell>
+                      {/* <TableCell className="font-medium">{order.id}</TableCell> */}
                       <TableCell>{profile.name}</TableCell>
-                      <TableCell>{order.productName}</TableCell>
+                      <TableCell>{order.grade} Cashews</TableCell>
                       <TableCell>{order.quantity}</TableCell>
                       <TableCell>{formatINR(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}</TableCell>
                       <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
