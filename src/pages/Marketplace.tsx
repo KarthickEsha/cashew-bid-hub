@@ -28,13 +28,14 @@ import {
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Product } from "@/types/user";
 
 const Marketplace = () => {
     const { toast } = useToast();
     const { user } = useUser();
+    const [merchant, setMerchant] = useState<Product | null>(null);
     const { addRequirement } = useRequirements();
     const { addOrder } = useOrders();
-
     const [filters, setFilters] = useState({
         search: "",
         grade: "",
@@ -72,108 +73,13 @@ const Marketplace = () => {
     // Combine demo products with merchant products
     const products = useMemo(() => {
         const demoProducts = [
-            // {
-            // id: 1,
-            // merchantName: merchantCompanyName,
-            // location: "Mumbai, India",
-            // origin: "Kerala, India",
-            // grade: "W320",
-            // quantity: 50,
-            // quantityUnit: "tons",
-            // pricePerTon: "$8,500",
-            // pricePerKg: "$8.50",
-            // pricingType: "fixed",
-            // expiry: "2024-12-15",
-            // rating: 4.8,
-            // verified: true,
-            // description: "Premium grade W320 cashews from Kerala, India"
-            // },
-            // {
-            // id: 2,
-            // merchantName: merchantCompanyName,
-            // location: "Ho Chi Minh City, Vietnam",
-            // origin: "Binh Phuoc, Vietnam",
-            // grade: "SW240",
-            // quantity: 100,
-            // quantityUnit: "tons",
-            // pricePerTon: "$9,200",
-            // pricePerKg: "$9.20",
-            // pricingType: "bidding",
-            // expiry: "2024-11-30",
-            // rating: 4.9,
-            // verified: true,
-            // description: "High quality SW240 cashews for export"
-            // },
-            // {
-            // id: 3,
-            // merchantName: merchantCompanyName,
-            // location: "California, USA",
-            // origin: "Ghana, West Africa",
-            // grade: "W240",
-            // quantity: 25,
-            // quantityUnit: "tons",
-            // pricePerTon: "$8,800",
-            // pricePerKg: "$8.80",
-            // pricingType: "fixed",
-            // expiry: "2024-10-20",
-            // rating: 4.6,
-            // verified: false,
-            // description: "Organic W240 cashews, premium quality"
-            // },
-            // {
-            // id: 4,
-            // merchantName: merchantCompanyName,
-            // location: "Accra, Ghana",
-            // origin: "Northern Ghana",
-            // grade: "W180",
-            // quantity: 75,
-            // quantityUnit: "tons",
-            // pricePerTon: "$7,200",
-            // pricePerKg: "$7.20",
-            // pricingType: "bidding",
-            // expiry: "2024-12-01",
-            // rating: 4.7,
-            // verified: true,
-            // description: "Premium W180 cashews from Ghana"
-            // },
-            // {
-            // id: 5,
-            // merchantName: merchantCompanyName,
-            // location: "São Paulo, Brazil",
-            // origin: "Ceará, Brazil",
-            // grade: "SW320",
-            // quantity: 40,
-            // quantityUnit: "tons",
-            // pricePerTon: "$8,000",
-            // pricePerKg: "$8.00",
-            // pricingType: "fixed",
-            // expiry: "2024-11-15",
-            // rating: 4.5,
-            // verified: true,
-            // description: "High quality SW320 cashews from Brazil"
-            // },
-            // {
-            // id: 6,
-            // merchantName: merchantCompanyName,
-            // location: "Dar es Salaam, Tanzania",
-            // origin: "Mtwara, Tanzania",
-            // grade: "W240",
-            // quantity: 60,
-            // quantityUnit: "tons",
-            // pricePerTon: "$7,800",
-            // pricePerKg: "$7.80",
-            // pricingType: "bidding",
-            // expiry: "2024-12-30",
-            // rating: 4.4,
-            // verified: false,
-            // description: "Organic W240 cashews from Tanzania"
-            // },
+
         ];
 
         // Convert inventory products to marketplace format
         const merchantProducts = inventoryProducts.map((product, index) => ({
             id: product.id,
-            merchantName: "Your Company Name", // Hardcoded company name
+            merchantName: product.merchantName || "Your Company Name", // Hardcoded company name
             location: typeof product.location === 'string'
                 ? product.location
                 : [
@@ -395,11 +301,13 @@ const Marketplace = () => {
         const unitPrice = parseFloat(selectedProduct.pricePerKg.replace('$', ''));
         const totalAmount = unitPrice * parseFloat(quickOrderQuantity);
 
-        addOrder({
+
+        const orderData = {
+            id: `ORD-${Date.now()}`,
             requirementId: `REQ-${Date.now()}`,
             responseId: `RES-${Date.now()}`,
             productName: `${selectedProduct.grade} Cashews`,
-            merchantName: selectedProduct.merchantName,
+            merchantName: profile?.companyName,
             merchantId: selectedProduct.id || 'merchant-1',
             customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
             quantity: `${quickOrderQuantity} ${selectedProduct.quantityUnit}`,
@@ -410,13 +318,15 @@ const Marketplace = () => {
             location: selectedProduct.location || 'N/A',
             grade: selectedProduct.grade,
             origin: selectedProduct.origin || 'N/A',
+            productId: selectedProduct.id,
             statusHistory: [{
                 status: 'Processing',
                 timestamp: new Date().toISOString(),
                 remarks: 'Quick order placed from marketplace',
                 updatedBy: user?.fullName || 'Customer'
             }],
-        });
+        };
+        addOrder(orderData);
 
         toast({
             title: "Order Placed Successfully",

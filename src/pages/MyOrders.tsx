@@ -61,7 +61,7 @@ const MyOrders = () => {
     field: 'orderDate',
     direction: 'desc',
   });
-  
+
   const { orders, updateOrderStatus, deleteOrder } = useOrders();
   const { profile } = useProfile();
 
@@ -107,8 +107,8 @@ const MyOrders = () => {
     if (sortConfig.field !== field) {
       return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
     }
-    return sortConfig.direction === 'asc' 
-      ? <ArrowUp className="ml-2 h-4 w-4" /> 
+    return sortConfig.direction === 'asc'
+      ? <ArrowUp className="ml-2 h-4 w-4" />
       : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
@@ -130,16 +130,23 @@ const MyOrders = () => {
   // filtering
   const filteredAndSortedOrders = useMemo(() => {
     const filtered = allOrders.filter((order) => {
-      const matchesSearch = order.productName
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-        order.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchTermLower = searchTerm.toLowerCase();
+      const productName = order.productName || '';
+      const orderId = order.id || '';
+      const orderStatus = order.status || '';
+      const orderLocation = order.location || '';
+
+      const matchesSearch =
+        productName.toLowerCase().includes(searchTermLower) ||
+        orderId.toLowerCase().includes(searchTermLower);
+
       const matchesStatus =
         statusFilter === "all" ||
-        order.status.toLowerCase() === statusFilter.toLowerCase();
+        orderStatus.toLowerCase() === statusFilter.toLowerCase();
+
       const matchesLocation =
         locationFilter === "all" ||
-        order.location.toLowerCase() === locationFilter.toLowerCase();
+        orderLocation.toLowerCase() === locationFilter.toLowerCase();
 
       return matchesSearch && matchesStatus && matchesLocation;
     });
@@ -147,7 +154,7 @@ const MyOrders = () => {
     // Apply sorting
     return [...filtered].sort((a, b) => {
       let aValue: any, bValue: any;
-      
+
       switch (sortConfig.field) {
         case 'productName':
           aValue = a.productName.toLowerCase();
@@ -237,8 +244,8 @@ const MyOrders = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50" 
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('productName')}
               >
                 <div className="flex items-center">
@@ -247,7 +254,7 @@ const MyOrders = () => {
                 </div>
               </TableHead>
               <TableHead>Merchant</TableHead>
-              <TableHead 
+              <TableHead
                 className="text-right cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('quantity')}
               >
@@ -256,7 +263,7 @@ const MyOrders = () => {
                   {getSortIcon('quantity')}
                 </div>
               </TableHead>
-              <TableHead 
+              <TableHead
                 className="text-right cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('totalAmount')}
               >
@@ -265,7 +272,7 @@ const MyOrders = () => {
                   {getSortIcon('totalAmount')}
                 </div>
               </TableHead>
-              <TableHead 
+              <TableHead
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('status')}
               >
@@ -274,7 +281,7 @@ const MyOrders = () => {
                   {getSortIcon('status')}
                 </div>
               </TableHead>
-              <TableHead 
+              <TableHead
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('orderDate')}
               >
@@ -545,13 +552,13 @@ const MyOrders = () => {
             <p>Are you sure you want to delete this enquiry? This action cannot be undone.</p>
           </div>
           <div className="flex justify-end space-x-2 pt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setDeleteConfirmOpen(false)}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               variant="destructive"
               onClick={() => {
                 if (orderToDelete) {
