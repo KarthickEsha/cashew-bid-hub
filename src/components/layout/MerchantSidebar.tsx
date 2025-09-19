@@ -29,6 +29,10 @@ import RoleSwitcher from "@/components/RoleSwitcher";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
 import { useOrders } from "@/hooks/useOrders";
+import { useInventory } from "@/hooks/useInventory"; // Add this line to import useInventory hook
+import { ProductType } from "@/types/user";
+import { useEffect, useState } from "react";
+import { useProfile } from "@/hooks/useProfile";
 
 const navItems = [
   {
@@ -36,7 +40,7 @@ const navItems = [
     url: "/",
     icon: Home,
   },
-   {
+  {
     title: "My Stocks",
     url: "/merchant/products",
     icon: Package,   // 👈 changed from Package to Boxes
@@ -93,27 +97,43 @@ export function MerchantSidebar() {
   const { getRequirementsAsEnquiries } = useRequirements();
   const { responses, getStockEnquiriesCount } = useResponses();
   const { orders } = useOrders();
+  const { products } = useInventory(); // Add this line to get products
 
   // Filter out skipped responses and get counts
   const activeResponses = responses.filter(r => r.status !== 'skipped');
-  
+
   // Only show active enquiries (not expired and not completed)
   const activeEnquiries = getRequirementsAsEnquiries().filter(enquiry => {
     const expiryDate = new Date(enquiry.deliveryDeadline || 0);
     const now = new Date();
-    return expiryDate > now && enquiry.status === 'active' || enquiry.status === 'responded' || enquiry.status === 'selected' || enquiry.status === 'viewed';
+    return (expiryDate > now && enquiry.status === 'active') ||
+      enquiry.status === 'responded' ||
+      enquiry.status === 'selected' ||
+      enquiry.status === 'viewed';
   });
-  
+
   // Only show selected (accepted) responses
   const selectedResponses = activeResponses.filter(r => r.status === 'accepted');
-
   const selectedRejectedResponses = activeResponses.filter(r => r.status === 'rejected');
-  
+
+  // Count calculations
   const enquiriesCount = activeEnquiries.length;
   const confirmedCount = selectedResponses.length;
   const rejectedCount = selectedRejectedResponses.length; // Don't show rejected count in sidebar
   const ordersCount = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length;
   const stockEnquiriesCount = getStockEnquiriesCount();
+  const [currentProductType, setCurrentProductType] = useState<ProductType>();
+  const { profile } = useProfile();
+  useEffect(() => {
+    if (profile?.productType && profile.productType !== "Both") {
+      setCurrentProductType(profile.productType);
+    } else {
+      setCurrentProductType("RCN")
+    }
+  }, [profile?.productType]);
+  // Count products by status
+  const activeProductsCount = products.filter(p => p.status === 'active' && p.type == currentProductType).length;
+  const outOfStockProductsCount = products.filter(p => p.status === 'out_of_stock').length;
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -155,14 +175,32 @@ export function MerchantSidebar() {
                     <NavLink to={item.url} end className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span className="text-[15px]">{item.title}</span>}
-                      {item.url === "/merchant/stock-response" && !collapsed && stockEnquiriesCount > 0 && (
-                        <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
-                          {stockEnquiriesCount}
-                        </Badge>
+
+                      {/* My Stocks counts */}
+                      {item.url === "/merchant/products" && !collapsed && activeProductsCount > 0 && (
+                        <div className="flex gap-1 ml-auto">
+                          <Badge variant="outline" className="px-1 h-5 text-xs font-normal">
+                            {activeProductsCount}
+                          </Badge>
+                          {outOfStockProductsCount > 0 && (
+                            <Badge variant="destructive" className="px-1 h-5 text-xs font-normal">
+                              {outOfStockProductsCount}
+                            </Badge>
+                          )}
+                        </div>
                       )}
+
+                      {/* Buyer Response counts */}
                       {item.url === "/merchant/buyer-response" && !collapsed && ordersCount > 0 && (
                         <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
                           {ordersCount}
+                        </Badge>
+                      )}
+
+                      {/* Stock Enquiries count */}
+                      {item.url === "/merchant/stock-response" && !collapsed && stockEnquiriesCount > 0 && (
+                        <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
+                          {stockEnquiriesCount}
                         </Badge>
                       )}
                     </NavLink>
@@ -184,18 +222,27 @@ export function MerchantSidebar() {
                     <NavLink to={item.url} className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span className="text-[15px]">{item.title}</span>}
+
+                      {/* Enquiries count */}
                       {item.url === "/merchant/enquiries" && !collapsed && enquiriesCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
+                        <Badge variant={enquiriesCount > 0 ? "destructive" : "outline"}
+                          className="ml-auto px-1.5 h-5 text-xs font-normal">
                           {enquiriesCount}
                         </Badge>
                       )}
+
+                      {/* Confirmed Orders count */}
                       {item.url === "/merchant/confirmed-orders" && !collapsed && confirmedCount > 0 && (
-                        <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
+                        <Badge variant={confirmedCount > 0 ? "secondary" : "outline"}
+                          className="ml-auto px-1.5 h-5 text-xs font-normal">
                           {confirmedCount}
                         </Badge>
                       )}
+
+                      {/* Rejected Orders count */}
                       {item.url === "/merchant/rejected-orders" && !collapsed && rejectedCount > 0 && (
-                        <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
+                        <Badge variant={rejectedCount > 0 ? "destructive" : "outline"}
+                          className="ml-auto px-1.5 h-5 text-xs font-normal">
                           {rejectedCount}
                         </Badge>
                       )}

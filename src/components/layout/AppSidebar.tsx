@@ -28,6 +28,8 @@ import { useEffect, useState } from "react";
 import { useResponses } from "@/hooks/useResponses";
 import RoleSwitcher from "@/components/RoleSwitcher";
 import { useTranslation } from "react-i18next";
+import { useOrders } from "@/hooks/useOrders";
+import { useRequirements } from "@/hooks/useRequirements";
 
 interface NavItem {
   path: string;
@@ -44,6 +46,9 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const { signOut } = useClerk();
   const { responses } = useResponses();
+  const { orders } = useOrders();
+  const { getMyRequirements } = useRequirements();
+  const requirements = getMyRequirements();
   const [newResponseCount, setNewResponseCount] = useState(0);
   const navigate = useNavigate();
 
@@ -65,8 +70,8 @@ export function AppSidebar() {
     // { path: "/notifications", label: t('sidebar.myActivity.notifications'), icon: Bell, badge: 0 },
     // { path: "/profile", label: t('sidebar.myActivity.profile'), icon: User },
     { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: newResponseCount },
-    { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail },
-    { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText }
+    { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail, badge: orders.length },
+    { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText, badge: requirements.length }
   ];
 
   const accountItems: NavItem[] = [

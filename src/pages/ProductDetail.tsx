@@ -217,7 +217,7 @@ const ProductDetail = () => {
           {
             status: 'Processing',
             timestamp: now,
-            remarks: 'Order created from bid',
+            remarks: bidMessage || 'Order placed',
             updatedBy: user?.fullName || profile?.name || 'System'
           }
         ]

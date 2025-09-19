@@ -139,9 +139,9 @@ const MyRequirements = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="lg" 
+          <Button
+            variant="outline"
+            size="lg"
             onClick={() => setFilterOpen(!filterOpen)}
             className="h-10 w-10 p-0 flex items-center justify-center"
           >
@@ -351,13 +351,13 @@ const MyRequirements = () => {
                     </Link>
                     {(requirement.status === "draft" ||
                       requirement.status === "active") && (
-                      <Link to={`/edit-requirement/${requirement.id}`}>
-                        <Button variant="outline" size="sm">
-                          <Edit size={14} className="mr-2" /> Edit
-                        </Button>
-                      </Link>
-                    )}
-                    {requirement.status === "draft" && (
+                        <Link to={`/edit-requirement/${requirement.id}`}>
+                          <Button variant="outline" size="sm">
+                            <Edit size={14} className="mr-2" /> Edit
+                          </Button>
+                        </Link>
+                      )}
+                    {(requirement.status === "draft" || requirement.status === "closed") && (
                       <Button
                         variant="outline"
                         size="sm"

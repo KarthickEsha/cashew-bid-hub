@@ -182,7 +182,7 @@ const Marketplace = () => {
                     (product.location as any)?.country
                 ].filter(Boolean).join(', '),
             origin: product.origin || 'Not specified',
-            grade: product.grade || 'N/A',
+            grade: product.grade || 'RAW Cashews',
             quantity: product.availableQty,
             quantityUnit: product.unit || 'kg',
             pricePerTon: `$${product.price * 1000}`, // Assuming price is per kg

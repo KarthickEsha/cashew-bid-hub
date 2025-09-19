@@ -143,7 +143,7 @@ const MerchantDashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold">{displayStats.products}</div>
               <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">{displayStats.stock}</span> published stock
+                <span className="text-green-600">{displayStats.products}</span> published stock
               </p>
             </CardContent>
           </Card>

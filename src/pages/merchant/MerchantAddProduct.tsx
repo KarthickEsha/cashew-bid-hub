@@ -93,6 +93,14 @@ const MerchantAddProduct = () => {
         grade: isEditMode && editingProduct ? editingProduct.grade || '' : '',
     });
 
+    useEffect(() => {    
+        if (profile?.productType && profile.productType !== "Both") {
+            setCurrentProductType(profile.productType);
+        }else{
+            setCurrentProductType("RCN")
+        }
+    }, [profile?.productType]);
+
     // Update form data when editing product is found
     useEffect(() => {
         if (isEditMode && editingProduct) {

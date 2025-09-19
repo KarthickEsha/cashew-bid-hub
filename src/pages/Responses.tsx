@@ -578,10 +578,10 @@ const Responses = () => {
                     <h4 className="font-medium">Grade</h4>
                     <p className="font-medium">{selectedResponse.grade}</p>
                   </div>
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <h4 className="font-medium">Delivery Time</h4>
                     <p className="font-medium">{selectedResponse.deliveryTime}</p>
-                  </div>
+                  </div> */}
                   <div className="space-y-2">
                     <h4 className="font-medium">
                       {selectedResponse.origin

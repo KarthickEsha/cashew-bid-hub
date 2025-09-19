@@ -1,17 +1,12 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useOrders } from "@/hooks/useOrders";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
   Calendar,
   MapPin,
   Search,
@@ -23,81 +18,98 @@ import {
   AlertCircle,
   DollarSign,
   User,
-  Inbox,
   Filter,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Trash2,
 } from "lucide-react";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { profile } from "console";
 import { useProfile } from "@/hooks/useProfile";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+type SortField = 'productName' | 'orderDate' | 'status' | 'totalAmount' | 'quantity';
+type SortDirection = 'asc' | 'desc';
 
 const MyOrders = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const { orders, updateOrderStatus } = useOrders();
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: SortDirection }>({
+    field: 'orderDate',
+    direction: 'desc',
+  });
+  
+  const { orders, updateOrderStatus, deleteOrder } = useOrders();
+  const { profile } = useProfile();
 
   // filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
 
-  // filter visibility state
-  const [filterOpen, setFilterOpen] = useState(false);
-
-  // applied filters
-  const [appliedFilters, setAppliedFilters] = useState({
-    searchTerm: "",
-    statusFilter: "all",
-    locationFilter: "all",
-  });
-
   // dialog states
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const { profile, setProfile } = useProfile();
   const [trackingOpen, setTrackingOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
-  // Add some mock orders if none exist
-  const allOrders = orders.length > 0 ? orders : [
-    // {
-    //   id: "ORD-001",
-    //   productName: "Premium W320 Cashews",
-    //   merchantName: "Golden Cashew Co.",
-    //   quantity: "25 tons",
-    //   unitPrice: "$8,200/ton",
-    //   totalAmount: "$205,000",
-    //   status: "confirmed" as const,
-    //   orderDate: "2024-08-20",
-    //   shippingDate: "2024-08-22",
-    //   deliveryDate: "2024-09-05",
-    //   location: "Mumbai, India",
-    //   trackingNumber: "TRK123456789",
-    //   steps: [
-    //     { label: "Order Placed", date: "2024-08-20", done: true },
-    //     { label: "Confirmed", date: "2024-08-21", done: true },
-    //     { label: "Shipped", date: "2024-08-22", done: true },
-    //     { label: "In Transit", date: "2024-08-28", done: false },
-    //     { label: "Delivered", date: "2024-09-05", done: false },
-    //   ],
-    // },
-  ];
+  const allOrders = orders.length > 0 ? orders : [];
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "processing":
-        return <Clock size={16} className="text-yellow-500" />;
-      case "confirmed":
-        return <CheckCircle size={16} className="text-blue-500" />;
-      case "shipped":
-        return <Truck size={16} className="text-orange-500" />;
-      case "delivered":
-        return <Package size={16} className="text-green-500" />;
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'processing':
+        return <Badge variant="outline" className="text-yellow-600 border-yellow-300 bg-yellow-50">Processing</Badge>;
+      case 'confirmed':
+        return <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50">Confirmed</Badge>;
+      case 'shipped':
+        return <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50">Shipped</Badge>;
+      case 'delivered':
+        return <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">Delivered</Badge>;
+      case 'cancelled':
+        return <Badge variant="outline" className="text-red-600 border-red-300 bg-red-50">Cancelled</Badge>;
       default:
-        return <AlertCircle size={16} className="text-gray-500" />;
+        return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const handleSort = (field: SortField) => {
+    setSortConfig(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortConfig.field !== field) {
+      return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+    }
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUp className="ml-2 h-4 w-4" /> 
+      : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   const getStatusColor = (status: string) => {
@@ -116,206 +128,318 @@ const MyOrders = () => {
   };
 
   // filtering
-  const filteredOrders = allOrders.filter((order) => {
-    const matchesSearch = appliedFilters.searchTerm
-      ? order.productName.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase()) ||
-      order.merchantName.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase()) ||
-      order.id.toLowerCase().includes(appliedFilters.searchTerm.toLowerCase())
-      : true;
+  const filteredAndSortedOrders = useMemo(() => {
+    const filtered = allOrders.filter((order) => {
+      const matchesSearch = order.productName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+        order.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" ||
+        order.status.toLowerCase() === statusFilter.toLowerCase();
+      const matchesLocation =
+        locationFilter === "all" ||
+        order.location.toLowerCase() === locationFilter.toLowerCase();
 
-    const matchesStatus =
-      appliedFilters.statusFilter !== "all"
-        ? order.status === appliedFilters.statusFilter
-        : true;
+      return matchesSearch && matchesStatus && matchesLocation;
+    });
 
-    const matchesLocation =
-      appliedFilters.locationFilter !== "all"
-        ? order.location === appliedFilters.locationFilter
-        : true;
+    // Apply sorting
+    return [...filtered].sort((a, b) => {
+      let aValue: any, bValue: any;
+      
+      switch (sortConfig.field) {
+        case 'productName':
+          aValue = a.productName.toLowerCase();
+          bValue = b.productName.toLowerCase();
+          break;
+        case 'orderDate':
+          aValue = new Date(a.orderDate);
+          bValue = new Date(b.orderDate);
+          break;
+        case 'status':
+          aValue = a.status.toLowerCase();
+          bValue = b.status.toLowerCase();
+          break;
+        case 'totalAmount':
+          aValue = parseFloat(a.totalAmount.replace(/[^0-9.-]+/g, ""));
+          bValue = parseFloat(b.totalAmount.replace(/[^0-9.-]+/g, ""));
+          break;
+        case 'quantity':
+          aValue = parseFloat(a.quantity.split(' ')[0]);
+          bValue = parseFloat(b.quantity.split(' ')[0]);
+          break;
+        default:
+          return 0;
+      }
 
-    return matchesSearch && matchesStatus && matchesLocation;
-  });
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [allOrders, searchTerm, statusFilter, locationFilter, sortConfig]);
 
-  const itemsPerPage = 6;
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedOrders.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
-
-  const uniqueLocations = Array.from(new Set(allOrders.map((o) => o.location)));
-
-  const handleApplyFilters = () => {
-    setAppliedFilters({
-      searchTerm,
-      statusFilter,
-      locationFilter,
-    });
-    setCurrentPage(1);
-  };
-
-  const handleClearFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("all");
-    setLocationFilter("all");
-    setAppliedFilters({
-      searchTerm: "",
-      statusFilter: "all",
-      locationFilter: "all",
-    });
-    setCurrentPage(1);
-  };
+  const currentOrders = filteredAndSortedOrders.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-6 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">My Enquiries</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl font-bold">My Enquiries</h1>
+          <p className="text-muted-foreground">
             View and manage your enquiries
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
-          <Filter className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-none md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by product or order ID..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Filters */}
-      {filterOpen && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Filter Enquiries</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  placeholder="Search orders..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+      {/* Orders Table */}
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead 
+                className="cursor-pointer hover:bg-muted/50" 
+                onClick={() => handleSort('productName')}
+              >
+                <div className="flex items-center">
+                  Product
+                  {getSortIcon('productName')}
+                </div>
+              </TableHead>
+              <TableHead>Merchant</TableHead>
+              <TableHead 
+                className="text-right cursor-pointer hover:bg-muted/50"
+                onClick={() => handleSort('quantity')}
+              >
+                <div className="flex items-center justify-end">
+                  Quantity
+                  {getSortIcon('quantity')}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="text-right cursor-pointer hover:bg-muted/50"
+                onClick={() => handleSort('totalAmount')}
+              >
+                <div className="flex items-center justify-end">
+                  Total Amount
+                  {getSortIcon('totalAmount')}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleSort('status')}
+              >
+                <div className="flex items-center">
+                  Status
+                  {getSortIcon('status')}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleSort('orderDate')}
+              >
+                <div className="flex items-center">
+                  Date
+                  {getSortIcon('orderDate')}
+                </div>
+              </TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {currentOrders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <Package className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">No enquiries found</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              currentOrders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex flex-col">
+                      <span>{order.productName}</span>
+                      {/* <span className="text-xs text-muted-foreground">#{order.id}</span> */}
+                    </div>
+                  </TableCell>
+                  <TableCell>{order.merchantName}</TableCell>
+                  <TableCell className="text-right">{order.quantity}</TableCell>
+                  <TableCell className="text-right font-medium">{order.totalAmount}</TableCell>
+                  <TableCell>
+                    {getStatusBadge(order.status)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span>{format(new Date(order.orderDate), 'MMM d, yyyy')}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(order.orderDate), 'h:mm a')}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setDetailsOpen(true);
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span className="sr-only">View details</span>
+                      </Button>
+                      {order.trackingNumber && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setTrackingOpen(true);
+                          }}
+                        >
+                          <Truck className="h-4 w-4" />
+                          <span className="sr-only">Track order</span>
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-700"
+                        onClick={() => {
+                          setOrderToDelete(order.id);
+                          setDeleteConfirmOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete enquiry</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+
+        {/* Pagination */}
+        {filteredAndSortedOrders.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredAndSortedOrders.length)} of {filteredAndSortedOrders.length} enquiries
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">Rows per page</p>
+                <Select
+                  value={`${itemsPerPage}`}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue placeholder={itemsPerPage} />
+                  </SelectTrigger>
+                  <SelectContent side="top">
+                    {[5, 10, 20, 30, 40, 50].map((pageSize) => (
+                      <SelectItem key={pageSize} value={`${pageSize}`}>
+                        {pageSize}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-
-              {/* Status */}
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Location */}
-              <Select value={locationFilter} onValueChange={(value) => setLocationFilter(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  {uniqueLocations.map((loc, i) => (
-                    <SelectItem key={i} value={loc}>
-                      {loc}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Buttons */}
-              <div className="flex space-x-2">
-                <Button variant="outline" onClick={handleClearFilters}>
-                  Clear Filters
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                  <span className="sr-only">First page</span>
                 </Button>
-                <Button onClick={handleApplyFilters}>Apply Filters</Button>
+                <Button
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Previous page</span>
+                </Button>
+                <div className="text-sm">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Next page</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                  <span className="sr-only">Last page</span>
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Orders */}
-      <div className="space-y-4">
-        {currentOrders.length === 0 ? (
-          <Card className="p-10 text-center">
-            <Inbox className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <p className="text-lg font-medium">
-              No data found for the selected filters
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Try changing your search or filter options
-            </p>
-          </Card>
-        ) : (
-          currentOrders.map((order) => (
-            <Card key={order.id}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold">Order #{order.id}</h3>
-                      {getStatusIcon(order.status)}
-                      <Badge className={getStatusColor(order.status)}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1).toLowerCase()}
-                      </Badge>
-
-                    </div>
-                    <p className="font-medium">{order.productName}</p>
-                    <p className="text-sm text-muted-foreground">{profile.companyName}</p>
-                    <div className="flex items-center text-sm text-muted-foreground mt-1">
-                      <MapPin size={14} className="mr-1" />
-                      {[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold">
-                      {new Intl.NumberFormat("en-IN", {
-                        style: "currency",
-                        currency: "INR",
-                        maximumFractionDigits: 2,
-                      }).format(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}
-                    </div>
-                  </div>
-
-                </div>
-
-                <div className="flex justify-end space-x-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedOrder(order);
-                      setDetailsOpen(true);
-                    }}
-                  >
-                    <Eye size={14} className="mr-2" /> View Details
-                  </Button>
-
-                  {order.trackingNumber && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedOrder(order);
-                        setTrackingOpen(true);
-                      }}
-                    >
-                      <Truck size={14} className="mr-2" /> Track Order
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))
+          </div>
         )}
-      </div>
+      </Card>
 
       {/* View Details Popup */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
@@ -408,6 +532,38 @@ const MyOrders = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to delete this enquiry? This action cannot be undone.</p>
+          </div>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                if (orderToDelete) {
+                  deleteOrder(orderToDelete);
+                  setDeleteConfirmOpen(false);
+                  setOrderToDelete(null);
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
