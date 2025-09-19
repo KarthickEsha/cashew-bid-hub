@@ -48,7 +48,7 @@ const Dashboard = () => {
   }, 0);
   useEffect(() => {
     // Count new/unread responses
-    const count = responses.filter(response => response.status === 'new').length;
+    const count = responses.length;
     setNewResponseCount(count);
   }, [responses]);
   const stats = [

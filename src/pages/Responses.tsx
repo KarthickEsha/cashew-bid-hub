@@ -48,6 +48,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Trash2,
 } from "lucide-react";
 import { useResponses } from "@/hooks/useResponses";
 import { useRequirements } from "@/hooks/useRequirements";
@@ -109,7 +110,8 @@ const Responses = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedResponse, setSelectedResponse] = useState<ResponseWithDetails | null>(null);
-  const { responses, updateResponseStatus } = useResponses();
+  const [responseToDelete, setResponseToDelete] = useState<{id: string, name: string} | null>(null);
+  const { responses, updateResponseStatus, deleteResponse } = useResponses();
   const { requirements } = useRequirements();
   const [isLoading, setIsLoading] = useState(false);
   const [sortField, setSortField] = useState<string>('responseDate');
@@ -240,6 +242,25 @@ const Responses = () => {
       toast({
         title: 'Error',
         description: 'Failed to update response status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle delete response
+  const handleDeleteResponse = async (responseId: string) => {
+    try {
+      await deleteResponse(responseId);
+      setResponseToDelete(null);
+      toast({
+        title: 'Success',
+        description: 'Seller Response deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting response:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete response',
         variant: 'destructive',
       });
     }
@@ -454,12 +475,31 @@ const Responses = () => {
                         <Eye className="h-4 w-4" />
                         <span className="sr-only">View details</span>
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setResponseToDelete({
+                            id: response.id,
+                            name: `${response.merchantName}'s response for ${response.requirementTitle}`
+                          });
+                        }}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
                       {(response.status === 'new' || response.status === 'viewed') && (
                         <>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleStatusUpdate(response.id, 'rejected')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusUpdate(response.id, 'rejected');
+                            }}
                             className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                             title="Reject"
                           >
@@ -468,7 +508,10 @@ const Responses = () => {
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => handleStatusUpdate(response.id, 'accepted')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusUpdate(response.id, 'accepted');
+                            }}
                             className="h-8 w-8 p-0"
                             title="Accept"
                           >
@@ -538,6 +581,35 @@ const Responses = () => {
         )}
       </div>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!responseToDelete}
+        onOpenChange={(open) => !open && setResponseToDelete(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <span className="font-medium">{responseToDelete?.name}</span>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setResponseToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => responseToDelete && handleDeleteResponse(responseToDelete.id)}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Response Details Dialog */}
       <Dialog
         open={!!selectedResponse}
@@ -568,11 +640,11 @@ const Responses = () => {
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-medium">Price</h4>
-                    <p className="font-medium">{selectedResponse.price} / kg</p>
+                    <p className="font-medium">₹{selectedResponse.price} / kg</p>
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-medium">Quantity</h4>
-                    <p className="font-medium">{selectedResponse.quantity}</p>
+                    <p className="font-medium">{selectedResponse.quantity} / kg</p>
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-medium">Grade</h4>

@@ -60,7 +60,7 @@ export function AppSidebar() {
 
   useEffect(() => {
     // Count new/unread responses
-    const count = responses.filter((response: { status: string }) => response.status === 'new').length;
+    const count = responses.length;
     setNewResponseCount(count);
     if (profile?.productType && profile.productType !== "Both") {
       setCurrentProductType(profile.productType);
