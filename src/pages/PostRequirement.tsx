@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,7 @@ const productPrices = {
 };
 
 const PostRequirement = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { addRequirement } = useRequirements();
   const { profile } = useProfile();
@@ -193,13 +195,13 @@ const PostRequirement = () => {
     // Show success message and redirect
     if (isDraft) {
       toast({
-        title: 'Requirement',
-        description: 'Requirement saved as draft successfully!',
+        title: t('postRequirement.title'),
+        description: t('postRequirement.successDraft'),
       });
     } else {
       toast({
-        title: 'Requirement',
-        description: 'Requirement posted successfully! Merchants will be able to see your requirement.',
+        title: t('postRequirement.title'),
+        description: t('postRequirement.successPosted'),
       });
       navigate('/my-requirements'); // Redirect to dashboard after successful submission
     }
@@ -209,9 +211,9 @@ const PostRequirement = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Post Requirement</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">{t('postRequirement.title')}</h1>
         <p className="text-muted-foreground">
-          Let merchants know what you're looking for and receive competitive offers
+          {t('postRequirement.subtitle')}
         </p>
       </div>
 
@@ -219,17 +221,17 @@ const PostRequirement = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <FileText size={20} className="mr-2" />
-            Requirement Details
+            {t('postRequirement.requirementDetails')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Basic Information</h3>
+            <h3 className="text-lg font-semibold">{t('postRequirement.basicInfo')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="grade">Product / Grade *</Label>
+                <Label htmlFor="grade">{t('postRequirement.productGrade')} *</Label>
                 <Select
                   value={formData.grade}
                   onValueChange={(value) =>
@@ -237,7 +239,7 @@ const PostRequirement = () => {
                   }
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select grade" />
+                    <SelectValue placeholder={t('postRequirement.selectGrade')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="W180">W180</SelectItem>
@@ -251,7 +253,7 @@ const PostRequirement = () => {
               </div>
 
               <div>
-                <Label htmlFor="origin">Origin *</Label>
+                <Label htmlFor="origin">{t('postRequirement.origin')} *</Label>
                 <Select
                   value={formData.origin}
                   onValueChange={(value) => {
@@ -260,7 +262,7 @@ const PostRequirement = () => {
                   }}
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select origin" />
+                    <SelectValue placeholder={t('postRequirement.selectOrigin')} />
                   </SelectTrigger>
                   <SelectContent>
                     {origins.map((origin) => (
@@ -275,7 +277,7 @@ const PostRequirement = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="quantity">Required Quantity (kg) *</Label>
+                <Label htmlFor="quantity">{t('postRequirement.requiredQuantity')} *</Label>
                 <Input
                   id="quantity"
                   name="quantity"
@@ -284,13 +286,13 @@ const PostRequirement = () => {
                   step="0.01"
                   value={formData.quantity}
                   onChange={handleInputChange}
-                  placeholder="Enter required quantity"
+                  placeholder={t('postRequirement.enterQuantity')}
                   required
                   className={quantityError ? 'border-red-500' : ''}
                 />
               </div>
               <div>
-                <Label htmlFor="minSupplyQuantity">Minimum Supply Quantity (kg)</Label>
+                <Label htmlFor="minSupplyQuantity">{t('postRequirement.minSupplyQuantity')}</Label>
                 <Input
                   id="minSupplyQuantity"
                   name="minSupplyQuantity"
@@ -299,7 +301,7 @@ const PostRequirement = () => {
                   step="0.01"
                   value={formData.minSupplyQuantity}
                   onChange={handleInputChange}
-                  placeholder="Enter minimum supply quantity"
+                  placeholder={t('postRequirement.enterMinQuantity')}
                   className={quantityError ? 'border-red-500' : ''}
                 />
                 {quantityError && (
@@ -347,10 +349,10 @@ const PostRequirement = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* First Expected Price Field */}
               <div>
-                <Label htmlFor="expectedPrice">Expected Price (₹/kg) *</Label>
+                <Label htmlFor="expectedPrice">{t('postRequirement.expectedPrice')} *</Label>
                 <Input
                   id="expectedPrice"
-                  placeholder="Enter expected price"
+                  placeholder={t('postRequirement.enterExpectedPrice')}
                   value={formData.expectedPrice}
                   onChange={(e) => {
                     setFormData({ ...formData, expectedPrice: e.target.value });
@@ -374,13 +376,13 @@ const PostRequirement = () => {
                   }
                   className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                 />
-                <Label htmlFor="allowLowerBid">Seller can bid lower price?</Label>
+                <Label htmlFor="allowLowerBid">{t('postRequirement.allowLowerBid')}</Label>
               </div>
             </div>
           </div>
 
           <div>
-            <Label>Expected Delivery Date *</Label>
+            <Label>{t('postRequirement.expectedDeliveryDate')} *</Label>
             <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -394,7 +396,7 @@ const PostRequirement = () => {
                   {formData.deliveryDeadline ? (
                     format(formData.deliveryDeadline, "PPP")
                   ) : (
-                    <span>Pick a date</span>
+                    <span>{t('postRequirement.pickDate')}</span>
                   )}
                 </Button>
               </PopoverTrigger>
@@ -455,13 +457,13 @@ const PostRequirement = () => {
 
           {/* Delivery Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Delivery Information</h3>
+            <h3 className="text-lg font-semibold">{t('postRequirement.deliveryInfo')}</h3>
 
             <div>
-              <Label htmlFor="deliveryLocation">Delivery Location *</Label>
+              <Label htmlFor="deliveryLocation">{t('postRequirement.deliveryLocation')} *</Label>
               <Input
                 id="deliveryLocation"
-                placeholder="e.g., Port of Chennai"
+                placeholder={t('postRequirement.enterDeliveryLocation')}
                 value={formData.deliveryLocation}
                 onChange={(e) =>
                   setFormData({ ...formData, deliveryLocation: e.target.value })
@@ -472,10 +474,10 @@ const PostRequirement = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="city">City *</Label>
+                <Label htmlFor="city">{t('postRequirement.city')} *</Label>
                 <Input
                   id="city"
-                  placeholder="e.g., Chennai"
+                  placeholder={t('postRequirement.enterCity')}
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="mt-1"
@@ -483,7 +485,7 @@ const PostRequirement = () => {
               </div>
 
               <div>
-                <Label>Country *</Label>
+                <Label>{t('postRequirement.country')} *</Label>
                 <Select
                   value={formData.country}
                   onValueChange={(value) =>
@@ -491,7 +493,7 @@ const PostRequirement = () => {
                   }
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select a country" />
+                    <SelectValue placeholder={t('postRequirement.selectCountry')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="India">India</SelectItem>
@@ -516,16 +518,16 @@ const PostRequirement = () => {
 
           {/* Additional Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Additional Information</h3>
+            <h3 className="text-lg font-semibold">{t('postRequirement.additionalInfo')}</h3>
 
             <div>
-              <Label htmlFor="specifications">Specifications</Label>
+              <Label htmlFor="specifications">{t('postRequirement.specifications')}</Label>
               <p className="text-sm text-muted-foreground mb-2">
-                Include details like moisture content, kernel size, etc.
+                {t('postRequirement.specificationsHint')}
               </p>
               <Textarea
                 id="specifications"
-                placeholder="e.g., Moisture content: 5% max, Kernel size: 320 pieces/kg"
+                placeholder={t('postRequirement.specificationsPlaceholder')}
                 value={formData.specifications}
                 onChange={(e) =>
                   setFormData({ ...formData, specifications: e.target.value })
@@ -539,11 +541,11 @@ const PostRequirement = () => {
           <div className="flex justify-end space-x-3 pt-6 border-t border-border">
             <Button variant="outline" onClick={() => handleSubmit(true)}>
               <Save size={16} className="mr-2" />
-              Save as Draft
+              {t('postRequirement.saveDraft')}
             </Button>
             <Button onClick={() => handleSubmit(false)} size="lg">
               <Send size={16} className="mr-2" />
-              Post Requirement
+              {t('postRequirement.postRequirementBtn')}
             </Button>
           </div>
         </CardContent>

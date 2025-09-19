@@ -30,6 +30,9 @@ import RoleSwitcher from "@/components/RoleSwitcher";
 import { useTranslation } from "react-i18next";
 import { useOrders } from "@/hooks/useOrders";
 import { useRequirements } from "@/hooks/useRequirements";
+import { useInventory } from "@/hooks/useInventory";
+import { ProductType } from "@/types/user";
+import { useProfile } from "@/hooks/useProfile";
 
 interface NavItem {
   path: string;
@@ -51,17 +54,25 @@ export function AppSidebar() {
   const requirements = getMyRequirements();
   const [newResponseCount, setNewResponseCount] = useState(0);
   const navigate = useNavigate();
+  const { products } = useInventory();
+  const [currentProductType, setCurrentProductType] = useState<ProductType>();
+  const { profile } = useProfile();
 
   useEffect(() => {
     // Count new/unread responses
     const count = responses.filter((response: { status: string }) => response.status === 'new').length;
     setNewResponseCount(count);
-  }, [responses]);
-
+    if (profile?.productType && profile.productType !== "Both") {
+      setCurrentProductType(profile.productType);
+    } else {
+      setCurrentProductType("RCN")
+    }
+  }, [responses, profile?.productType]);
+  const activeProductsCount = products.filter(p => p.status === 'active').length;
   const mainNavItems: NavItem[] = [
     { path: "/", label: t('sidebar.mainNav.dashboard'), icon: Home },
-    { path: "/marketplace", label: t('sidebar.mainNav.marketplace'), icon: Store },
-    { path: "/post-requirement", label: t('sidebar.mainNav.postRequirement'), icon: Plus },
+    { path: "/marketplace", label: t('sidebar.mainNav.marketplace'), icon: Store , badge: activeProductsCount},
+    { path: "/post-requirement", label: t('sidebar.mainNav.postRequirement'), icon: Plus, },
   ];
 
   const myActivityItems: NavItem[] = [
@@ -75,11 +86,11 @@ export function AppSidebar() {
   ];
 
   const accountItems: NavItem[] = [
-    { 
-      path: "#", 
-      label: t('sidebar.account.signOut'), 
-      icon: LogOut, 
-      onClick: () => signOut().then(() => navigate('/login')) 
+    {
+      path: "#",
+      label: t('sidebar.account.signOut'),
+      icon: LogOut,
+      onClick: () => signOut().then(() => navigate('/login'))
     },
   ];
 
@@ -120,6 +131,11 @@ export function AppSidebar() {
                     <NavLink to={item.path} end className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span className="text-[15px]">{item.label}</span>}
+                      {item.badge !== undefined && item.badge > 0 && !collapsed && (
+                        <Badge variant="destructive" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
+                          {item.badge}
+                        </Badge>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -136,8 +152,8 @@ export function AppSidebar() {
               {myActivityItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.path} 
+                    <NavLink
+                      to={item.path}
                       className={getNavCls}
                       onClick={item.onClick ? (e) => {
                         e.preventDefault();
