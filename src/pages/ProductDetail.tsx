@@ -450,15 +450,15 @@ const ProductDetail = () => {
                           setBidQuantity(value); // always update, so user can type freely
                         }}
                         placeholder={`Min: ${product.minOrderQty || 1}, Max: ${product.availableQty} ${product.unit}`}
-                      className={`border-primary/20 focus:border-primary ${(bidQuantity &&
+                        className={`border-primary/20 focus:border-primary ${(bidQuantity &&
                           parseFloat(bidQuantity) > product.availableQty) ||
                           (bidQuantity &&
                             product.minOrderQty &&
                             parseFloat(bidQuantity) < product.minOrderQty)
                           ? 'border-red-500'
                           : ''
-                        }`}
-  />
+                          }`}
+                      />
 
                       {/* Validation message */}
                       {bidQuantity &&

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,13 @@ import {
   Plus,
   Inbox,
   Filter,
+  List,
+  Grid3X3,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
 import {
   Dialog,
@@ -47,6 +53,11 @@ const MyRequirements = () => {
   const [gradeFilter, setGradeFilter] = useState("all");
   const [filteredRequirements, setFilteredRequirements] = useState<any[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
 
   // Get requirements from the hook
   const requirements = getMyRequirements();
@@ -85,12 +96,15 @@ const MyRequirements = () => {
     }
   };
 
-  // Apply filter function
+  // Apply filter and sorting
   const applyFilters = () => {
     let temp = [...requirements];
+    
+    // Apply filters
     if (searchTerm) {
       temp = temp.filter((req) =>
-        req.title.toLowerCase().includes(searchTerm.toLowerCase())
+        req.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     if (statusFilter !== "all") {
@@ -99,8 +113,63 @@ const MyRequirements = () => {
     if (gradeFilter !== "all") {
       temp = temp.filter((req) => req.grade === gradeFilter);
     }
+
+    // Apply sorting
+    if (sortConfig !== null) {
+      temp.sort((a, b) => {
+        let aValue = a[sortConfig.key as keyof typeof a];
+        let bValue = b[sortConfig.key as keyof typeof b];
+
+        // Handle date sorting
+        if (sortConfig.key === 'createdAt' || sortConfig.key === 'lastModified') {
+          aValue = new Date(aValue as string).getTime();
+          bValue = new Date(bValue as string).getTime();
+        }
+        // Handle numeric sorting
+        else if (sortConfig.key === 'quantity') {
+          aValue = parseFloat(aValue as string) || 0;
+          bValue = parseFloat(bValue as string) || 0;
+        }
+        // Handle price range sorting (extract first number from string like "$1,000 - $1,200")
+        else if (sortConfig.key === 'priceRange') {
+          const extractNumber = (str: string) => {
+            if (!str) return 0;
+            const match = str.match(/\$([\d,]+)/);
+            return match ? parseFloat(match[1].replace(/,/g, '')) : 0;
+          };
+          aValue = extractNumber(a.budgetRange || '');
+          bValue = extractNumber(b.budgetRange || '');
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
     setFilteredRequirements(temp);
-    setCurrentPage(1); // reset to first page
+    setCurrentPage(1);
+  };
+
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <ArrowUpDown className="ml-1 h-3 w-3" />;
+    }
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUp className="ml-1 h-3 w-3" /> 
+      : <ArrowDown className="ml-1 h-3 w-3" />;
   };
 
   // Run filters automatically when dependencies change
@@ -129,16 +198,36 @@ const MyRequirements = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">
             My Requirements
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm md:text-base">
             Manage your posted requirements and track responses
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 w-full md:w-auto">
+          <div className="flex items-center space-x-1 bg-muted p-1 rounded-md">
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setViewMode('card')}
+            >
+              <Grid3X3 className="h-4 w-4" />
+              <span className="sr-only">Card View</span>
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+              <span className="sr-only">List View</span>
+            </Button>
+          </div>
           <Button
             variant="outline"
             size="lg"
@@ -243,8 +332,212 @@ const MyRequirements = () => {
         </Card>
       )}
 
-      {/* Requirements Grid */}
-      {filteredRequirements.length === 0 ? (
+      {/* Requirements Grid or Table */}
+      {viewMode === 'list' ? (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('title')}
+                >
+                  <div className="flex items-center">
+                    Requirement
+                    {getSortIcon('title')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('grade')}
+                >
+                  <div className="flex items-center">
+                    Grade
+                    {getSortIcon('grade')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('deliveryLocation')}
+                >
+                  <div className="flex items-center">
+                    Location
+                    {getSortIcon('deliveryLocation')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-right cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('quantity')}
+                >
+                  <div className="flex items-center justify-end">
+                    Quantity
+                    {getSortIcon('quantity')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('priceRange')}
+                >
+                  <div className="flex items-center">
+                    Price Range
+                    {getSortIcon('priceRange')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('status')}
+                >
+                  <div className="flex items-center">
+                    Status
+                    {getSortIcon('status')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('lastModified')}
+                >
+                  <div className="flex items-center">
+                    Last Updated
+                    {getSortIcon('lastModified')}
+                  </div>
+                </TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRequirements.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center">
+                    <div className="flex flex-col items-center justify-center py-6">
+                      <Inbox className="h-10 w-10 text-muted-foreground mb-2" />
+                      <p className="text-muted-foreground">
+                        {searchTerm || statusFilter !== "all" || gradeFilter !== "all"
+                          ? 'No requirements match your current filters.'
+                          : 'You haven\'t created any requirements yet'}
+                      </p>
+                      <Link to="/post-requirement" className="mt-4">
+                        <Button size="sm">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Requirement
+                        </Button>
+                      </Link>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                currentRequirements.map((requirement) => (
+                  <TableRow key={requirement.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span>{requirement.title}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {requirement.description?.substring(0, 50)}{requirement.description?.length > 50 ? '...' : ''}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{requirement.grade || 'N/A'}</Badge>
+                    </TableCell>
+                    <TableCell>{requirement.deliveryLocation || 'N/A'}</TableCell>
+                    <TableCell className="text-right">
+                      {requirement.quantity} kg
+                    </TableCell>
+                    <TableCell>
+                      {requirement.budgetRange || 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(requirement.status)}>
+                        {requirement.status.charAt(0).toUpperCase() + requirement.status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(requirement.lastModified).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                          <Link to={`/requirement/${requirement.id}`}>
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">View</span>
+                          </Link>
+                        </Button>
+                        {(requirement.status === "draft" || requirement.status === "active") && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                            <Link to={`/edit-requirement/${requirement.id}`}>
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Link>
+                          </Button>
+                        )}
+                        {(requirement.status === "draft" || requirement.status === "closed") && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setDeleteId(requirement.id);
+                              setDeleteOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          
+          {/* Pagination */}
+          {filteredRequirements.length > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredRequirements.length)} of {filteredRequirements.length} items
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  First
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="text-sm">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                >
+                  Next
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage >= totalPages}
+                >
+                  Last
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+      ) : filteredRequirements.length === 0 ? (
         <Card className="p-10 text-center">
           <Inbox className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
           <p className="text-lg font-medium">
@@ -255,7 +548,7 @@ const MyRequirements = () => {
           </p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {currentRequirements.map((requirement) => (
             <Card
               key={requirement.id}

@@ -57,6 +57,7 @@ const MerchantEnquiries = () => {
   const [remarks, setRemarks] = useState('');
   const [actionType, setActionType] = useState<'skip' | 'selected' | 'quotes'>('quotes');
   const [quantityError, setQuantityError] = useState('');
+  const [error, setError] = useState("");
 
   // Map UI status values to the underlying enquiry statuses in your data
   const statusMap: Record<string, string[]> = {
@@ -457,6 +458,18 @@ const MerchantEnquiries = () => {
     setRemarks('');
     setResponseModalOpen(false);
   };
+
+  const handlePriceChange = (e) => {
+    const value = e.target.value;
+    setMerchantPrice(value);
+
+    // Validation logic
+    if (selectedEnquiry.allowLowerBid && parseFloat(value) < selectedEnquiry.expectedPrice) {
+      setError(`Price cannot be lower than expected price ₹${selectedEnquiry.expectedPrice}`);
+    } else {
+      setError(""); // clear error if valid
+    }
+  }
 
   const handleSubmitResponse = async () => {
     console.group('=== HANDLE SUBMIT RESPONSE ===');
@@ -1055,11 +1068,12 @@ const MerchantEnquiries = () => {
                         type="number"
                         placeholder="Enter your price per kg"
                         value={merchantPrice}
-                        onChange={(e) => setMerchantPrice(e.target.value)}
-                        className="border-input"
+                        onChange={handlePriceChange}
+                        className={`border - input ${error ? "border-red-500" : ""}`}
                         min="0"
                         step="0.01"
                       />
+                      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
                     </div>
                   </div>
 
