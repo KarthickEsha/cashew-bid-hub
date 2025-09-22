@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -106,6 +107,7 @@ interface ResponseWithDetails extends MerchantResponse {
 }
 
 const Responses = () => {
+  const { t } = useTranslation();
   const { profile, setProfile } = useProfile();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
@@ -305,8 +307,8 @@ const Responses = () => {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <Inbox className="h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900">No responses yet</h3>
-        <p className="text-gray-500">Your responses will appear here once merchants respond to your requirements.</p>
+        <h3 className="text-lg font-medium text-gray-900">{t('responses.noResponses')}</h3>
+        <p className="text-gray-500">{t('responses.noResponsesDescription')}</p>
       </div>
     );
   }
@@ -315,9 +317,9 @@ const Responses = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Seller Responses</h1>
+          <h1 className="text-3xl font-bold">{t('responses.title')}</h1>
           <p className="text-muted-foreground mt-1">
-            View and manage responses from merchants for your requirements
+            {t('responses.subtitle')}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
@@ -329,14 +331,14 @@ const Responses = () => {
       {filterOpen && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Filter Responses</CardTitle>
+            <CardTitle>{t('responses.filter.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search responses..."
+                  placeholder={t('responses.filter.searchPlaceholder')}
                   className="pl-10"
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
@@ -350,19 +352,19 @@ const Responses = () => {
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="viewed">Viewed</SelectItem>
-                  <SelectItem value="accepted">Accepted</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="all">{t('responses.filter.status.all')}</SelectItem>
+                  <SelectItem value="new">{t('responses.filter.status.new')}</SelectItem>
+                  <SelectItem value="viewed">{t('responses.filter.status.viewed')}</SelectItem>
+                  <SelectItem value="accepted">{t('responses.filter.status.accepted')}</SelectItem>
+                  <SelectItem value="rejected">{t('responses.filter.status.rejected')}</SelectItem>
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2">
                 <Button onClick={handleApplyFilters} className="w-full md:w-auto">
-                  Apply Filters
+                  {t('common.actions.applyFilters')}
                 </Button>
                 <Button variant="outline" onClick={resetFilters} className="w-full md:w-auto">
-                  Reset
+                  {t('common.actions.reset')}
                 </Button>
               </div>
             </div>
@@ -395,47 +397,47 @@ const Responses = () => {
               <TableRow>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('merchantName')}>
                   <div className="flex items-center">
-                    Merchant
+                    {t('responses.table.merchant')}
                     {getSortIcon('merchantName')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('requirementTitle')}>
                   <div className="flex items-center">
-                    Requirement
+                    {t('responses.table.requirement')}
                     {getSortIcon('requirementTitle')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('price')}>
                   <div className="flex items-center">
-                    Price
+                    {t('responses.table.price')}
                     {getSortIcon('price')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('quantity')}>
                   <div className="flex items-center">
-                    Quantity
+                    {t('responses.table.quantity')}
                     {getSortIcon('quantity')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('grade')}>
                   <div className="flex items-center">
-                    Grade
+                    {t('responses.table.grade')}
                     {getSortIcon('grade')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
                   <div className="flex items-center">
-                    Status
+                    {t('responses.table.status')}
                     {getSortIcon('status')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('responseDate')}>
                   <div className="flex items-center">
-                    Response Date
+                    {t('responses.table.responseDate')}
                     {getSortIcon('responseDate')}
                   </div>
                 </TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right">{t('common.actions.title')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -473,7 +475,7 @@ const Responses = () => {
                         title="View details"
                       >
                         <Eye className="h-4 w-4" />
-                        <span className="sr-only">View details</span>
+                        <span className="sr-only">{t('common.actions.viewDetails')}</span>
                       </Button>
                       <Button
                         variant="ghost"
@@ -489,7 +491,7 @@ const Responses = () => {
                         title="Delete"
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
+                        <span className="sr-only">{t('common.actions.delete')}</span>
                       </Button>
                       {(response.status === 'new' || response.status === 'viewed') && (
                         <>
@@ -504,7 +506,7 @@ const Responses = () => {
                             title="Reject"
                           >
                             <X className="h-4 w-4" />
-                            <span className="sr-only">Reject</span>
+                            <span className="sr-only">{t('common.actions.reject')}</span>
                           </Button>
                           <Button
                             size="sm"
@@ -516,7 +518,7 @@ const Responses = () => {
                             title="Accept"
                           >
                             <Check className="h-4 w-4" />
-                            <span className="sr-only">Accept</span>
+                            <span className="sr-only">{t('common.actions.accept')}</span>
                           </Button>
                         </>
                       )}
@@ -531,7 +533,12 @@ const Responses = () => {
                   <td colSpan={8} className="border-t px-4 py-3">
                     <div className="flex items-center justify-between">
                       <div className="text-sm text-muted-foreground">
-                        Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredResponses.length)} of {filteredResponses.length} responses
+                        {t('common.pagination.showing', {
+                          start: startIndex + 1,
+                          end: Math.min(startIndex + itemsPerPage, filteredResponses.length),
+                          total: filteredResponses.length,
+                          item: t('common.pagination.responses')
+                        })}
                       </div>
                       <div className="flex items-center space-x-4">
                         <Select
@@ -545,10 +552,10 @@ const Responses = () => {
                             <SelectValue placeholder="Page size" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="5">5</SelectItem>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="20">20</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="5">5 {t('common.pagination.perPage')}</SelectItem>
+                            <SelectItem value="10">10 {t('common.pagination.perPage')}</SelectItem>
+                            <SelectItem value="20">20 {t('common.pagination.perPage')}</SelectItem>
+                            <SelectItem value="50">50 {t('common.pagination.perPage')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <div className="flex space-x-2">
@@ -559,7 +566,7 @@ const Responses = () => {
                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                             disabled={currentPage === 1}
                           >
-                            Previous
+                            {t('common.pagination.previous')}
                           </Button>
                           <Button
                             variant="outline"
@@ -568,7 +575,7 @@ const Responses = () => {
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                             disabled={currentPage === totalPages}
                           >
-                            Next
+                            {t('common.pagination.next')}
                           </Button>
                         </div>
                       </div>
@@ -588,9 +595,9 @@ const Responses = () => {
       >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogTitle>{t('responses.dialogs.delete.title')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <span className="font-medium">{responseToDelete?.name}</span>? This action cannot be undone.
+              {t('responses.dialogs.delete.description', { name: responseToDelete?.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -598,13 +605,13 @@ const Responses = () => {
               variant="outline" 
               onClick={() => setResponseToDelete(null)}
             >
-              Cancel
+              {t('common.actions.cancel')}
             </Button>
             <Button 
               variant="destructive" 
               onClick={() => responseToDelete && handleDeleteResponse(responseToDelete.id)}
             >
-              Delete
+              {t('common.actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -619,35 +626,35 @@ const Responses = () => {
           {selectedResponse && (
             <>
               <DialogHeader>
-                <DialogTitle>Response Details</DialogTitle>
+                <DialogTitle>{t('responses.dialogs.details.title')}</DialogTitle>
                 <DialogDescription>
-                  Detailed information about the merchant's response
+                  {t('responses.dialogs.details.description')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <h4 className="font-medium">Requirement</h4>
+                    <h4 className="font-medium">{t('responses.details.requirement')}</h4>
                     <p className="text-muted-foreground">
                       {selectedResponse.requirementTitle}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium">Merchant</h4>
+                    <h4 className="font-medium">{t('responses.details.merchant')}</h4>
                     <p className="text-muted-foreground">
                       {profile.companyName}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium">Price</h4>
+                    <h4 className="font-medium">{t('responses.details.price')}</h4>
                     <p className="font-medium">₹{selectedResponse.price} / kg</p>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium">Quantity</h4>
+                    <h4 className="font-medium">{t('responses.details.quantity')}</h4>
                     <p className="font-medium">{selectedResponse.quantity} / kg</p>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium">Grade</h4>
+                    <h4 className="font-medium">{t('responses.details.grade')}</h4>
                     <p className="font-medium">{selectedResponse.grade}</p>
                   </div>
                   {/* <div className="space-y-2">
@@ -657,9 +664,9 @@ const Responses = () => {
                   <div className="space-y-2">
                     <h4 className="font-medium">
                       {selectedResponse.origin
-                        ? "Origin"
+                        ? t('responses.details.origin')
                         : selectedResponse.merchantLocation
-                          ? "Merchant Location"
+                          ? t('responses.details.merchantLocation')
                           : ""}
                     </h4>
 
@@ -688,7 +695,7 @@ const Responses = () => {
 
                 {selectedResponse.message && (
                   <div className="space-y-2">
-                    <h4 className="font-medium">Merchant's Message</h4>
+                    <h4 className="font-medium">{t('responses.details.merchantMessage')}</h4>
                     <p className="text-muted-foreground whitespace-pre-line">
                       {selectedResponse.message}
                     </p>
@@ -700,7 +707,7 @@ const Responses = () => {
                   variant="outline"
                   onClick={() => setSelectedResponse(null)}
                 >
-                  Close
+                  {t('common.actions.close')}
                 </Button>
                 {(selectedResponse.status === 'new' || selectedResponse.status === 'viewed') && (
                   <div className="flex gap-2">

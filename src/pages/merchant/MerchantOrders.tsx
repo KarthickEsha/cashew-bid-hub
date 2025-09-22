@@ -445,7 +445,7 @@ const MerchantOrders = () => {
                     <TableRow key={order.id}>
                       {/* <TableCell className="font-medium">{order.id}</TableCell> */}
                       <TableCell>{profile.name}</TableCell>
-                      <TableCell>{order.grade} Cashews</TableCell>
+                      <TableCell>{order.productName}</TableCell>
                       <TableCell>{order.quantity}</TableCell>
                       <TableCell>{formatINR(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}</TableCell>
                       <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>

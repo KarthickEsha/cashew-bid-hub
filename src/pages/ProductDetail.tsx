@@ -438,7 +438,7 @@ const ProductDetail = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-foreground">Quantity ({product.unit})</label>
-                    <div className="relative">
+                    <div>
                       <Input
                         type="number"
                         min="0"
@@ -447,19 +447,34 @@ const ProductDetail = () => {
                         value={bidQuantity}
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= product.availableQty)) {
-                            setBidQuantity(value);
-                          }
+                          setBidQuantity(value); // always update, so user can type freely
                         }}
-                        placeholder={`Max ${product.availableQty} ${product.unit}`}
-                        className={`border-primary/20 focus:border-primary ${bidQuantity && parseFloat(bidQuantity) > product.availableQty ? 'border-red-500' : ''
-                          }`}
-                      />
-                      {bidQuantity && parseFloat(bidQuantity) > product.availableQty && (
-                        <p className="text-xs text-red-500 mt-1">
-                          Cannot exceed {product.availableQty} {product.unit}
-                        </p>
-                      )}
+                        placeholder={`Min: ${product.minOrderQty || 1}, Max: ${product.availableQty} ${product.unit}`}
+                      className={`border-primary/20 focus:border-primary ${(bidQuantity &&
+                          parseFloat(bidQuantity) > product.availableQty) ||
+                          (bidQuantity &&
+                            product.minOrderQty &&
+                            parseFloat(bidQuantity) < product.minOrderQty)
+                          ? 'border-red-500'
+                          : ''
+                        }`}
+  />
+
+                      {/* Validation message */}
+                      {bidQuantity &&
+                        parseFloat(bidQuantity) > product.availableQty && (
+                          <p className="text-red-500 text-sm mt-1">
+                            Quantity cannot exceed {product.availableQty} {product.unit}.
+                          </p>
+                        )}
+
+                      {bidQuantity &&
+                        product.minOrderQty &&
+                        parseFloat(bidQuantity) < product.minOrderQty && (
+                          <p className="text-red-500 text-sm mt-1">
+                            Minimum order quantity is {product.minOrderQty} {product.unit}.
+                          </p>
+                        )}
                     </div>
                   </div>
                   <div className="space-y-2">

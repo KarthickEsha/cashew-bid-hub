@@ -1,7 +1,4 @@
 {
-  "common": {
-    "user": "User"
-  },
   "header": {
     "greeting": "Hi, {{name}}",
     "buyerMode": "Buyer Mode",
@@ -104,5 +101,77 @@
     "validationError": "Please fill in all required fields",
     "successDraft": "Requirement saved as draft successfully!",
     "successPosted": "Requirement posted successfully! Merchants will be able to see your requirement."
+  },
+  "responses": {
+    "title": "Seller Responses",
+    "subtitle": "View and manage responses from merchants for your requirements",
+    "noResponses": "No responses yet",
+    "noResponsesDescription": "Your responses will appear here once merchants respond to your requirements.",
+    "filter": {
+      "title": "Filter Responses",
+      "searchPlaceholder": "Search responses...",
+      "status": {
+        "all": "All Status",
+        "new": "New",
+        "viewed": "Viewed",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      }
+    },
+    "table": {
+      "merchant": "Merchant",
+      "requirement": "Requirement",
+      "price": "Price",
+      "quantity": "Quantity",
+      "grade": "Grade",
+      "status": "Status",
+      "responseDate": "Response Date"
+    },
+    "dialogs": {
+      "delete": {
+        "title": "Confirm Deletion",
+        "description": "Are you sure you want to delete <1>{{name}}</1>? This action cannot be undone."
+      },
+      "details": {
+        "title": "Response Details",
+        "description": "Detailed information about the merchant's response"
+      }
+    },
+    "details": {
+      "requirement": "Requirement",
+      "merchant": "Merchant",
+      "price": "Price",
+      "quantity": "Quantity",
+      "grade": "Grade",
+      "origin": "Origin",
+      "merchantLocation": "Merchant Location",
+      "merchantMessage": "Merchant's Message"
+    }
+  },
+  "common": {
+    "user": "User",
+    "actions": {
+      "title": "Actions",
+      "viewDetails": "View details",
+      "delete": "Delete",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirm": "Confirm",
+      "submit": "Submit",
+      "reset": "Reset",
+      "applyFilters": "Apply Filters",
+      "clearFilters": "Clear Filters",
+      "accept": "Accept",
+      "reject": "Reject"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "perPage": "per page",
+      "showing": "Showing {{start}} to {{end}} of {{total}} {{item}}",
+      "responses": "responses"
+    }
   }
 }
