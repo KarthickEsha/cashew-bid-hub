@@ -308,6 +308,8 @@ const MyRequirements = () => {
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="responded">Responded</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -580,7 +582,7 @@ const MyRequirements = () => {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Quantity:</span>
-                    <div className="font-semibold">{requirement.quantity}</div>
+                    <div className="font-semibold">{requirement.quantity} kg</div>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Origin:</span>

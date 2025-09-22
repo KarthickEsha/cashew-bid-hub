@@ -103,6 +103,9 @@ export const useRequirements = create<RequirementsState>()(
       requirements: [],
 
       addRequirement: (requirement) => {
+        console.group('=== addRequirement ===');
+        console.log('Adding new requirement:', requirement);
+        
         const fixedPrice = getFixedPrice(requirement.grade, requirement.origin);
         const now = new Date().toISOString();
         const originNames: { [key: string]: string } = {
@@ -119,7 +122,7 @@ export const useRequirements = create<RequirementsState>()(
           customerName: 'Anonymous Buyer',
           productName: `${requirement.grade} Cashews`,
           message: '',
-          fixedPrice: 0,
+          fixedPrice,
           state: '',
           city: '',
           country: '',
@@ -127,7 +130,7 @@ export const useRequirements = create<RequirementsState>()(
           specifications: '',
           allowLowerBid: false,
           date: now.split('T')[0],
-          isDraft: false,
+          isDraft: false, // Explicitly set to false for new requirements
           status: 'active',
           createdAt: now,
           responsesCount: 0,
@@ -145,13 +148,20 @@ export const useRequirements = create<RequirementsState>()(
           title: `${requirement.grade} Cashews for ${requirement.deliveryLocation}`,
           preferredOrigin: originNames[requirement.origin] || requirement.origin,
           budgetRange: `₹${requirement.expectedPrice}/kg`,
-          requirementExpiry: requirement.deliveryDeadline, // Use delivery deadline as expiry
-          status: requirement.isDraft ? 'draft' : 'active'
+          requirementExpiry: requirement.deliveryDeadline,
+          status: requirement.isDraft ? 'draft' : 'active',
+          isDraft: requirement.isDraft || false // Ensure isDraft is always set
         } as Requirement;
 
-        set((state) => ({
-          requirements: [...state.requirements, newRequirement]
-        }));
+        console.log('New requirement to be added:', newRequirement);
+        
+        set((state) => {
+          const updatedRequirements = [...state.requirements, newRequirement];
+          console.log('Updated requirements array:', updatedRequirements);
+          return { requirements: updatedRequirements };
+        });
+        
+        console.groupEnd();
       },
 
       updateRequirement: (id, requirement) => {
@@ -269,74 +279,86 @@ export const useRequirements = create<RequirementsState>()(
       },
 
       getRequirementsAsEnquiries: () => {
-        const { requirements } = get();
         console.group('=== getRequirementsAsEnquiries ===');
+        const { requirements } = get();
         console.log('Current requirements in store:', requirements);
         
         // Get responses from the responses store
         const responses = useResponses.getState().responses;
         
-        return requirements
-          .filter(req => {
-            const isValid = !req.isDraft;
-            console.log('Checking requirement:', { 
-              id: req.id, 
-              isDraft: req.isDraft, 
-              status: req.status,
-              isValid
-            });
-            return isValid;
-          })
-          .map(req => {
-            const requirementResponses = responses.filter(r => r.requirementId === req.id);
-            const hasResponses = requirementResponses.length > 0;
-            
-            console.log('Mapping requirement to enquiry:', { 
-              id: req.id, 
-              originalStatus: req.status,
-              hasResponses,
-              responseCount: requirementResponses.length
-            });
-            
-            // If there are responses but status is still active, update it to responded
-            let status = req.status;
-            if (hasResponses && status === 'active') {
-              status = 'responded';
-              console.log('Updating status from active to responded for requirement:', req.id);
-              
-              // Update the requirement status in the store if it's different
-              if (req.status !== status) {
-                set(state => ({
-                  requirements: state.requirements.map(r => 
-                    r.id === req.id ? { ...r, status } : r
-                  )
-                }));
-              }
-            }
-            
-            return {
-              id: parseInt(req.id),
-              customerName: req.customerName,
-              productName: req.productName,
-              quantity: req.quantity,
-              message: req.message,
-              date: req.date,
-              status,
-              expectedPrice: req.expectedPrice,
-              fixedPrice: req.fixedPrice,
-              origin: req.origin,
-              grade: req.grade,
-              deliveryLocation: req.deliveryLocation,
-              city: req.city,
-              country: req.country,
-              deliveryDeadline: req.deliveryDeadline,
-              specifications: req.specifications,
-              allowLowerBid: req.allowLowerBid,
-              minSupplyQuantity: req.minSupplyQuantity,
-              createdAt: req.createdAt,
-              lastModified: req.lastModified || req.createdAt
-            };
+        const filteredRequirements = requirements.filter(req => {
+          const isValid = req.isDraft !== true; // Explicitly check for true
+          console.log('Checking requirement:', { 
+            id: req.id, 
+            isDraft: req.isDraft, 
+            status: req.status,
+            isValid,
+            requirement: req
           });
+          return isValid;
+        });
+        
+        console.log('Filtered requirements (non-draft):', filteredRequirements);
+        
+        const mappedEnquiries = filteredRequirements.map(req => {
+          const requirementResponses = responses.filter(r => r.requirementId === req.id || r.requirementId === req.id.toString());
+          const hasResponses = requirementResponses.length > 0;
+          
+          console.log('Mapping requirement to enquiry:', { 
+            id: req.id, 
+            originalStatus: req.status,
+            hasResponses,
+            responseCount: requirementResponses.length,
+            requirement: req
+          });
+          
+          // If there are responses but status is still active, update it to responded
+          let status = req.status || 'active'; // Default to 'active' if status is not set
+          if (hasResponses && status === 'active') {
+            status = 'responded';
+            console.log('Updating status from active to responded for requirement:', req.id);
+            
+            // Update the requirement status in the store if it's different
+            if (req.status !== status) {
+              set(state => ({
+                requirements: state.requirements.map(r => 
+                  r.id === req.id ? { ...r, status } : r
+                )
+              }));
+            }
+          }
+          
+          // Ensure ID is a number for compatibility
+          const enquiryId = typeof req.id === 'string' ? parseInt(req.id, 10) : req.id;
+          
+          return {
+            id: isNaN(enquiryId) ? 0 : enquiryId,
+            customerName: req.customerName || 'Anonymous Buyer',
+            productName: req.productName || `${req.grade || 'Cashew'} Product`,
+            quantity: req.quantity || '0',
+            message: req.message || '',
+            date: req.date || new Date().toISOString().split('T')[0],
+            status,
+            expectedPrice: req.expectedPrice || 0,
+            fixedPrice: req.fixedPrice || 0,
+            origin: req.origin || 'any',
+            grade: req.grade || 'W320',
+            deliveryLocation: req.deliveryLocation || 'Not specified',
+            city: req.city || '',
+            country: req.country || '',
+            deliveryDeadline: req.deliveryDeadline || req.requirementExpiry || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            specifications: req.specifications || '',
+            allowLowerBid: req.allowLowerBid || false,
+            minSupplyQuantity: req.minSupplyQuantity || '0',
+            createdAt: req.createdAt || new Date().toISOString(),
+            lastModified: req.lastModified || req.createdAt || new Date().toISOString()
+          };
+        });
+        
+        console.log('Mapped enquiries:', mappedEnquiries);
+        console.groupEnd();
+        
+        return mappedEnquiries;
       },
 
       getMyRequirements: () => {

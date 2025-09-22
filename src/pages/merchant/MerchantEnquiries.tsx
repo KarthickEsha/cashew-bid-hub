@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -26,13 +26,19 @@ import { useToast } from "@/hooks/use-toast";
 const mockEnquiries = [];
 
 const MerchantEnquiries = () => {
-  const { getRequirementsAsEnquiries, updateRequirementStatus } = useRequirements();
+  const { getRequirementsAsEnquiries, updateRequirementStatus, requirements } = useRequirements();
   const { addResponse, getResponsesByRequirementId, updateResponseStatus } = useResponses();
   const { user } = useUser();
   const { profile } = useProfile();
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+  
+  // Refresh enquiries when requirements change
+  useEffect(() => {
+    console.log('Requirements changed, refreshing enquiries...');
+    refreshEnquiries();
+  }, [requirements]); // Add requirements to dependency array
 
   // Actual filters applied to the table
   const [searchFilter, setSearchFilter] = useState('');
@@ -119,33 +125,45 @@ const MerchantEnquiries = () => {
 
   // State for enquiries
   const [enquiries, setEnquiries] = useState(() => {
-    const storedEnquiries = getRequirementsAsEnquiries().map(enquiry => {
-      const responses = getResponsesByRequirementId(enquiry.id);
-      const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
-      const hasRejectedResponse = responses.some(r => r.status === 'rejected');
-      const hasResponse = responses.length > 0;
-
-      let status = enquiry.status;
-
-      // Only override status if it's not already set to 'responded'
-      if (status !== 'responded') {
-        if (hasAcceptedResponse) {
-          status = 'confirmed';
-        } else if (hasRejectedResponse && !hasAcceptedResponse) {
-          status = 'Rejected';
-        } else if (hasResponse) {
-          status = 'responded';
-        } else {
-          status = status || 'active';
+    console.log('Initializing enquiries state...');
+    const storedEnquiries = getRequirementsAsEnquiries()
+      .filter(enquiry => {
+        // Filter out any invalid or draft requirements
+        const isValid = enquiry && !enquiry.isDraft && enquiry.status !== 'draft';
+        if (!isValid) {
+          console.log('Filtering out invalid/draft enquiry:', enquiry);
         }
-      }
+        return isValid;
+      })
+      .map(enquiry => {
+        const responses = getResponsesByRequirementId(enquiry.id);
+        const hasAcceptedResponse = responses.some(r => r.status === 'accepted');
+        const hasRejectedResponse = responses.some(r => r.status === 'rejected');
+        const hasResponse = responses.length > 0;
 
-      return {
-        ...enquiry,
-        status,
-        buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined
-      };
-    });
+        let status = enquiry.status || 'active';
+
+        // Only override status if it's not already set to 'responded'
+        if (status !== 'responded') {
+          if (hasAcceptedResponse) {
+            status = 'confirmed';
+          } else if (hasRejectedResponse && !hasAcceptedResponse) {
+            status = 'Rejected';
+          } else if (hasResponse) {
+            status = 'responded';
+          } else {
+            status = status || 'active';
+          }
+        }
+
+        return {
+          ...enquiry,
+          status,
+          buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined
+        };
+      });
+      
+    console.log('Initial enquiries:', [...mockEnquiries, ...storedEnquiries]);
     return [...mockEnquiries, ...storedEnquiries];
   });
 

@@ -129,6 +129,7 @@ const MyOrders = () => {
 
   // filtering
   const filteredAndSortedOrders = useMemo(() => {
+    debugger
     const filtered = allOrders.filter((order) => {
       const searchTermLower = searchTerm.toLowerCase();
       const productName = order.productName || '';
@@ -308,13 +309,15 @@ const MyOrders = () => {
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      <span>{order.productName}</span>
+                      <span>{order.grade} Cashews</span>
                       {/* <span className="text-xs text-muted-foreground">#{order.id}</span> */}
                     </div>
                   </TableCell>
                   <TableCell>{order.merchantName}</TableCell>
                   <TableCell className="text-right">{order.quantity}</TableCell>
-                  <TableCell className="text-right font-medium">{order.totalAmount}</TableCell>
+                   <TableCell className="text-right font-medium">
+                    ₹{new Intl.NumberFormat('en-IN').format(Number(order.totalAmount))}
+                  </TableCell>
                   <TableCell>
                     {getStatusBadge(order.status)}
                   </TableCell>

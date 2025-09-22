@@ -451,7 +451,7 @@ const Responses = () => {
                   </TableCell>
                   <TableCell>{response.requirementTitle}</TableCell>
                   <TableCell>₹{response.price} / kg</TableCell>
-                  <TableCell>{response.quantity}</TableCell>
+                  <TableCell>{response.quantity} kg</TableCell>
                   <TableCell>{response.grade || 'N/A'}</TableCell>
                   <TableCell>
                     <Badge
