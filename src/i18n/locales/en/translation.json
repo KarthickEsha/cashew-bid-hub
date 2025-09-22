@@ -150,6 +150,17 @@
   },
   "common": {
     "user": "User",
+    "product": "Product",
+    "merchant": "Merchant",
+    "quantity": "Quantity",
+    "status": "Status",
+    "date": "Date",
+    "allStatus": "All Status",
+    "searchPlaceholder": "Search by product or order ID...",
+    "totalAmount": "Total Amount",
+    "enquiryInformation": "Enquiry Information",
+    "productInformation": "Product Information",
+    "merchantAndLocation": "Merchant & Location",
     "actions": {
       "title": "Actions",
       "viewDetails": "View details",
@@ -173,5 +184,11 @@
       "showing": "Showing {{start}} to {{end}} of {{total}} {{item}}",
       "responses": "responses"
     }
+  },
+  "myEnquiries": {
+    "subtitle": "View and manage your enquiries",
+    "noOrders": "No orders found",
+    "noMatchingOrders": "No orders match your current filters.",
+    "enquiryDetails": "Enquiry Details"
   }
 }

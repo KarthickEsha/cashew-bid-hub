@@ -150,6 +150,17 @@
   },
   "common": {
     "user": "பயனர்",
+    "product": "தயாரிப்பு",
+    "merchant": "வணிகர்",
+    "quantity": "அளவு",
+    "status": "நிலை",
+    "date": "தேதி",
+    "allStatus": "அனைத்து நிலைகளும்",
+    "searchPlaceholder": "தயாரிப்பு அல்லது ஆர்டர் ஐடி மூலம் தேடுக...",
+    "totalAmount": "மொத்த தொகை",
+    "enquiryInformation": "விசாரணை விவரங்கள்",
+    "productInformation": "தயாரிப்பு தகவல்",
+    "merchantAndLocation": "வணிகர் மற்றும் இடம்",
     "actions": {
       "title": "செயல்கள்",
       "viewDetails": "விவரங்களைப் பார்க்கவும்",
@@ -173,5 +184,18 @@
       "showing": "{{start}} முதல் {{end}} வரை, மொத்தம் {{total}} {{item}} இல்",
       "responses": "பதில்கள்"
     }
+  },
+  "status": {
+    "processing": "செயலாக்கப்படுகிறது",
+    "confirmed": "உறுதி செய்யப்பட்டது",
+    "shipped": "அனுப்பப்பட்டது",
+    "delivered": "விநியோகிக்கப்பட்டது",
+    "cancelled": "ரத்து செய்யப்பட்டது"
+  },
+  "myEnquiries": {
+    "subtitle": "உங்கள் விசாரணைகளைக் காண்க மற்றும் நிர்வகிக்கவும்",
+    "noOrders": "ஆர்டர்கள் எதுவும் கிடைக்கவில்லை",
+    "noMatchingOrders": "உங்கள் தற்போதைய வடிகட்டல்களுடன் பொருந்தக்கூடிய ஆர்டர்கள் எதுவும் இல்லை.",
+    "enquiryDetails": "விசாரணை விவரங்கள்"
   }
 }

@@ -150,6 +150,17 @@
   },
   "common": {
     "user": "उपयोगकर्ता",
+    "product": "उत्पाद",
+    "merchant": "व्यापारी",
+    "quantity": "मात्रा",
+    "status": "स्थिति",
+    "date": "तिथि",
+    "allStatus": "सभी स्थितियां",
+    "searchPlaceholder": "उत्पाद या ऑर्डर आईडी से खोजें...",
+    "totalAmount": "कुल राशि",
+    "enquiryInformation": "पूछताछ की जानकारी",
+    "productInformation": "उत्पाद जानकारी",
+    "merchantAndLocation": "व्यापारी और स्थान",
     "actions": {
       "title": "क्रियाएं",
       "viewDetails": "विवरण देखें",
@@ -173,5 +184,18 @@
       "showing": "{{start}} से {{end}}, कुल {{total}} {{item}} में से",
       "responses": "प्रतिक्रियाएं"
     }
+  },
+  "status": {
+    "processing": "प्रसंस्करण",
+    "confirmed": "पुष्टि की गई",
+    "shipped": "भेज दिया गया",
+    "delivered": "वितरित किया गया",
+    "cancelled": "रद्द कर दिया गया"
+  },
+  "myEnquiries": {
+    "subtitle": "अपनी पूछताछ देखें और प्रबंधित करें",
+    "noOrders": "कोई आदेश नहीं मिला",
+    "noMatchingOrders": "आपके वर्तमान फ़िल्टर से मेल खाने वाला कोई आदेश नहीं मिला।",
+    "enquiryDetails": "पूछताछ विवरण"
   }
 }

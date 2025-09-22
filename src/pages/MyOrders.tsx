@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,7 @@ const MyOrders = () => {
 
   const { orders, updateOrderStatus, deleteOrder } = useOrders();
   const { profile } = useProfile();
+  const { t } = useTranslation();
 
   // filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,19 +82,22 @@ const MyOrders = () => {
   const allOrders = orders.length > 0 ? orders : [];
 
   const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
+    const statusKey = status.toLowerCase();
+    const statusText = t(`status.${statusKey}`, { defaultValue: status });
+    
+    switch (statusKey) {
       case 'processing':
-        return <Badge variant="outline" className="text-yellow-600 border-yellow-300 bg-yellow-50">Processing</Badge>;
+        return <Badge variant="outline" className="text-yellow-600 border-yellow-300 bg-yellow-50">{statusText}</Badge>;
       case 'confirmed':
-        return <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50">Confirmed</Badge>;
+        return <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50">{statusText}</Badge>;
       case 'shipped':
-        return <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50">Shipped</Badge>;
+        return <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50">{statusText}</Badge>;
       case 'delivered':
-        return <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">Delivered</Badge>;
+        return <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">{statusText}</Badge>;
       case 'cancelled':
-        return <Badge variant="outline" className="text-red-600 border-red-300 bg-red-50">Cancelled</Badge>;
+        return <Badge variant="outline" className="text-red-600 border-red-300 bg-red-50">{statusText}</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{statusText}</Badge>;
     }
   };
 
@@ -199,16 +204,16 @@ const MyOrders = () => {
     <div className="container mx-auto py-6 px-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold">My Enquiries</h1>
+          <h1 className="text-2xl font-bold">{t('sidebar.myActivity.myEnquiries')}</h1>
           <p className="text-muted-foreground">
-            View and manage your enquiries
+            {t('myEnquiries.subtitle', 'View and manage your enquiries')}
           </p>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <div className="relative flex-1 md:flex-none md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by product or order ID..."
+              placeholder={t('common.searchPlaceholder', 'Search by product or order ID...')}
               className="pl-9"
               value={searchTerm}
               onChange={(e) => {
@@ -228,12 +233,12 @@ const MyOrders = () => {
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="processing">Processing</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="shipped">Shipped</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="all">{t('common.allStatus', 'All Status')}</SelectItem>
+              <SelectItem value="processing">{t('status.processing', 'Processing')}</SelectItem>
+              <SelectItem value="confirmed">{t('status.confirmed', 'Confirmed')}</SelectItem>
+              <SelectItem value="shipped">{t('status.shipped', 'Shipped')}</SelectItem>
+              <SelectItem value="delivered">{t('status.delivered', 'Delivered')}</SelectItem>
+              <SelectItem value="cancelled">{t('status.cancelled', 'Cancelled')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -249,7 +254,7 @@ const MyOrders = () => {
                 onClick={() => handleSort('productName')}
               >
                 <div className="flex items-center">
-                  Product
+                  {t('common.product', 'Product')}
                   {getSortIcon('productName')}
                 </div>
               </TableHead>
@@ -259,7 +264,7 @@ const MyOrders = () => {
                 onClick={() => handleSort('quantity')}
               >
                 <div className="flex items-center justify-end">
-                  Quantity
+                  {t('common.quantity', 'Quantity')}
                   {getSortIcon('quantity')}
                 </div>
               </TableHead>
@@ -268,7 +273,7 @@ const MyOrders = () => {
                 onClick={() => handleSort('totalAmount')}
               >
                 <div className="flex items-center justify-end">
-                  Total Amount
+                  {t('common.totalAmount', 'Total Amount')}
                   {getSortIcon('totalAmount')}
                 </div>
               </TableHead>
@@ -277,7 +282,7 @@ const MyOrders = () => {
                 onClick={() => handleSort('status')}
               >
                 <div className="flex items-center">
-                  Status
+                  {t('common.status', 'Status')}
                   {getSortIcon('status')}
                 </div>
               </TableHead>
@@ -286,7 +291,7 @@ const MyOrders = () => {
                 onClick={() => handleSort('orderDate')}
               >
                 <div className="flex items-center">
-                  Date
+                  {t('common.date', 'Date')}
                   {getSortIcon('orderDate')}
                 </div>
               </TableHead>
@@ -298,6 +303,7 @@ const MyOrders = () => {
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center py-6">
+                    <p className="text-muted-foreground">{t('myEnquiries.noMatchingOrders', 'No orders match your current filters.')}</p>
                     <Package className="h-10 w-10 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">No enquiries found</p>
                   </div>
@@ -460,7 +466,7 @@ const MyOrders = () => {
                 {/* Order Info */}
                 <div>
                   <h3 className="font-semibold text-lg mb-2 flex items-center">
-                    <Package className="mr-2 h-5 w-5 text-blue-500" /> Enquirie Information
+                    <Package className="mr-2 h-5 w-5 text-blue-500" /> {t('common.enquiryInformation', 'Enquiry Information')}
                   </h3>
                   <p><strong>Order ID:</strong> {selectedOrder.id}</p>
                   <p><strong>Status:</strong> {selectedOrder.status}</p>
@@ -482,7 +488,7 @@ const MyOrders = () => {
                 {/* Product Info */}
                 <div>
                   <h3 className="font-semibold text-lg mb-2 flex items-center">
-                    <Package className="mr-2 h-5 w-5 text-green-500" /> Product Information
+                    <Package className="mr-2 h-5 w-5 text-green-500" /> {t('common.productInformation', 'Product Information')}
                   </h3>
                   <p><strong>Product:</strong> {selectedOrder.productName}</p>
                   <p><strong>Quantity:</strong> {selectedOrder.quantity}</p>
@@ -495,7 +501,7 @@ const MyOrders = () => {
                 {/* Merchant & Location */}
                 <div>
                   <h3 className="font-semibold text-lg mb-2 flex items-center">
-                    <User className="mr-2 h-5 w-5 text-purple-500" /> Merchant & Location
+                    <User className="mr-2 h-5 w-5 text-purple-500" /> {t('common.merchantAndLocation', 'Merchant & Location')}
                   </h3>
                   <p><strong>Merchant:</strong> {profile.companyName}</p>
                   <p className="flex items-center text-sm text-muted-foreground">
