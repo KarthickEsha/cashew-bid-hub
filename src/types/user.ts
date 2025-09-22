@@ -61,6 +61,7 @@ export interface Product {
   enquiries: number;
   orders: number;
   buyerResponses: number;
+  allowBuyerOffers: boolean;
   [key: string]: any;
 }
 

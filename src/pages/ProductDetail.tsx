@@ -425,8 +425,8 @@ const ProductDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Enhanced Request Form - Hide in processor mode */}
-          {role !== "processor" && (
+          {/* Enhanced Request Form - Hide in processor mode or if buyer offers are not allowed */}
+          {role !== "processor" && product.allowBuyerOffers && (
             <Card className="shadow-warm border-primary/20 bg-gradient-to-br from-primary/5 to-accent/20">
               <CardHeader>
                 <div className="flex items-center space-x-2">
