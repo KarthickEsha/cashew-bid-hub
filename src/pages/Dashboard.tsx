@@ -36,7 +36,7 @@ const Dashboard = () => {
   const totalResponses = newResponseCount
 
   // Get dynamic order counts
-  const totalOrders = orders.length;
+  const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
   const confirmedOrders = orders.filter(order => order.status === 'Confirmed').length;
   const pendingOrders = orders.filter(order => order.status === 'Processing').length;
 
@@ -70,7 +70,7 @@ const Dashboard = () => {
     },
     {
       title: t('dashboard.totalEnquiries'),
-      value: totalOrders.toString(),
+      value: ordersCount.toString(),
       icon: Clock,
       color: "text-orange-500",
       trend: t('dashboard.orderStats', { confirmed: confirmedOrders, pending: pendingOrders }),

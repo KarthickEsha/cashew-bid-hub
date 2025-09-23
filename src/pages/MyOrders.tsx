@@ -129,6 +129,7 @@ const MyOrders = () => {
 
   // filtering
   const filteredAndSortedOrders = useMemo(() => {
+    debugger
     const filtered = allOrders.filter((order) => {
       const searchTermLower = searchTerm.toLowerCase();
       const productName = order.productName || '';
@@ -315,7 +316,7 @@ const MyOrders = () => {
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      <span>{order.grade} Cashews</span>
+                      <span>{order.grade != "N/A" ? order.grade : "Raw"} Cashews</span>
                       {/* <span className="text-xs text-muted-foreground">#{order.id}</span> */}
                     </div>
                   </TableCell>

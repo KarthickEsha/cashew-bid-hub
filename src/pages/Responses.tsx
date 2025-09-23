@@ -548,14 +548,14 @@ const Responses = () => {
                             setCurrentPage(1);
                           }}
                         >
-                          <SelectTrigger className="w-[100px] h-8">
+                          <SelectTrigger className="w-[70px] h-8">
                             <SelectValue placeholder="Page size" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="5">5 {t('common.pagination.perPage')}</SelectItem>
-                            <SelectItem value="10">10 {t('common.pagination.perPage')}</SelectItem>
-                            <SelectItem value="20">20 {t('common.pagination.perPage')}</SelectItem>
-                            <SelectItem value="50">50 {t('common.pagination.perPage')}</SelectItem>
+                            <SelectItem value="5">5 </SelectItem>
+                            <SelectItem value="10">10 </SelectItem>
+                            <SelectItem value="20">20 </SelectItem>
+                            <SelectItem value="50">50 </SelectItem>
                           </SelectContent>
                         </Select>
                         <div className="flex space-x-2">

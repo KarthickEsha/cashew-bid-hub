@@ -92,18 +92,56 @@ const PostRequirement = () => {
   const [priceError, setPriceError] = useState("");
   const [quantityError, setQuantityError] = useState("");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [numberError, setNumberError] = useState("");
+
+  // Format number with commas
+  const formatNumberWithCommas = (value: string) => {
+    // Remove all non-digit characters
+    const numbers = value.replace(/\D/g, '');
+    // Add commas as thousands separators
+    return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
+  // Validate if input contains only numbers and commas
+  const isValidNumberInput = (value: string) => {
+    return /^\d{1,3}(,\d{3})*$/.test(value) || value === '';
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
-    // If either quantity field changes, validate them
-    if ((name === 'quantity' || name === 'minSupplyQuantity') && formData.quantity && formData.minSupplyQuantity) {
-      validateQuantity(
-        name === 'minSupplyQuantity' ? value : formData.minSupplyQuantity,
-        name === 'quantity' ? value : formData.quantity
-      );
+    // Handle numeric fields (quantity, minSupplyQuantity, expectedPrice)
+    if (['quantity', 'minSupplyQuantity', 'expectedPrice'].includes(name)) {
+      // Allow only numbers and backspace
+      if (value !== '' && !/^\d*$/.test(value.replace(/,/g, ''))) {
+        setNumberError('Please enter numbers only');
+        return;
+      }
+
+      // Format the number with commas
+      const formattedValue = formatNumberWithCommas(value);
+
+      // Update the form data with the formatted value
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedValue
+      }));
+
+      // Clear any previous number error
+      setNumberError('');
+
+      // For quantity fields, validate the relationship between min and max
+      if ((name === 'quantity' || name === 'minSupplyQuantity') && formData.quantity && formData.minSupplyQuantity) {
+        validateQuantity(
+          name === 'minSupplyQuantity' ? formattedValue : formData.minSupplyQuantity,
+          name === 'quantity' ? formattedValue : formData.quantity
+        );
+      }
+
+      return;
     }
 
+    // For non-numeric fields, update normally
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -111,7 +149,7 @@ const PostRequirement = () => {
   };
 
   // Get fixed price based on product and origin
-  const getFixedPrice = () => {
+  const getFixedPrice = (): number => {
     if (!formData.grade || !formData.origin || formData.origin === "any") {
       return 0;
     }
@@ -127,19 +165,32 @@ const PostRequirement = () => {
 
   // Validate expected price
   const validateExpectedPrice = (price: string) => {
-    const numPrice = parseFloat(price);
+    // Remove commas for validation
+    const cleanPrice = price.replace(/,/g, '');
+    const numPrice = parseFloat(cleanPrice);
     const currentFixedPrice = getFixedPrice();
-    if (price && currentFixedPrice && numPrice > currentFixedPrice) {
-      setPriceError(`Expected price cannot exceed fixed price of ₹${currentFixedPrice}`);
+
+    if (isNaN(numPrice)) {
+      setPriceError('Please enter a valid number');
       return false;
     }
+
+    if (price && currentFixedPrice && numPrice > currentFixedPrice) {
+      setPriceError(`Expected price cannot exceed fixed price of ₹${currentFixedPrice.toLocaleString()}`);
+      return false;
+    }
+
     setPriceError("");
     return true;
   };
 
   // Validate minimum quantity against required quantity
   const validateQuantity = (minQty: string, reqQty: string) => {
-    if (minQty && reqQty && parseFloat(minQty) > parseFloat(reqQty)) {
+    // Remove commas for comparison
+    const cleanMinQty = minQty.replace(/,/g, '');
+    const cleanReqQty = reqQty.replace(/,/g, '');
+
+    if (cleanMinQty && cleanReqQty && parseFloat(cleanMinQty) > parseFloat(cleanReqQty)) {
       setQuantityError('Minimum quantity cannot be greater than required quantity');
       return false;
     }
@@ -150,6 +201,7 @@ const PostRequirement = () => {
   const handleSubmit = (isDraft = false) => {
     // Reset errors
     setQuantityError('');
+    setNumberError('');
 
     // Validate quantities
     if (formData.minSupplyQuantity && formData.quantity) {
@@ -175,7 +227,7 @@ const PostRequirement = () => {
       grade: formData.grade,
       quantity: formData.quantity,
       origin: formData.origin,
-      expectedPrice: parseFloat(formData.expectedPrice) || 0,
+      expectedPrice: formData.expectedPrice,
       minSupplyQuantity: formData.minSupplyQuantity,
       deliveryLocation: formData.deliveryLocation,
       city: formData.city,
@@ -281,91 +333,68 @@ const PostRequirement = () => {
                 <Input
                   id="quantity"
                   name="quantity"
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  type="text"
                   value={formData.quantity}
                   onChange={handleInputChange}
-                  placeholder={t('postRequirement.enterQuantity')}
+                  placeholder="e.g. 1,000"
                   required
-                  className={quantityError ? 'border-red-500' : ''}
+                  inputMode="numeric"
                 />
+                {quantityError && <p className="text-sm text-red-500">{quantityError}</p>}
+                {numberError && formData.quantity && !isValidNumberInput(formData.quantity) && (
+                  <p className="text-sm text-red-500">{numberError}</p>
+                )}
               </div>
-              <div>
-                <Label htmlFor="minSupplyQuantity">{t('postRequirement.minSupplyQuantity')}</Label>
+              <div className="grid gap-2">
+                <Label htmlFor="minSupplyQuantity">{t('postRequirement.minSupplyQuantity')} *</Label>
                 <Input
                   id="minSupplyQuantity"
                   name="minSupplyQuantity"
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  type="text"
                   value={formData.minSupplyQuantity}
                   onChange={handleInputChange}
-                  placeholder={t('postRequirement.enterMinQuantity')}
-                  className={quantityError ? 'border-red-500' : ''}
+                  placeholder="e.g. 500"
+                  inputMode="numeric"
                 />
-                {quantityError && (
-                  <p className="mt-1 text-sm text-red-500">{quantityError}</p>
+                {quantityError && <p className="text-sm text-red-500">{quantityError}</p>}
+                {numberError && formData.minSupplyQuantity && !isValidNumberInput(formData.minSupplyQuantity) && (
+                  <p className="text-sm text-red-500">{numberError}</p>
                 )}
               </div>
-
             </div>
 
-            {/* <div>
- <Label>Target Date *</Label>
- <Popover>
- <PopoverTrigger asChild>
- <Button
- variant="outline"
- className={cn(
- "w-full justify-start text-left font-normal mt-1",
- !formData.targetDate && "text-muted-foreground"
- )}
- >
- <CalendarIcon className="mr-2 h-4 w-4" />
- {formData.targetDate
- ? format(formData.targetDate, "dd/MM/yyyy")
- : "Select target date"}
- </Button>
- </PopoverTrigger>
- <PopoverContent className="w-auto p-0">
- <Calendar
- mode="single"
- selected={formData.targetDate}
- onSelect={(date) =>
- setFormData({ ...formData, targetDate: date })
- }
- disabled={(date) => date < new Date()}
- initialFocus
- defaultMonth={new Date()}
- />
- </PopoverContent>
- </Popover>
- </div> */}
+            {/* ... */}
           </div>
 
           {/* Budget Information */}
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* First Expected Price Field */}
-              <div>
+              <div className="grid gap-2">
                 <Label htmlFor="expectedPrice">{t('postRequirement.expectedPrice')} *</Label>
                 <Input
                   id="expectedPrice"
-                  placeholder={t('postRequirement.enterExpectedPrice')}
+                  name="expectedPrice"
+                  type="text"
                   value={formData.expectedPrice}
-                  onChange={(e) => {
-                    setFormData({ ...formData, expectedPrice: e.target.value });
-                    validateExpectedPrice(e.target.value);
+                  onChange={handleInputChange}
+                  onBlur={(e) => {
+                    const isValid = validateExpectedPrice(e.target.value.replace(/,/g, ''));
+                    if (!isValid) {
+                      // The error will be shown by the priceError state
+                      return;
+                    }
                   }}
-                  className={cn("mt-1", priceError && "border-red-500")}
+                  placeholder="e.g. 75,000"
+                  required
+                  inputMode="numeric"
                 />
-                {priceError && (
-                  <p className="text-sm text-red-500 mt-1">{priceError}</p>
+                {priceError && <p className="text-sm text-red-500">{priceError}</p>}
+                {numberError && formData.expectedPrice && !isValidNumberInput(formData.expectedPrice) && (
+                  <p className="text-sm text-red-500">{numberError}</p>
                 )}
               </div>
-
-              {/* Checkbox Field */}
+              {/* ... */}
               <div className="flex items-center space-x-2 mt-6">
                 <input
                   id="allowLowerBid"
@@ -472,17 +501,10 @@ const PostRequirement = () => {
               />
             </div>
 
+
+
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city">{t('postRequirement.city')} *</Label>
-                <Input
-                  id="city"
-                  placeholder={t('postRequirement.enterCity')}
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
 
               <div>
                 <Label>{t('postRequirement.country')} *</Label>
@@ -512,6 +534,17 @@ const PostRequirement = () => {
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="city">{t('postRequirement.city')} *</Label>
+                <Input
+                  id="city"
+                  placeholder={t('postRequirement.enterCity')}
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  className="mt-1"
+                />
               </div>
             </div>
           </div>

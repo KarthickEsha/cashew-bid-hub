@@ -21,6 +21,19 @@ import { useRequirements } from "@/hooks/useRequirements";
 import { useProfile } from "@/hooks/useProfile";
 import { useUser } from "@clerk/clerk-react";
 
+// Format number with commas (e.g., 1000 -> 1,000)
+const formatNumber = (value: string): string => {
+  // Remove all non-digit characters
+  const num = value.replace(/\D/g, '');
+  // Add commas as thousand separators
+  return num.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
+
+// Parse formatted number back to number string (e.g., 1,000 -> 1000)
+const parseFormattedNumber = (value: string): string => {
+  return value.replace(/,/g, '');
+};
+
 // Origin countries
 const origins = [
   { id: "india", name: "India" },
@@ -154,10 +167,15 @@ const EditRequirement = () => {
   const handleSubmit = (isDraft = false) => {
     if (!id) return;
 
+    // Parse formatted numbers back to raw numbers for submission
+    const quantity = formData.quantity ? parseFormattedNumber(formData.quantity) : '';
+    const minSupplyQuantity = formData.minSupplyQuantity ? parseFormattedNumber(formData.minSupplyQuantity) : '';
+    const expectedPrice = formData.expectedPrice ? parseFormattedNumber(formData.expectedPrice) : '';
+
     // Validate required fields
     if (!isDraft) {
-      if (!formData.grade || !formData.quantity || !formData.origin || 
-          !formData.expectedPrice || !formData.deliveryLocation || 
+      if (!formData.grade || !quantity || !formData.origin || 
+          !expectedPrice || !formData.deliveryLocation || 
           !formData.city || !formData.country || !formData.deliveryDeadline) {
         alert('Please fill in all required fields');
         return;
@@ -170,10 +188,10 @@ const EditRequirement = () => {
     // Prepare requirement data
     const requirementData = {
       grade: formData.grade,
-      quantity: formData.quantity,
+      quantity: quantity,
       origin: formData.origin,
-      expectedPrice: parseFloat(formData.expectedPrice) || 0,
-      minSupplyQuantity: formData.minSupplyQuantity,
+      expectedPrice: parseFloat(expectedPrice) || 0,
+      minSupplyQuantity: minSupplyQuantity,
       deliveryLocation: formData.deliveryLocation,
       city: formData.city,
       country: formData.country,
@@ -291,11 +309,14 @@ const EditRequirement = () => {
                 <Input
                   id="quantity"
                   placeholder="e.g., 500"
-                  value={formData.quantity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, quantity: e.target.value })
-                  }
+                  value={formData.quantity ? formatNumber(formData.quantity) : ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const unformattedValue = parseFormattedNumber(value);
+                    setFormData({ ...formData, quantity: unformattedValue });
+                  }}
                   className="mt-1"
+                  inputMode="numeric"
                 />
               </div>
               <div>
@@ -305,11 +326,14 @@ const EditRequirement = () => {
                 <Input
                   id="minSupplyQuantity"
                   placeholder="e.g., 100"
-                  value={formData.minSupplyQuantity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, minSupplyQuantity: e.target.value })
-                  }
+                  value={formData.minSupplyQuantity ? formatNumber(formData.minSupplyQuantity) : ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const unformattedValue = parseFormattedNumber(value);
+                    setFormData({ ...formData, minSupplyQuantity: unformattedValue });
+                  }}
                   className="mt-1"
+                  inputMode="numeric"
                 />
               </div>
             </div>
@@ -324,12 +348,15 @@ const EditRequirement = () => {
                 <Input
                   id="expectedPrice"
                   placeholder="Enter expected price"
-                  value={formData.expectedPrice}
+                  value={formData.expectedPrice ? formatNumber(formData.expectedPrice) : ''}
                   onChange={(e) => {
-                    setFormData({ ...formData, expectedPrice: e.target.value });
-                    validateExpectedPrice(e.target.value);
+                    const value = e.target.value;
+                    const unformattedValue = parseFormattedNumber(value);
+                    setFormData({ ...formData, expectedPrice: unformattedValue });
+                    validateExpectedPrice(unformattedValue);
                   }}
                   className={cn("mt-1", priceError && "border-red-500")}
+                  inputMode="numeric"
                 />
                 {priceError && (
                   <p className="text-sm text-red-500 mt-1">{priceError}</p>
@@ -398,16 +425,6 @@ const EditRequirement = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city">City *</Label>
-                <Input
-                  id="city"
-                  placeholder="e.g., Los Angeles"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
 
               <div>
                 <Label htmlFor="country">Country *</Label>
@@ -416,6 +433,17 @@ const EditRequirement = () => {
                   placeholder="e.g., USA"
                   value={formData.country}
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="city">City *</Label>
+                <Input
+                  id="city"
+                  placeholder="e.g., Los Angeles"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="mt-1"
                 />
               </div>

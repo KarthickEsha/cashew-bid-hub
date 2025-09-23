@@ -452,8 +452,8 @@ const MerchantEnquiries = () => {
   const validateQuantity = (quantity: string) => {
     if (!selectedEnquiry) return false;
 
-    const requiredQty = parseFloat(selectedEnquiry.quantity);
-    const availableQty = parseFloat(quantity);
+    const requiredQty = Number(selectedEnquiry.quantity.replace(/[^0-9]/g, '')); // Extract numeric part
+    const availableQty = Number(quantity);
 
     if (isNaN(availableQty)) {
       setQuantityError('Please enter a valid quantity');
@@ -482,7 +482,7 @@ const MerchantEnquiries = () => {
     setMerchantPrice(value);
 
     // Validation logic
-    if (selectedEnquiry.allowLowerBid && parseFloat(value) < selectedEnquiry.expectedPrice) {
+    if (!selectedEnquiry.allowLowerBid && parseFloat(value) < selectedEnquiry.expectedPrice) {
       setError(`Price cannot be lower than expected price ₹${selectedEnquiry.expectedPrice}`);
     } else {
       setError(""); // clear error if valid

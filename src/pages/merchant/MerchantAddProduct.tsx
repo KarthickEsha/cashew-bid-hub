@@ -14,6 +14,24 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useProfile } from "@/hooks/useProfile";
 import { useInventory } from "@/hooks/useInventory";
+
+// Utility function to format number with commas
+const formatNumber = (value: string): string => {
+  if (!value) return '';
+  // Remove all non-digit characters except decimal point
+  const numStr = value.replace(/[^0-9.]/g, '');
+  if (!numStr) return '';
+  // Format with commas
+  return parseFloat(numStr).toLocaleString('en-IN', {
+    maximumFractionDigits: 2,
+    useGrouping: true
+  });
+};
+
+// Utility function to parse formatted number back to raw number string
+const parseFormattedNumber = (formattedValue: string): string => {
+  return formattedValue.replace(/[^0-9.]/g, '');
+};
 import ProductTypeToggle from "@/components/ProductTypeToggle";
 import { ProductType, Location } from "@/types/user";
 import { toast } from "@/hooks/use-toast";
@@ -397,31 +415,34 @@ const MerchantAddProduct = () => {
                                 <Label htmlFor="availableQty">Available Quantity (kg)*</Label>
                                 <Input
                                     id="availableQty"
-                                    type="number"
-                                    min="1"
-                                    value={formData.availableQty}
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={formatNumber(formData.availableQty)}
                                     onChange={(e) => {
-                                        const value = e.target.value;
-                                        setFormData(prev => {
-                                            const newData = {
-                                                ...prev, 
-                                                availableQty: value,
-                                                minOrderQty: value && parseFloat(prev.minOrderQty) > parseFloat(value) ? value : prev.minOrderQty
-                                            };
-                                            
-                                            // Clear error if fixed
-                                            if (formErrors.minOrderQty && parseFloat(prev.minOrderQty) <= parseFloat(value)) {
-                                                setFormErrors(prevErrors => {
-                                                    const newErrors = {...prevErrors};
-                                                    delete newErrors.minOrderQty;
-                                                    return newErrors;
-                                                });
-                                            }
-                                            
-                                            return newData;
-                                        });
+                                        const rawValue = parseFormattedNumber(e.target.value);
+                                        // Only update if the value is a valid number or empty
+                                        if (rawValue === '' || /^\d*\.?\d*$/.test(rawValue)) {
+                                            setFormData(prev => {
+                                                const newData = {
+                                                    ...prev, 
+                                                    availableQty: rawValue,
+                                                    minOrderQty: rawValue && parseFloat(prev.minOrderQty) > parseFloat(rawValue) ? rawValue : prev.minOrderQty
+                                                };
+                                                
+                                                // Clear error if fixed
+                                                if (formErrors.minOrderQty && parseFloat(prev.minOrderQty) <= parseFloat(rawValue)) {
+                                                    setFormErrors(prevErrors => {
+                                                        const newErrors = {...prevErrors};
+                                                        delete newErrors.minOrderQty;
+                                                        return newErrors;
+                                                    });
+                                                }
+                                                
+                                                return newData;
+                                            });
+                                        }
                                     }}
-                                    placeholder="e.g., 400"
+                                    placeholder="e.g., 1,000"
                                     required
                                     className={formErrors.availableQty ? 'border-destructive' : ''}
                                 />
@@ -435,28 +456,31 @@ const MerchantAddProduct = () => {
                                 <Label htmlFor="minOrderQty">Minimum Order Quantity (kg)*</Label>
                                 <Input
                                     id="minOrderQty"
-                                    type="number"
-                                    min="1"
-                                    value={formData.minOrderQty}
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={formatNumber(formData.minOrderQty)}
                                     onChange={(e) => {
-                                        const value = e.target.value;
-                                        const availableQty = parseFloat(formData.availableQty) || 0;
-                                        const minOrderQty = parseFloat(value) || 0;
-                                        
-                                        setFormData(prev => ({...prev, minOrderQty: value}));
-                                        
-                                        // Validate in real-time
-                                        if (minOrderQty > availableQty) {
-                                            setFormErrors(prev => ({
-                                                ...prev,
-                                                minOrderQty: 'Cannot exceed available quantity'
-                                            }));
-                                        } else {
-                                            setFormErrors(prev => {
-                                                const newErrors = {...prev};
-                                                delete newErrors.minOrderQty;
-                                                return newErrors;
-                                            });
+                                        const rawValue = parseFormattedNumber(e.target.value);
+                                        // Only update if the value is a valid number or empty
+                                        if (rawValue === '' || /^\d*\.?\d*$/.test(rawValue)) {
+                                            const availableQty = parseFloat(formData.availableQty) || 0;
+                                            const minOrderQty = parseFloat(rawValue) || 0;
+                                            
+                                            setFormData(prev => ({...prev, minOrderQty: rawValue}));
+                                            
+                                            // Validate in real-time
+                                            if (minOrderQty > availableQty) {
+                                                setFormErrors(prev => ({
+                                                    ...prev,
+                                                    minOrderQty: 'Cannot exceed available quantity'
+                                                }));
+                                            } else {
+                                                setFormErrors(prev => {
+                                                    const newErrors = {...prev};
+                                                    delete newErrors.minOrderQty;
+                                                    return newErrors;
+                                                });
+                                            }
                                         }
                                     }}
                                     placeholder="e.g., 50"
@@ -486,11 +510,17 @@ const MerchantAddProduct = () => {
                                 <Label htmlFor="price">Expected Selling Price (₹) *</Label>
                                 <Input
                                     id="price"
-                                    type="number"
-                                    step="0.01"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                    placeholder="e.g., 8.50"
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={formatNumber(formData.price)}
+                                    onChange={(e) => {
+                                        const rawValue = parseFormattedNumber(e.target.value);
+                                        // Only update if the value is a valid number or empty
+                                        if (rawValue === '' || /^\d*\.?\d{0,2}$/.test(rawValue)) {
+                                            setFormData({ ...formData, price: rawValue });
+                                        }
+                                    }}
+                                    placeholder="e.g., 1,250.50"
                                     required
                                 />
                             </div>
@@ -534,7 +564,7 @@ const MerchantAddProduct = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Expire Date *</Label>
+                                <Label>Stock Till Date *</Label>
                                 <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                                     <PopoverTrigger asChild>
                                         <Button

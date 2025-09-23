@@ -53,7 +53,7 @@ const MyRequirements = () => {
   const [gradeFilter, setGradeFilter] = useState("all");
   const [filteredRequirements, setFilteredRequirements] = useState<any[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: 'asc' | 'desc';
@@ -67,33 +67,19 @@ const MyRequirements = () => {
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <CheckCircle size={16} className="text-green-500" />;
-      case "draft":
-        return <Edit size={16} className="text-gray-500" />;
-      case "expired":
-        return <Clock size={16} className="text-red-500" />;
-      case "closed":
-        return <AlertTriangle size={16} className="text-orange-500" />;
-      default:
-        return <Clock size={16} className="text-gray-500" />;
-    }
+    return status.toLowerCase() === 'confirmed' 
+      ? <CheckCircle size={16} className="text-green-500" /> 
+      : <Clock size={16} className="text-blue-500" />;
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "draft":
-        return "bg-gray-100 text-gray-800";
-      case "expired":
-        return "bg-red-100 text-red-800";
-      case "closed":
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+    return status.toLowerCase() === 'confirmed' 
+      ? "bg-green-100 text-green-800" 
+      : "bg-blue-100 text-blue-800";
+  };
+  
+  const getDisplayStatus = (status: string) => {
+    return status.toLowerCase() === 'closed' ? 'Closed' : 'Open';
   };
 
   // Apply filter and sorting
@@ -210,15 +196,6 @@ const MyRequirements = () => {
         <div className="flex items-center space-x-2 w-full md:w-auto">
           <div className="flex items-center space-x-1 bg-muted p-1 rounded-md">
             <Button
-              variant={viewMode === 'card' ? 'default' : 'ghost'}
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setViewMode('card')}
-            >
-              <Grid3X3 className="h-4 w-4" />
-              <span className="sr-only">Card View</span>
-            </Button>
-            <Button
               variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="sm"
               className="h-8 w-8 p-0"
@@ -226,6 +203,15 @@ const MyRequirements = () => {
             >
               <List className="h-4 w-4" />
               <span className="sr-only">List View</span>
+            </Button>
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setViewMode('card')}
+            >
+              <Grid3X3 className="h-4 w-4" />
+              <span className="sr-only">Card View</span>
             </Button>
           </div>
           <Button
@@ -306,10 +292,9 @@ const MyRequirements = () => {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="closed">Closed</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                    <SelectItem value="responded">Responded</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -449,7 +434,7 @@ const MyRequirements = () => {
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(requirement.status)}>
-                        {requirement.status.charAt(0).toUpperCase() + requirement.status.slice(1)}
+                        {getDisplayStatus(requirement.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -463,35 +448,31 @@ const MyRequirements = () => {
                             <span className="sr-only">View</span>
                           </Link>
                         </Button>
-                        {(requirement.status === "draft" || requirement.status === "active") && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                            <Link to={`/edit-requirement/${requirement.id}`}>
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                            </Link>
-                          </Button>
-                        )}
-                        {(requirement.status === "draft" || requirement.status === "closed") && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => {
-                              setDeleteId(requirement.id);
-                              setDeleteOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        )}
+                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                          <Link to={`/edit-requirement/${requirement.id}`}>
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            setDeleteId(requirement.id);
+                            setDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))
               )}
-            </TableBody>
-          </Table>
+              </TableBody>
+            </Table>
           
           {/* Pagination removed from table view as per requirements */}
         </Card>
@@ -522,8 +503,7 @@ const MyRequirements = () => {
                       <div className="flex items-center space-x-1">
                         {getStatusIcon(requirement.status)}
                         <Badge className={getStatusColor(requirement.status)}>
-                          {requirement.status.charAt(0).toUpperCase() +
-                            requirement.status.slice(1)}
+                          {getDisplayStatus(requirement.status)}
                         </Badge>
                       </div>
                     </div>
@@ -600,26 +580,22 @@ const MyRequirements = () => {
                         <Eye size={14} className="mr-2" /> View
                       </Button>
                     </Link>
-                    {(requirement.status === "draft" ||
-                      requirement.status === "active") && (
-                        <Link to={`/edit-requirement/${requirement.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Edit size={14} className="mr-2" /> Edit
-                          </Button>
-                        </Link>
-                      )}
-                    {(requirement.status === "draft" || requirement.status === "closed") && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setDeleteId(requirement.id);
-                          setDeleteOpen(true);
-                        }}
-                      >
-                        <Trash2 size={14} className="mr-2" /> Delete
+                    <Link to={`/edit-requirement/${requirement.id}`}>
+                      <Button variant="outline" size="sm">
+                        <Edit size={14} className="mr-2" /> Edit
                       </Button>
-                    )}
+                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        setDeleteId(requirement.id);
+                        setDeleteOpen(true);
+                      }}
+                    >
+                      <Trash2 size={14} className="mr-2" /> Delete
+                    </Button>
                   </div>
                 </div>
               </CardContent>

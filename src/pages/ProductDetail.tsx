@@ -19,6 +19,11 @@ import { useProfile } from "@/hooks/useProfile";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useOrders } from "@/hooks/useOrders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MessageSquare, CheckCircle, XCircle, Clock as ClockIcon, User, ArrowUpRight } from 'lucide-react';
+import { useResponses } from '@/hooks/useResponses';
+import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const ProductDetail = () => {
   // Hooks must be called at the top level
@@ -29,8 +34,11 @@ const ProductDetail = () => {
   const { user } = useUser();
   const { profile, setProfile } = useProfile();
   const { addRequirement } = useRequirements();
-  const { addOrder } = useOrders();
+  const { orders: allOrders, addOrder, updateOrderStatus } = useOrders();
   const { toast } = useToast();
+
+  const { getOrderByResponseId } = useOrders();
+  const { responses, getResponsesByProductId } = useResponses();
 
   // State hooks - all hooks must be called unconditionally at the top level
   const [isLoading, setIsLoading] = useState(true);
@@ -52,9 +60,14 @@ const ProductDetail = () => {
   const [bidPrice, setBidPrice] = useState("");
   const [bidMessage, setBidMessage] = useState("");
   const [timeLeft, setTimeLeft] = useState("");
+  const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [selectedEnquiry, setSelectedEnquiry] = useState<any>(null);
+  const [showEnquiryDetail, setShowEnquiryDetail] = useState(false);
 
   // Derived state
   const auctionEnd = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+
+
 
   // All effects must be defined before any conditional returns
   useEffect(() => {
@@ -110,7 +123,81 @@ const ProductDetail = () => {
     fetchData();
   }, [id, inventoryProducts]);
 
+  useEffect(() => {
+    if (id) {
+      // Get all orders for the current product - filter by productId
+      const productOrders = allOrders.filter(order => order.productId === id);
 
+      // Get all responses for the current product
+      const productResponses = getResponsesByProductId(id);
+
+      // Combine orders and responses into enquiries
+      const combinedEnquiries = [
+        ...productOrders.map(order => ({
+          id: order.id,
+          type: 'order',
+          status: order.status,
+          date: order.orderDate,
+          customer: order.customerName,
+          quantity: order.quantity,
+          price: order.unitPrice,
+          message: order.buyerRemarks || 'No message provided',
+          details: order
+        })),
+        ...productResponses.map(response => ({
+          id: response.id,
+          type: 'response',
+          status: response.status,
+          date: response.responseDate || response.createdAt,
+          customer: response.merchantName || 'Unknown',
+          quantity: response.quantity,
+          price: response.price,
+          message: response.message || 'No message provided',
+          details: response,
+          orderId: getOrderByResponseId(response.id)?.id
+        }))
+      ];
+
+      // Sort by date (newest first)
+      combinedEnquiries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setEnquiries(combinedEnquiries);
+    }
+  }, [id, allOrders, responses, getResponsesByProductId, getOrderByResponseId]);
+
+  const getStatusBadge = (status: string) => {
+    if (!status) return null;
+
+    const statusLower = status.toLowerCase();
+
+    if (['accepted', 'confirmed', 'processing'].includes(statusLower)) {
+      return (
+        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+          <CheckCircle className="mr-1 h-3 w-3" />
+          {status}
+        </Badge>
+      );
+    }
+
+    if (['rejected', 'cancelled', 'declined'].includes(statusLower)) {
+      return (
+        <Badge variant="destructive" className="hover:bg-destructive/90">
+          <XCircle className="mr-1 h-3 w-3" />
+          {status}
+        </Badge>
+      );
+    }
+
+    if (['new', 'pending', 'in_progress'].includes(statusLower)) {
+      return (
+        <Badge variant="outline" className="border-amber-500 text-amber-600">
+          <ClockIcon className="mr-1 h-3 w-3" />
+          {status}
+        </Badge>
+      );
+    }
+
+    return <Badge variant="outline">{status}</Badge>;
+  };
   // Get product specifications safely
   const getProductSpecs = () => {
     if (!product) return [];
@@ -128,9 +215,10 @@ const ProductDetail = () => {
 
     // Add common specs
     specs.push(
-      ['Stock', `${product.availableQty} ${product.unit}`],
-      ['Minimum Order', product.minOrderQty ? `${product.minOrderQty} ${product.unit}` : 'No minimum'],
-      ['Pricing Type', product.pricingType === 'bidding' ? 'Bidding' : 'Fixed Price'],
+      // ['Stock', `${product.availableQty} ${product.unit}`],
+      [
+        'Minimum Order', product.minOrderQty ? `${product.minOrderQty.toLocaleString()} ${product.unit}` : 'No minimum'],
+      // ['Pricing Type', product.pricingType === 'bidding' ? 'Bidding' : 'Fixed Price'],
       ['Origin', product.location || 'N/A']
     );
 
@@ -233,7 +321,7 @@ const ProductDetail = () => {
         status: 'accepted' as const, // Auto-accept the bid
         productId: product.id,
         productName: product.grade ? `${product.grade} Cashews` : 'Raw Cashews',
-        grade: product.grade || 'N/A',
+        grade: product.grade != "N/A" ? product.grade : "Raw Cashews",
         price: bidPrice ? parseFloat(bidPrice) : 0,
         orderId: `ORD-${Date.now()}` // Link to the order
       };
@@ -305,6 +393,104 @@ const ProductDetail = () => {
     navigate(`/merchant/${merchant.id}/products`);
   };
 
+  // Handle enquiry confirmation
+  const handleConfirmEnquiry = async (enquiryId: string) => {
+    try {
+      // Find the enquiry
+      const enquiry = enquiries.find(e => e.id === enquiryId);
+      if (!enquiry) {
+        throw new Error('Enquiry not found');
+      }
+
+      // If it's an order type, update the order status using the orders hook
+      if (enquiry.type === 'order' && enquiry.details) {
+        await updateOrderStatus(enquiry.details.id, "Confirmed");
+      }
+
+      // Update the enquiry status to confirmed
+      setEnquiries(prev =>
+        prev.map(e =>
+          e.id === enquiryId
+            ? { ...e, status: 'confirmed' }
+            : e
+        )
+      );
+
+      // Update selected enquiry if it's currently being viewed
+      if (selectedEnquiry?.id === enquiryId) {
+        setSelectedEnquiry(prev => ({
+          ...prev!,
+          status: 'confirmed'
+        }));
+      }
+
+      toast({
+        title: "Enquiry Confirmed",
+        description: `Enquiry from ${enquiry.customer} has been confirmed.`,
+        variant: "default",
+      });
+
+      // Close the detail modal if it's open
+      setShowEnquiryDetail(false);
+    } catch (error) {
+      console.error('Error confirming enquiry:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to confirm enquiry',
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle enquiry rejection
+  const handleRejectEnquiry = async (enquiryId: string) => {
+    try {
+      // Find the enquiry
+      const enquiry = enquiries.find(e => e.id === enquiryId);
+      if (!enquiry) {
+        throw new Error('Enquiry not found');
+      }
+
+      // If it's an order type, update the order status using the orders hook
+      if (enquiry.type === 'order' && enquiry.details) {
+        await updateOrderStatus(enquiry.details.id, "Cancelled");
+      }
+
+      // Update the enquiry status to rejected
+      setEnquiries(prev =>
+        prev.map(e =>
+          e.id === enquiryId
+            ? { ...e, status: 'rejected' }
+            : e
+        )
+      );
+
+      // Update selected enquiry if it's currently being viewed
+      if (selectedEnquiry?.id === enquiryId) {
+        setSelectedEnquiry(prev => ({
+          ...prev!,
+          status: 'rejected'
+        }));
+      }
+
+      toast({
+        title: "Enquiry Rejected",
+        description: `Enquiry from ${enquiry.customer} has been rejected.`,
+        variant: "default",
+      });
+
+      // Close the detail modal if it's open
+      setShowEnquiryDetail(false);
+    } catch (error) {
+      console.error('Error rejecting enquiry:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to reject enquiry',
+        variant: "destructive",
+      });
+    }
+  };
+
 
 
   return (
@@ -319,9 +505,9 @@ const ProductDetail = () => {
         {role === "processor" ? "Back to My Product Stocks" : "Back to Marketplace"}
       </Button>
 
-      <div className={`grid grid-cols-1 ${role === 'processor' ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-8`}>
-        {/* Left Column */}
-        <div className={`${role === 'processor' ? 'w-full' : 'lg:col-span-2'} space-y-8`}>
+      <div className={`grid grid-cols-1 ${role === 'processor' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-8`}>
+        {/* Main Content Column */}
+        <div className={`${role === 'processor' ? 'lg:col-span-3' : 'lg:col-span-2'} space-y-8`}>
           {/* Hero Product Card */}
           <Card className="overflow-hidden shadow-warm border-0 bg-gradient-warm">
             <CardHeader className="pb-4">
@@ -360,8 +546,11 @@ const ProductDetail = () => {
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground font-medium">Available Stock</div>
-                    <div className="font-bold text-lg">{product.availableQty} {product.unit}</div>
+                    <div className="font-bold text-lg">
+                      {product.availableQty?.toLocaleString()} {product.unit}
+                    </div>
                   </div>
+
                 </div>
                 <div className="flex items-center space-x-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
                   <div className="p-2 bg-primary/10 rounded-lg">
@@ -385,7 +574,7 @@ const ProductDetail = () => {
                     <Calendar size={24} className="text-primary" />
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground font-medium">Best Before</div>
+                    <div className="text-sm text-muted-foreground font-medium">Stock Till Date</div>
                     <div className="font-bold text-lg">{new Date(product.expireDate).toLocaleDateString()}</div>
                   </div>
                 </div>
@@ -426,7 +615,7 @@ const ProductDetail = () => {
           </Card>
 
           {/* Enhanced Request Form - Hide in processor mode or if buyer offers are not allowed */}
-          {role !== "processor" && product.allowBuyerOffers && (
+          {role !== "processor" && (
             <Card className="shadow-warm border-primary/20 bg-gradient-to-br from-primary/5 to-accent/20">
               <CardHeader>
                 <div className="flex items-center space-x-2">
@@ -477,18 +666,32 @@ const ProductDetail = () => {
                         )}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-foreground">
-                      Your Expected Price (₹/{product.unit})
-                    </label>
-                    <Input
-                      type="number"
-                      value={bidPrice}
-                      onChange={(e) => setBidPrice(e.target.value)}
-                      placeholder="Enter your expected price"
-                      className="border-primary/20 focus:border-primary"
-                    />
-                  </div>
+                  {product.allowBuyerOffers ? (
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-foreground">
+                        Your Expected Price (₹/{product.unit})
+                      </label>
+                      <Input
+                        type="number"
+                        value={bidPrice}
+                        onChange={(e) => setBidPrice(e.target.value)}
+                        placeholder="Enter your expected price"
+                        className="border-primary/20 focus:border-primary"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-foreground">
+                        Price (₹/{product.unit})
+                      </label>
+                      <div className="flex items-center h-10 px-3 py-2 text-sm border rounded-md bg-muted/50 text-muted-foreground">
+                        {bidQuantity && parseFloat(bidQuantity) > 0
+                          ? `₹${(parseFloat(bidQuantity) * product.price).toFixed(2)} (${product.price}/${product.unit})`
+                          : `₹${product.price}/${product.unit}`
+                        }
+                      </div>
+                    </div>
+                  )}
 
                 </div>
                 <div className="space-y-2">
@@ -654,8 +857,208 @@ const ProductDetail = () => {
             </Card>
 
           )}
+
+          {/* Enquiries Section (Processor only) */}
+          {role === 'processor' && (
+            <Card className="shadow-warm border-0 bg-gradient-warm">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <MessageSquare size={18} className="mr-2" />
+                  All Enquiries ({enquiries.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-[45rem] overflow-y-auto pr-2">
+                  {enquiries.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No enquiries yet. Buyers will see your product and can send enquiries.
+                    </div>
+                  ) : (
+                    enquiries.map((enquiry) => (
+                      <Card
+                        key={enquiry.id}
+                        className="p-3 border cursor-pointer hover:bg-accent/50 transition-colors relative"
+                        onClick={() => {
+                          setSelectedEnquiry(enquiry);
+                          setShowEnquiryDetail(true);
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium">{enquiry.customer}</div>
+                            <div className="text-sm text-muted-foreground flex items-center">
+                              <MapPin size={12} className="mr-1" />
+                              {enquiry.type === 'order' ? enquiry.details?.location : 'N/A'}
+                            </div>
+                            {enquiry.price && (
+                              <div className="text-sm text-primary font-medium">
+                                Price:{" "}
+                                {enquiry.price.toString().includes("₹")
+                                  ? enquiry.price
+                                  : `₹${enquiry.price}`}
+                                /{product?.unit}
+                              </div>
+                            )}
+
+                            {enquiry.quantity && (
+                              <div className="text-sm text-muted-foreground">
+                                Quantity: {enquiry.quantity}
+                              </div>
+                            )}
+                            {enquiry.message && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                Message: {enquiry.message.substring(0, 50)}
+                                {enquiry.message.length > 50 ? '...' : ''}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            {getStatusBadge(enquiry.status)}
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {new Date(enquiry.date).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
+
+      {/* Enquiry Detail Modal */}
+      <Dialog open={showEnquiryDetail} onOpenChange={setShowEnquiryDetail}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto border-l-4 border-l-purple-500">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-purple-700">
+              <MessageSquare size={20} className="mr-2" />
+              Enquiry Details
+              {selectedEnquiry?.status === 'Processing' && (
+                <Badge variant="outline" className="ml-2 bg-purple-100 text-purple-700 border-purple-300">
+                  New
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedEnquiry && (
+            <div className="space-y-6">
+              {/* Customer Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg bg-purple-50/80 border border-purple-100">
+                <div>
+                  <div className="text-sm text-purple-700 font-medium">Customer Name</div>
+                  <div className="font-medium">{selectedEnquiry.customer}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-purple-700 font-medium">Enquiry Date</div>
+                  <div className="font-medium">
+                    {new Date(selectedEnquiry.date).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Details */}
+              <div>
+                <div className="text-sm text-purple-700 font-medium mb-2">Product Details</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-accent/20 rounded-lg">
+                  {selectedEnquiry.quantity && (
+                    <div>
+                      <div className="text-sm text-muted-foreground">Quantity</div>
+                      <div className="font-medium">{selectedEnquiry.quantity}</div>
+                    </div>
+                  )}
+                  {selectedEnquiry.price && (
+                    <div>
+                      <div className="text-sm text-muted-foreground">Expected Price</div>
+                      <div className="font-medium text-primary">
+                        {selectedEnquiry.price.toString().includes("₹")
+                          ? selectedEnquiry.price
+                          : `₹${selectedEnquiry.price}`}
+                        /{product?.unit}
+                      </div>
+                    </div>
+                  )}
+                  {selectedEnquiry.details?.grade && (
+                    <div>
+                      <div className="text-sm text-muted-foreground">Grade</div>
+                      <div className="font-medium">{selectedEnquiry.details.grade != "N/A" ? selectedEnquiry.details.grade : "Raw Cashews"}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Order Details (if it's an order) */}
+              {selectedEnquiry.type === 'order' && selectedEnquiry.details && (
+                <div>
+                  <div className="text-sm text-purple-700 font-medium mb-2">Enquiry Information</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-accent/20 rounded-lg border border-purple-100">
+                    <div>
+                      <div className="text-sm text-purple-700 font-medium">Total Amount</div>
+                      <div className="font-medium">
+                        ₹{selectedEnquiry.details.totalAmount?.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-sm text-purple-700 font-medium">Delivery Date</div>
+                      <div className="font-medium">
+                        {selectedEnquiry.details.deliveryDate ?
+                          new Date(selectedEnquiry.details.deliveryDate).toLocaleDateString() :
+                          'Not specified'
+                        }
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-purple-700 font-medium">Location</div>
+                      <div className="font-medium">{selectedEnquiry.details.location || 'Not specified'}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Message */}
+              <div className="bg-purple-50/50 p-4 rounded-lg border border-purple-100">
+                <div className="text-sm text-purple-700 font-medium mb-2">Customer Message</div>
+                <div className="p-4 bg-white rounded-md border border-purple-100">
+                  <p className="text-sm">{selectedEnquiry.message || 'No message provided'}</p>
+                </div>
+              </div>
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-end pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowEnquiryDetail(false)}>
+                  Close
+                </Button>
+                {selectedEnquiry.status === 'Processing' ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="border-red-500 text-red-500 hover:bg-red-50"
+                      onClick={() => handleRejectEnquiry(selectedEnquiry.id)}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Reject
+                    </Button>
+                    <Button
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleConfirmEnquiry(selectedEnquiry.id)}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Confirm
+                    </Button>
+                  </>
+                ) : (
+                  <div>
+                    <div className="text-sm text-muted-foreground">Status</div>
+                    <div>{getStatusBadge(selectedEnquiry.status)}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

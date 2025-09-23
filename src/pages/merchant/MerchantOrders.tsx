@@ -446,7 +446,7 @@ const MerchantOrders = () => {
                     <TableRow key={order.id}>
                       {/* <TableCell className="font-medium">{order.id}</TableCell> */}
                       <TableCell>{profile.name}</TableCell>
-                      <TableCell>{order.grade} Cashews</TableCell>
+                      <TableCell>{order.grade != "N/A" ? order.grade : "Raw"} Cashews</TableCell>
                       <TableCell>
                         {order.quantity?.toString().toLowerCase().includes("kg")
                           ? order.quantity
@@ -572,17 +572,13 @@ const MerchantOrders = () => {
           <DialogHeader>
             <DialogTitle>Buyer Response Details</DialogTitle>
             <DialogDescription>
-              Detailed information about the selected order
+              Detailed information about the selected response.
             </DialogDescription>
           </DialogHeader>
 
           {selectedOrder && (
             <div className="mt-4 space-y-3">
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Order ID</span>
-                <span className="font-semibold">{selectedOrder.id}</span>
-              </div>
-
+      
               <div className="flex justify-between">
                 <span className="font-medium text-muted-foreground">Customer Name</span>
                 <span className="font-semibold">{profile.name}</span>
@@ -604,7 +600,7 @@ const MerchantOrders = () => {
               </div>
 
               <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Order Date</span>
+                <span className="font-medium text-muted-foreground">Date</span>
                 <span className="font-semibold">{new Date(selectedOrder.orderDate).toLocaleDateString()}</span>
               </div>
 

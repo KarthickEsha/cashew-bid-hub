@@ -175,9 +175,13 @@ const RequirementDetails = () => {
     const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected', remarks: string = '') => {
         // Update the response status in the backend
         updateResponseStatus(responseId, status, remarks);
-        // Update requirement status when response is accepted
-        if (status === 'accepted' && requirement) {
-            updateRequirementStatus(requirement.id, 'responded');
+        // Update requirement status based on response status
+        if (requirement) {
+            if (status === 'accepted') {
+                updateRequirementStatus(requirement.id, 'closed');
+            } else if (status === 'rejected') {
+                updateRequirementStatus(requirement.id, 'closed');
+            }
         }
 
         // Convert status to lowercase to match the type

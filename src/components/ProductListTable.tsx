@@ -87,7 +87,7 @@ const ProductListTable = ({
               <SortableHeader field="availableQty">Available Stock</SortableHeader>
               <SortableHeader field="price">Offer/kg</SortableHeader>
               <SortableHeader field="location">Origin</SortableHeader>
-              <SortableHeader field="expireDate">Expire Date</SortableHeader>
+              <SortableHeader field="expireDate">Date</SortableHeader>
             </>
           ) : (
             <>

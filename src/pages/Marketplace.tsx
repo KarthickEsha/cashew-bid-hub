@@ -561,7 +561,7 @@ const Marketplace = () => {
                                                     {product.pricePerKg}/kg
                                                 </div>
                                             </div>
-                                            <div>
+                                            {/* <div>
                                                 <span className="text-muted-foreground">Type:</span>
                                                 <div className="flex items-center">
                                                     {product.pricingType === "bidding" && (
@@ -571,7 +571,7 @@ const Marketplace = () => {
                                                         {product.pricingType}
                                                     </span>
                                                 </div>
-                                            </div>
+                                            </div> */}
                                         </div>
 
                                         <div className="flex items-center text-sm text-muted-foreground">
@@ -586,26 +586,6 @@ const Marketplace = () => {
                                                     View Details
                                                 </Button>
                                             </Link>
-                                            {product.pricingType === "bidding" ? (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => {
-                                                        setSelectedProduct(product);
-                                                        setShowRequestDialog(true);
-                                                    }}
-                                                >
-                                                    Place Bid
-                                                </Button>
-                                            ) : (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => handleQuickOrder(product)}
-                                                >
-                                                    Quick Order
-                                                </Button>
-                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
