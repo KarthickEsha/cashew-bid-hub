@@ -329,7 +329,7 @@ const Marketplace = () => {
         addOrder(orderData);
 
         toast({
-            title: "Order Placed Successfully",
+            title: "Enquiry Sent Successfully",
             description: "Your order has been placed and sent to the merchant.",
         });
 
@@ -553,7 +553,9 @@ const Marketplace = () => {
                                             </div>
                                             <div>
                                                 <span className="text-muted-foreground">Quantity:</span>
-                                                <div className="font-semibold">{product.quantity} {product.quantityUnit}</div>
+                                                <div className="font-semibold">
+                                                    {product.quantity?.toLocaleString('en-IN')} {product.quantityUnit}
+                                                </div>
                                             </div>
                                             <div>
                                                 <span className="text-muted-foreground">Price:</span>
@@ -700,24 +702,6 @@ const Marketplace = () => {
                                                             View
                                                         </Button>
                                                     </Link>
-                                                    {product.pricingType === "bidding" ? (
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => {
-                                                                setSelectedProduct(product);
-                                                                setShowRequestDialog(true);
-                                                            }}
-                                                        >
-                                                            Place Bid
-                                                        </Button>
-                                                    ) : (
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => handleQuickOrder(product)}
-                                                        >
-                                                            Quick Order
-                                                        </Button>
-                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>

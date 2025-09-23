@@ -160,7 +160,7 @@ const MerchantOrders = () => {
       reduceAvailableStock(productId, quantity);
 
       toast({
-        title: "Order Confirmed",
+        title: "Response Submitted Successfully",
         description: `Order ${orderId} has been confirmed and stock has been updated.`,
         variant: "default",
       });

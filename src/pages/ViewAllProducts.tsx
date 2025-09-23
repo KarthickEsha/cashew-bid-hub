@@ -134,9 +134,9 @@ const ViewAllProducts = () => {
                     <Eye size={14} className="mr-2" />
                     View Details
                   </Button>
-                  <Button size="sm" variant="outline">
+                  {/* <Button size="sm" variant="outline">
                     {prod.pricingType === "bidding" ? "Place Bid" : "Quick Order"}
-                  </Button>
+                  </Button> */}
                 </div>
               </CardContent>
             </Card>

@@ -710,7 +710,7 @@ const ProductDetail = () => {
                   size="lg"
                 >
                   <Send className="mr-2" size={18} />
-                  {product.pricingType === "bidding" ? "Place Bid Now" : "Send Request"}
+                  {product.pricingType === "bidding" ? "Place Bid Now" : "Submit"}
                 </Button>
               </CardContent>
             </Card>
