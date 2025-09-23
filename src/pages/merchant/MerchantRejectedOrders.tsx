@@ -195,7 +195,7 @@ const MerchantRejectedOrders = () => {
                 >
                   Your Price <SortIcon field="price" />
                 </TableHead>
-                <TableHead>Available Qty</TableHead>
+                <TableHead>Available Qty (kg)</TableHead>
                 <TableHead>Status</TableHead>
                 {/* <TableHead>Actions</TableHead> */}
               </TableRow>
@@ -207,7 +207,7 @@ const MerchantRejectedOrders = () => {
                   <TableCell>{order.productName}</TableCell>
                   <TableCell>{order.enquiry?.quantity || order.quantity ||  'N/A'}</TableCell>
                   <TableCell>₹{order.expectedPrice}/kg</TableCell>
-                  <TableCell className="font-semibold text-primary">{order.price}</TableCell>
+                  <TableCell className="font-semibold text-primary">₹{order.price}</TableCell>
                   <TableCell>{order.quantity}</TableCell>
                   <TableCell>
                     <Badge variant="destructive">

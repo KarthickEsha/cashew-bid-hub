@@ -29,6 +29,7 @@ export interface OrderItem {
   origin: string;
   remarks?: string;
   buyerRemarks?: string;
+  productId: string;
   statusHistory: StatusHistoryItem[];
   steps: Array<{
     label: string;

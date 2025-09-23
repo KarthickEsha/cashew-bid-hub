@@ -75,13 +75,15 @@ export function AppSidebar() {
     { path: "/post-requirement", label: t('sidebar.mainNav.postRequirement'), icon: Plus, },
   ];
 
+  const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
+
   const myActivityItems: NavItem[] = [
     // { path: "/my-requests", label: t('sidebar.myActivity.myRequests'), icon: MessageSquare, badge: 0 },
     // { path: "/messages", label: t('sidebar.myActivity.messages'), icon: Mail, badge: 0 },
     // { path: "/notifications", label: t('sidebar.myActivity.notifications'), icon: Bell, badge: 0 },
     // { path: "/profile", label: t('sidebar.myActivity.profile'), icon: User },
     { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: newResponseCount },
-    { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail, badge: orders.length },
+    { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail, badge: ordersCount },
     { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText, badge: requirements.length }
   ];
 

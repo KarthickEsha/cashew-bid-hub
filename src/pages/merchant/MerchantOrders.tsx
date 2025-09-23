@@ -50,6 +50,7 @@ const MerchantOrders = () => {
 
   // Calculate displayed orders based on filters and sorting
   const displayedOrders = useMemo(() => {
+    debugger
     if (!merchantOrders) return [];
     let result = [...merchantOrders];
 
@@ -147,17 +148,17 @@ const MerchantOrders = () => {
       // Get the product ID from the order
       // Note: You'll need to ensure the productId is stored in the order when it's created
       const productId = (order as any).productId; // Cast to any since productId might not be in the type yet
-      
+
       if (!productId) {
         throw new Error('Product ID not found in order');
       }
-      
+
       // First update the order status
       await updateOrderStatus(orderId, "Confirmed");
-      
+
       // Then reduce the stock
       reduceAvailableStock(productId, quantity);
-      
+
       toast({
         title: "Order Confirmed",
         description: `Order ${orderId} has been confirmed and stock has been updated.`,
@@ -445,8 +446,12 @@ const MerchantOrders = () => {
                     <TableRow key={order.id}>
                       {/* <TableCell className="font-medium">{order.id}</TableCell> */}
                       <TableCell>{profile.name}</TableCell>
-                      <TableCell>{order.productName}</TableCell>
-                      <TableCell>{order.quantity}</TableCell>
+                      <TableCell>{order.grade} Cashews</TableCell>
+                      <TableCell>
+                        {order.quantity?.toString().toLowerCase().includes("kg")
+                          ? order.quantity
+                          : `${order.quantity} kg`}
+                      </TableCell>
                       <TableCell>{formatINR(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}</TableCell>
                       <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
                       {/* <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell> */}
@@ -584,7 +589,7 @@ const MerchantOrders = () => {
               </div>
 
               <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Product</span>
+                <span className="font-medium text-muted-foreground">Product Name</span>
                 <span className="font-semibold">{selectedOrder.productName}</span>
               </div>
 

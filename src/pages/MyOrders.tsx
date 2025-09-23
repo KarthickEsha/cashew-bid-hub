@@ -129,13 +129,19 @@ const MyOrders = () => {
 
   // filtering
   const filteredAndSortedOrders = useMemo(() => {
-    debugger
     const filtered = allOrders.filter((order) => {
       const searchTermLower = searchTerm.toLowerCase();
       const productName = order.productName || '';
       const orderId = order.id || '';
       const orderStatus = order.status || '';
       const orderLocation = order.location || '';
+
+      const productId = order.productId || ''; // assuming order has productId
+
+      // ✅ skip if productId is empty
+      if (!productId.trim()) {
+        return false;
+      }
 
       const matchesSearch =
         productName.toLowerCase().includes(searchTermLower) ||
@@ -315,7 +321,7 @@ const MyOrders = () => {
                   </TableCell>
                   <TableCell>{order.merchantName}</TableCell>
                   <TableCell className="text-right">{order.quantity}</TableCell>
-                   <TableCell className="text-right font-medium">
+                  <TableCell className="text-right font-medium">
                     ₹{new Intl.NumberFormat('en-IN').format(Number(order.totalAmount))}
                   </TableCell>
                   <TableCell>
