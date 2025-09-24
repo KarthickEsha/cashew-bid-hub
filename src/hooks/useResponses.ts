@@ -106,7 +106,7 @@ export const useResponses = create<ResponsesState>()(
                   const statusHistory = [{
                     status: 'Processing',
                     timestamp: now,
-                    remarks: remarks || 'Order placed by buyer',
+                    remarks: remarks || 'Response received from buyer',
                     updatedBy: 'Buyer'
                   }];
 
@@ -136,7 +136,8 @@ export const useResponses = create<ResponsesState>()(
                     origin: response.origin,
                     remarks: response.message,
                     buyerRemarks: response.remarks,
-                    statusHistory: statusHistory
+                    statusHistory: statusHistory,
+                    productId: ''
                   });
                 }
               }

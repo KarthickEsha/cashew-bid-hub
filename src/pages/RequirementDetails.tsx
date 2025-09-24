@@ -311,7 +311,7 @@ const RequirementDetails = () => {
                     </Card>
 
                     {/* Specifications */}
-                    <Card>
+                    {/* <Card>
                         <CardHeader>
                             <CardTitle className="text-lg">Product Specifications</CardTitle>
                         </CardHeader>
@@ -347,7 +347,7 @@ const RequirementDetails = () => {
                                 </div>
                             </div>
                         </CardContent>
-                    </Card>
+                    </Card> */}
                 </div>
 
                 {/* Sidebar - Responses */}

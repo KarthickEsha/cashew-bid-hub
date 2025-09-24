@@ -560,7 +560,7 @@ const Marketplace = () => {
                                             <div>
                                                 <span className="text-muted-foreground">Price:</span>
                                                 <div className="font-semibold text-primary">
-                                                    {product.pricePerKg}/kg
+                                                    ₹{String(product.pricePerKg).replace('$', '')}/kg
                                                 </div>
                                             </div>
                                             {/* <div>

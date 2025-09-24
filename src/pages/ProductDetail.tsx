@@ -366,8 +366,8 @@ const ProductDetail = () => {
       }
 
       toast({
-        title: "Order Placed Successfully",
-        description: "Your enquiry has been placed and an order has been created.",
+        title: "Enquiry Submitted Successfully",
+        description: "Your enquiry has been successfully submitted.",
       });
 
       // Reset form

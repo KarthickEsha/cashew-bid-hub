@@ -106,10 +106,10 @@ export function MerchantSidebar() {
   const activeEnquiries = getRequirementsAsEnquiries().filter(enquiry => {
     const expiryDate = new Date(enquiry.deliveryDeadline || 0);
     const now = new Date();
-    return (expiryDate > now && enquiry.status === 'active') ||
-      enquiry.status === 'responded' ||
-      enquiry.status === 'selected' ||
-      enquiry.status === 'viewed';
+    return (
+      expiryDate > now &&
+      (enquiry.status === 'active' || enquiry.status === 'pending' || enquiry.status === 'viewed' || enquiry.status === 'closed' || enquiry.status === 'accepted' || enquiry.status === "responded")
+    );
   });
 
   // Only show selected (accepted) responses
