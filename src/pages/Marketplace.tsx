@@ -319,6 +319,7 @@ const Marketplace = () => {
             grade: selectedProduct.grade,
             origin: selectedProduct.origin || 'N/A',
             productId: selectedProduct.id,
+            source: 'marketplace',
             statusHistory: [{
                 status: 'Processing',
                 timestamp: new Date().toISOString(),
@@ -578,7 +579,7 @@ const Marketplace = () => {
 
                                         <div className="flex items-center text-sm text-muted-foreground">
                                             <Calendar size={14} className="mr-1" />
-                                            Expires: {new Date(product.expiry).toLocaleDateString()}
+                                            Stock Available Until: {new Date(product.expiry).toLocaleDateString()}
                                         </div>
 
                                         <div className="flex space-x-2 pt-2">
@@ -639,15 +640,6 @@ const Marketplace = () => {
                                         </TableHead>
                                         <TableHead
                                             className="cursor-pointer hover:bg-muted/50"
-                                            onClick={() => handleSort('pricingType')}
-                                        >
-                                            <div className="flex items-center space-x-2">
-                                                <span>Type</span>
-                                                {getSortIcon('pricingType')}
-                                            </div>
-                                        </TableHead>
-                                        <TableHead
-                                            className="cursor-pointer hover:bg-muted/50"
                                             onClick={() => handleSort('expiry')}
                                         >
                                             <div className="flex items-center space-x-2">
@@ -676,20 +668,7 @@ const Marketplace = () => {
                                                 {product.quantity} {product.quantityUnit}
                                             </TableCell>
                                             <TableCell className="font-semibold text-primary">
-                                                {product.pricePerKg}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center">
-                                                    {product.pricingType === "bidding" && (
-                                                        <TrendingUp size={14} className="mr-1 text-primary" />
-                                                    )}
-                                                    <Badge
-                                                        variant={product.pricingType === "bidding" ? "default" : "secondary"}
-                                                        className="capitalize"
-                                                    >
-                                                        {product.pricingType}
-                                                    </Badge>
-                                                </div>
+                                               ₹{String(product.pricePerKg).replace('$', '')}/kg
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
                                                 {new Date(product.expiry).toLocaleDateString()}

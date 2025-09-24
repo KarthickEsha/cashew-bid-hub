@@ -564,7 +564,7 @@ const MerchantAddProduct = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Stock Till Date *</Label>
+                                <Label>Stock Available Until *</Label>
                                 <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                                     <PopoverTrigger asChild>
                                         <Button
@@ -575,7 +575,7 @@ const MerchantAddProduct = () => {
                                             )}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {expireDate ? format(expireDate, "PPP") : <span>Pick expire date</span>}
+                                            {expireDate ? format(expireDate, "PPP") : <span>Pick date</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">

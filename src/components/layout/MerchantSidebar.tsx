@@ -108,7 +108,7 @@ export function MerchantSidebar() {
     const now = new Date();
     return (
       expiryDate > now &&
-      (enquiry.status === 'active' || enquiry.status === 'pending' || enquiry.status === 'viewed' || enquiry.status === 'closed' || enquiry.status === 'accepted' || enquiry.status === "responded")
+      (enquiry.status === 'active' || enquiry.status === 'pending' || enquiry.status === 'viewed' || enquiry.status === 'accepted' || enquiry.status === "responded")
     );
   });
 

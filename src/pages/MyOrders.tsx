@@ -472,10 +472,10 @@ const MyOrders = () => {
                   <h3 className="font-semibold text-lg mb-2 flex items-center">
                     <Package className="mr-2 h-5 w-5 text-blue-500" /> Enquirie Information
                   </h3>
-                  <p><strong>Order ID:</strong> {selectedOrder.id}</p>
+                  {/* <p><strong>Order ID:</strong> {selectedOrder.id}</p> */}
                   <p><strong>Status:</strong> {selectedOrder.status}</p>
                   <p className="flex items-center text-sm text-muted-foreground">
-                    <Calendar size={14} className="mr-1" /> Ordered on: {selectedOrder.orderDate}
+                    <Calendar size={14} className="mr-1" /> Enquire on: {selectedOrder.orderDate}
                   </p>
                   {selectedOrder.shippingDate && (
                     <p className="flex items-center text-sm text-muted-foreground">

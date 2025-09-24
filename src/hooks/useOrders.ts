@@ -26,6 +26,7 @@ export interface OrderItem {
   location: string;
   trackingNumber?: string;
   grade: string;
+  source?: string;
   origin: string;
   remarks?: string;
   buyerRemarks?: string;
@@ -99,6 +100,7 @@ export const useOrders = create<OrdersState>()(
           id: orderId,
           createdAt: now,
           updatedAt: now,
+          source: 'My Requirement',
           buyerRemarks: orderData.buyerRemarks || '',
           statusHistory: orderData.statusHistory || [{
             status: orderData.status,

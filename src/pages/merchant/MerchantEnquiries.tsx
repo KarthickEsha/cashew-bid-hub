@@ -33,7 +33,7 @@ const MerchantEnquiries = () => {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  
+
   // Refresh enquiries when requirements change
   useEffect(() => {
     console.log('Requirements changed, refreshing enquiries...');
@@ -162,7 +162,7 @@ const MerchantEnquiries = () => {
           buyerReply: responses.length > 0 ? responses[responses.length - 1].message : undefined
         };
       });
-      
+
     console.log('Initial enquiries:', [...mockEnquiries, ...storedEnquiries]);
     return [...mockEnquiries, ...storedEnquiries];
   });
@@ -1017,12 +1017,17 @@ const MerchantEnquiries = () => {
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Required Qty</Label>
-                  <p className="font-medium">{selectedEnquiry.quantity}</p>
+                  <p className="font-medium">{selectedEnquiry.quantity} Kg</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Minimum Qty</Label>
+                  <p className="font-medium">{selectedEnquiry.minSupplyQuantity} Kg</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Expected Price</Label>
                   <p className="font-medium">₹{selectedEnquiry.expectedPrice}/kg</p>
                 </div>
+
               </div>
 
               <div className="flex border rounded-md p-0.5 bg-muted/50 mt-2">
@@ -1061,24 +1066,36 @@ const MerchantEnquiries = () => {
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium">Available Quantity (kg) *</Label>
+                      <Label className="text-sm font-medium">Supply Quantity (kg) *</Label>
                       <Input
                         id="availableQuantity"
                         type="number"
-                        placeholder={`Max: ${selectedEnquiry?.quantity}kg`}
+                        placeholder={`Min: ${selectedEnquiry?.minSupplyQuantity}kg | Max: ${selectedEnquiry?.quantity}kg`}
                         value={availableQuantity}
                         onChange={(e) => {
+                          const value = parseFloat(e.target.value);
                           setAvailableQuantity(e.target.value);
-                          if (e.target.value) validateQuantity(e.target.value);
+
+                          if (!value) {
+                            setQuantityError("Quantity is required");
+                          } else if (value < selectedEnquiry?.minSupplyQuantity) {
+                            setQuantityError(`Quantity should not be less than ${selectedEnquiry?.minSupplyQuantity}kg`);
+                          } else if (value > selectedEnquiry?.quantity) {
+                            setQuantityError(`Quantity should not exceed ${selectedEnquiry?.quantity}kg`);
+                          } else {
+                            setQuantityError(""); // clear error
+                          }
                         }}
                         className={`border-input ${quantityError ? 'border-red-500' : ''}`}
-                        min="0"
+                        min={selectedEnquiry?.minQuantity || 0}
+                        max={selectedEnquiry?.quantity || undefined}
                         step="0.01"
                       />
                       {quantityError && (
                         <p className="text-sm text-red-500 mt-1">{quantityError}</p>
                       )}
                     </div>
+
                     <div>
                       <Label className="text-sm font-medium">Your Price (₹) *</Label>
                       <Input

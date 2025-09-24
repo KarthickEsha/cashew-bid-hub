@@ -173,7 +173,7 @@ const ProductDetail = () => {
       return (
         <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
           <CheckCircle className="mr-1 h-3 w-3" />
-          {status}
+          {status === 'Processing' ? 'New' : status}
         </Badge>
       );
     }
@@ -320,6 +320,7 @@ const ProductDetail = () => {
         date: now,
         status: 'accepted' as const, // Auto-accept the bid
         productId: product.id,
+        source: 'marketplace' as const,
         productName: product.grade ? `${product.grade} Cashews` : 'Raw Cashews',
         grade: product.grade != "N/A" ? product.grade : "Raw Cashews",
         price: bidPrice ? parseFloat(bidPrice) : 0,
@@ -860,71 +861,71 @@ const ProductDetail = () => {
 
           {/* Enquiries Section (Processor only) */}
           {role === 'processor' && (
-            <Card className="shadow-warm border-0 bg-gradient-warm">
+            <Card className="shadow-warm border-0 bg-gradient-warm max-h-[39rem] flex flex-col">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center">
                   <MessageSquare size={18} className="mr-2" />
                   All Enquiries ({enquiries.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-[45rem] overflow-y-auto pr-2">
-                  {enquiries.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No enquiries yet. Buyers will see your product and can send enquiries.
-                    </div>
-                  ) : (
-                    enquiries.map((enquiry) => (
-                      <Card
-                        key={enquiry.id}
-                        className="p-3 border cursor-pointer hover:bg-accent/50 transition-colors relative"
-                        onClick={() => {
-                          setSelectedEnquiry(enquiry);
-                          setShowEnquiryDetail(true);
-                        }}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium">{enquiry.customer}</div>
-                            <div className="text-sm text-muted-foreground flex items-center">
-                              <MapPin size={12} className="mr-1" />
-                              {enquiry.type === 'order' ? enquiry.details?.location : 'N/A'}
-                            </div>
-                            {enquiry.price && (
-                              <div className="text-sm text-primary font-medium">
-                                Price:{" "}
-                                {enquiry.price.toString().includes("₹")
-                                  ? enquiry.price
-                                  : `₹${enquiry.price}`}
-                                /{product?.unit}
-                              </div>
-                            )}
 
-                            {enquiry.quantity && (
-                              <div className="text-sm text-muted-foreground">
-                                Quantity: {enquiry.quantity}
-                              </div>
-                            )}
-                            {enquiry.message && (
-                              <div className="text-sm text-muted-foreground mt-1">
-                                Message: {enquiry.message.substring(0, 50)}
-                                {enquiry.message.length > 50 ? '...' : ''}
-                              </div>
-                            )}
+              {/* 👇 Add scroll here */}
+              <CardContent className="flex-1 overflow-y-auto pr-2 space-y-3">
+                {enquiries.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No enquiries yet. Buyers will see your product and can send enquiries.
+                  </div>
+                ) : (
+                  enquiries.map((enquiry) => (
+                    <Card
+                      key={enquiry.id}
+                      className="p-3 border cursor-pointer hover:bg-accent/50 transition-colors relative"
+                      onClick={() => {
+                        setSelectedEnquiry(enquiry);
+                        setShowEnquiryDetail(true);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium">{enquiry.customer}</div>
+                          <div className="text-sm text-muted-foreground flex items-center">
+                            <MapPin size={12} className="mr-1" />
+                            {enquiry.type === 'order' ? enquiry.details?.location : 'N/A'}
                           </div>
-                          <div className="text-right">
-                            {getStatusBadge(enquiry.status)}
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {new Date(enquiry.date).toLocaleDateString()}
+                          {enquiry.price && (
+                            <div className="text-sm text-primary font-medium">
+                              Price:{" "}
+                              {enquiry.price.toString().includes("₹")
+                                ? enquiry.price
+                                : `₹${enquiry.price}`}
+                              /{product?.unit}
                             </div>
+                          )}
+                          {enquiry.quantity && (
+                            <div className="text-sm text-muted-foreground">
+                              Quantity: {enquiry.quantity}
+                            </div>
+                          )}
+                          {enquiry.message && (
+                            <div className="text-sm text-muted-foreground mt-1">
+                              Message: {enquiry.message.substring(0, 50)}
+                              {enquiry.message.length > 50 ? "..." : ""}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          {getStatusBadge(enquiry.status)}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {new Date(enquiry.date).toLocaleDateString()}
                           </div>
                         </div>
-                      </Card>
-                    ))
-                  )}
-                </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
               </CardContent>
             </Card>
+
           )}
         </div>
       </div>

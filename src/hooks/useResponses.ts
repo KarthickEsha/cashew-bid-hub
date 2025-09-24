@@ -136,6 +136,7 @@ export const useResponses = create<ResponsesState>()(
                     origin: response.origin,
                     remarks: response.message,
                     buyerRemarks: response.remarks,
+                    source: 'My Requirement',
                     statusHistory: statusHistory,
                     productId: ''
                   });

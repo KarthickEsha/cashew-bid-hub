@@ -50,11 +50,10 @@ const MerchantOrders = () => {
 
   // Calculate displayed orders based on filters and sorting
   const displayedOrders = useMemo(() => {
-    debugger
     if (!merchantOrders) return [];
     let result = [...merchantOrders];
 
-    // Apply filters
+    // ✅ Apply filters
     if (filters.orderId || filters.customer || filters.product) {
       result = result.filter(order =>
         (filters.orderId ? order.id?.toLowerCase().includes(filters.orderId.toLowerCase()) : true) &&
@@ -63,37 +62,38 @@ const MerchantOrders = () => {
       );
     }
 
-    // Apply sorting
+    // ✅ Apply sorting
     if (sortField) {
       result = [...result].sort((a, b) => {
-        // Get values with proper typing
+        // 🔹 Step 1: Processing orders first
+        const aIsProcessing = a.status?.toLowerCase() === 'processing';
+        const bIsProcessing = b.status?.toLowerCase() === 'processing';
+
+        if (aIsProcessing && !bIsProcessing) return -1; // a comes first
+        if (!aIsProcessing && bIsProcessing) return 1;  // b comes first
+
+        // 🔹 Step 2: Normal sorting
         const aValue = a[sortField as keyof typeof a];
         const bValue = b[sortField as keyof typeof b];
 
-        // Function to get comparable value from any type
         const getComparableValue = (value: any): string | number => {
-          // Handle array type
           if (Array.isArray(value)) {
             const firstItem = value[0];
             if (firstItem) {
-              // If items have a date field, use that for comparison
-              if (firstItem && typeof firstItem === 'object' && 'date' in firstItem) {
+              if (typeof firstItem === 'object' && 'date' in firstItem) {
                 return new Date(firstItem.date).getTime();
               }
-              // If items have a label field, use that for comparison
-              if (firstItem && typeof firstItem === 'object' && 'label' in firstItem) {
+              if (typeof firstItem === 'object' && 'label' in firstItem) {
                 return String(firstItem.label).toLowerCase();
               }
             }
-            return ''; // Default for empty arrays
+            return '';
           }
 
-          // Handle date fields
           if (sortField === 'orderDate' || sortField === 'deliveryDate' || sortField === 'shippingDate') {
             return value ? new Date(String(value)).getTime() : 0;
           }
 
-          // Handle numeric fields
           if (sortField === 'totalAmount') {
             return Number(String(value || '').replace(/[^0-9.-]+/g, '') || 0);
           }
@@ -102,23 +102,28 @@ const MerchantOrders = () => {
             return parseInt(String(value || '').replace(/[^0-9]/g, '') || '0', 10) || 0;
           }
 
-          // Default to string comparison
           return String(value || '').toLowerCase();
         };
 
-        // Get comparable values
         const compareA = getComparableValue(aValue);
         const compareB = getComparableValue(bValue);
 
-        // Perform the comparison
         if (compareA < compareB) return sortDirection === 'asc' ? -1 : 1;
         if (compareA > compareB) return sortDirection === 'asc' ? 1 : -1;
         return 0;
+      });
+    } else {
+      // ✅ If no sortField, still show Processing first
+      result = result.sort((a, b) => {
+        const aIsProcessing = a.status?.toLowerCase() === 'processing';
+        const bIsProcessing = b.status?.toLowerCase() === 'processing';
+        return aIsProcessing === bIsProcessing ? 0 : aIsProcessing ? -1 : 1;
       });
     }
 
     return result;
   }, [merchantOrders, filters, sortField, sortDirection]);
+
 
   // Reset to first page when filters/sorting changes
   useEffect(() => {
@@ -161,7 +166,7 @@ const MerchantOrders = () => {
 
       toast({
         title: "Response Submitted Successfully",
-        description: `Order ${orderId} has been confirmed and stock has been updated.`,
+        description: `Response has been confirmed and stock has been updated.`,
         variant: "default",
       });
     } catch (error) {
@@ -392,6 +397,11 @@ const MerchantOrders = () => {
                       {getSortIcon('productName')}
                     </div>
                   </TableHead>
+                  <TableHead className="w-[15%] cursor-pointer hover:bg-muted/50 select-none">
+                    <div className="flex items-center justify-between">
+                      Source  {getSortIcon('source')}
+                    </div>
+                  </TableHead>
                   <TableHead
                     className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('quantity')}
@@ -447,6 +457,7 @@ const MerchantOrders = () => {
                       {/* <TableCell className="font-medium">{order.id}</TableCell> */}
                       <TableCell>{profile.name}</TableCell>
                       <TableCell>{order.grade != "N/A" ? order.grade : "Raw"} Cashews</TableCell>
+                      <TableCell>{order.source || 'Market Place'}</TableCell>
                       <TableCell>
                         {order.quantity?.toString().toLowerCase().includes("kg")
                           ? order.quantity
@@ -457,7 +468,7 @@ const MerchantOrders = () => {
                       {/* <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell> */}
                       <TableCell>
                         <Badge variant={getStatusColor(order.status)}>
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          {order.status === "Processing" ? "New" : order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -578,7 +589,7 @@ const MerchantOrders = () => {
 
           {selectedOrder && (
             <div className="mt-4 space-y-3">
-      
+
               <div className="flex justify-between">
                 <span className="font-medium text-muted-foreground">Customer Name</span>
                 <span className="font-semibold">{profile.name}</span>
@@ -612,7 +623,7 @@ const MerchantOrders = () => {
               <div className="flex justify-between items-center">
                 <span className="font-medium text-muted-foreground">Status</span>
                 <Badge variant={getStatusColor(selectedOrder.status)}>
-                  {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
+                  {selectedOrder.status === "Processing" ? "New" : selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
                 </Badge>
               </div>
 

@@ -79,7 +79,7 @@ const MyRequirements = () => {
   };
   
   const getDisplayStatus = (status: string) => {
-    return status.toLowerCase() === 'closed' ? 'Closed' : 'Open';
+    return status.toLowerCase() === 'closed' ? 'Closed' : 'Active';
   };
 
   // Apply filter and sorting
@@ -231,7 +231,7 @@ const MyRequirements = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {[
           {
             label: "Total Requirements",
@@ -261,7 +261,7 @@ const MyRequirements = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </div> */}
 
       {/* Filters */}
       {filterOpen && (
@@ -292,7 +292,6 @@ const MyRequirements = () => {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="open">Open</SelectItem>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="closed">Closed</SelectItem>
                   </SelectContent>
@@ -343,7 +342,7 @@ const MyRequirements = () => {
                     {getSortIcon('grade')}
                   </div>
                 </TableHead>
-                <TableHead 
+                {/* <TableHead 
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => requestSort('deliveryLocation')}
                 >
@@ -351,7 +350,7 @@ const MyRequirements = () => {
                     Location
                     {getSortIcon('deliveryLocation')}
                   </div>
-                </TableHead>
+                </TableHead> */}
                 <TableHead 
                   className="text-right cursor-pointer hover:bg-muted/50"
                   onClick={() => requestSort('quantity')}
@@ -366,7 +365,7 @@ const MyRequirements = () => {
                   onClick={() => requestSort('priceRange')}
                 >
                   <div className="flex items-center">
-                    Price Range
+                    Price
                     {getSortIcon('priceRange')}
                   </div>
                 </TableHead>
@@ -425,7 +424,6 @@ const MyRequirements = () => {
                     <TableCell>
                       <Badge variant="outline">{requirement.grade || 'N/A'}</Badge>
                     </TableCell>
-                    <TableCell>{requirement.deliveryLocation || 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       {requirement.quantity} kg
                     </TableCell>
