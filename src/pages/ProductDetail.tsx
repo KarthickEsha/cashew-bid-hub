@@ -575,7 +575,7 @@ const ProductDetail = () => {
                     <Calendar size={24} className="text-primary" />
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground font-medium">Stock Till Date</div>
+                    <div className="text-sm text-muted-foreground font-medium">Stock Until Date</div>
                     <div className="font-bold text-lg">{new Date(product.expireDate).toLocaleDateString()}</div>
                   </div>
                 </div>

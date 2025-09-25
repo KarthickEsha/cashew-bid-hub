@@ -69,14 +69,15 @@ export function AppSidebar() {
     }
   }, [responses, profile?.productType]);
   const activeProductsCount = products.filter(p => p.status === 'active').length;
+  const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
   const mainNavItems: NavItem[] = [
     { path: "/", label: t('sidebar.mainNav.dashboard'), icon: Home },
     { path: "/marketplace", label: t('sidebar.mainNav.marketplace'), icon: Store , badge: activeProductsCount},
-    { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: newResponseCount },
+    { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail, badge: ordersCount }
     
   ];
 
-  const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
+
 
   const myActivityItems: NavItem[] = [
     // { path: "/my-requests", label: t('sidebar.myActivity.myRequests'), icon: MessageSquare, badge: 0 },
@@ -84,8 +85,8 @@ export function AppSidebar() {
     // { path: "/notifications", label: t('sidebar.myActivity.notifications'), icon: Bell, badge: 0 },
     // { path: "/profile", label: t('sidebar.myActivity.profile'), icon: User },
     { path: "/post-requirement", label: t('sidebar.mainNav.postRequirement'), icon: Plus, },
-    { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail, badge: ordersCount },
-    { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText, badge: requirements.length }
+    { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText, badge: requirements.length },
+    { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: newResponseCount }
   ];
 
   const accountItems: NavItem[] = [
