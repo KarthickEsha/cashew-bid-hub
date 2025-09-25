@@ -940,7 +940,7 @@ const MerchantEnquiries = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(enquiry)} title="Submit Response">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(enquiry)} title="View Details">
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleChatClick(enquiry)} title="View Responses">
