@@ -106,10 +106,10 @@ const ViewAllProducts = () => {
                   <div>
                     <span className="text-muted-foreground">Price:</span>
                     <div className="font-semibold text-primary">
-                      ₹{prod.price} / ton
+                      ₹{prod.price} / kg
                     </div>
                   </div>
-                  <div>
+                  {/* <div>
                     <span className="text-muted-foreground">Type:</span>
                     <div className="flex items-center">
                       {prod.pricingType === "bidding" && (
@@ -117,7 +117,7 @@ const ViewAllProducts = () => {
                       )}
                       <span className="font-semibold capitalize">{prod.pricingType ?? "fixed"}</span>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="flex items-center text-sm text-muted-foreground">

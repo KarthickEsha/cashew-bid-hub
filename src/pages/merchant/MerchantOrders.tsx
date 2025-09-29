@@ -51,6 +51,7 @@ const MerchantOrders = () => {
 
   // Calculate displayed orders based on filters and sorting
   const displayedOrders = useMemo(() => {
+    debugger
     if (!merchantOrders) return [];
     let result = [...merchantOrders];
 

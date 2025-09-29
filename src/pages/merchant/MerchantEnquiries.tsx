@@ -327,7 +327,14 @@ const MerchantEnquiries = () => {
   const totalPages = Math.ceil(filteredEnquiries.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, filteredEnquiries.length);
-  const paginatedEnquiries = filteredEnquiries.slice(startIndex, endIndex);
+
+  const sortedEnquiries = filteredEnquiries.sort((a, b) => {
+    // Assuming each enquiry has a 'createdAt' field as a date string or Date object
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  // Apply pagination
+  const paginatedEnquiries = sortedEnquiries.slice(startIndex, endIndex);
 
   const handleViewClick = async (enquiry: any) => {
     console.group('=== handleViewClick ===');

@@ -37,7 +37,7 @@ const Dashboard = () => {
 
   // Get dynamic order counts
   const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
-  const confirmedOrders = orders.filter(order => order.status === 'Confirmed').length;
+ const confirmedOrders = orders.filter(order => order.productId && order.productId.trim() !== '' && order.status === 'Confirmed').length;
   const pendingOrders = orders.filter(order => order.status === 'Processing').length;
 
   // Calculate total value (mock calculation - in real app this would come from orders)
