@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useProfile } from "@/hooks/useProfile";
 import { useUser } from "@clerk/clerk-react";
+import { useToast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 // Format number with commas (e.g., 1000 -> 1,000)
 const formatNumber = (value: string): string => {
@@ -108,6 +110,7 @@ const EditRequirement = () => {
 
   const [priceError, setPriceError] = useState("");
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   // Get fixed price based on product and origin
   const getFixedPrice = () => {
@@ -208,12 +211,17 @@ const EditRequirement = () => {
     updateRequirement(id, requirementData);
 
     // Show success message and redirect
-    if (isDraft) {
-      alert('Requirement saved as draft successfully!');
-    } else {
-      alert('Requirement updated successfully!');
-    }
-    navigate('/my-requirements');
+    toast({
+      title: isDraft ? "Draft Saved" : "Requirement Updated",
+      description: isDraft 
+        ? "Your requirement has been saved as a draft."
+        : "Your requirement has been updated successfully!",
+    });
+    
+    // Navigate after a short delay to allow the toast to be seen
+    setTimeout(() => {
+      navigate('/my-requirements');
+    }, 1500);
   };
 
   const handleBack = () => {
@@ -231,7 +239,9 @@ const EditRequirement = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <>
+      <Toaster />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="mb-6">
         <Button variant="ghost" onClick={handleBack} className="mb-4">
@@ -483,7 +493,8 @@ const EditRequirement = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 };
 

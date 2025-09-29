@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +45,7 @@ import { useResponses } from "@/hooks/useResponses";
 
 const MyRequirements = () => {
   const { getMyRequirements, deleteRequirement } = useRequirements();
-  const { getResponseCount } = useResponses();
+  const { getResponseCount, getResponsesByRequirementId } = useResponses();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,7 +57,7 @@ const MyRequirements = () => {
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: 'asc' | 'desc';
-  } | null>(null);
+  } | null>({ key: 'statusPriority', direction: 'desc' });
 
   // Get requirements from the hook
   const requirements = getMyRequirements();
@@ -82,10 +82,23 @@ const MyRequirements = () => {
     return status.toLowerCase() === 'closed' ? 'Closed' : 'Active';
   };
 
-  // Apply filter and sorting
+  // Status priority: Active > Draft > Confirmed > Closed (customize as needed)
+  const getStatusPriority = (status: string) => {
+    const s = status?.toLowerCase();
+    if (s === 'active') return 7;
+    if (s === 'selected') return 5;
+    if (s === 'viewed') return 4;
+    if (s === 'responded') return 3;
+    if (s === 'draft') return 2;
+    if (s === 'confirmed') return 1;
+    if (s === 'closed') return 0;
+    return -1;
+  };
+
+  // Apply filter and sorting, prioritizing processing count when selected
   const applyFilters = () => {
     let temp = [...requirements];
-    
+
     // Apply filters
     if (searchTerm) {
       temp = temp.filter((req) =>
@@ -103,8 +116,8 @@ const MyRequirements = () => {
     // Apply sorting
     if (sortConfig !== null) {
       temp.sort((a, b) => {
-        let aValue = a[sortConfig.key as keyof typeof a];
-        let bValue = b[sortConfig.key as keyof typeof b];
+        let aValue: any = a[sortConfig.key as keyof typeof a];
+        let bValue: any = b[sortConfig.key as keyof typeof b];
 
         // Handle date sorting
         if (sortConfig.key === 'createdAt' || sortConfig.key === 'lastModified') {
@@ -125,6 +138,15 @@ const MyRequirements = () => {
           };
           aValue = extractNumber(a.budgetRange || '');
           bValue = extractNumber(b.budgetRange || '');
+        }
+        // Status priority: place Active first
+        else if (sortConfig.key === 'statusPriority' || sortConfig.key === 'status') {
+          aValue = getStatusPriority(a.status);
+          bValue = getStatusPriority(b.status);
+        } else {
+          // Fallback: string compare
+          if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+          if (typeof bValue === 'string') bValue = bValue.toLowerCase();
         }
 
         if (aValue < bValue) {
@@ -163,7 +185,7 @@ const MyRequirements = () => {
     applyFilters();
     // Reset to first page when filters change
     setCurrentPage(1);
-  }, [requirements, searchTerm, statusFilter, gradeFilter]);
+  }, [requirements, searchTerm, statusFilter, gradeFilter, sortConfig]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredRequirements.length / itemsPerPage));
@@ -371,11 +393,11 @@ const MyRequirements = () => {
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => requestSort('status')}
+                  onClick={() => requestSort('statusPriority')}
                 >
                   <div className="flex items-center">
                     Status
-                    {getSortIcon('status')}
+                    {getSortIcon('statusPriority')}
                   </div>
                 </TableHead>
                 <TableHead 
@@ -440,12 +462,23 @@ const MyRequirements = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                          <Link to={`/requirement/${requirement.id}`}>
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">View</span>
-                          </Link>
-                        </Button>
+                        <div className="relative">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                            <Link to={`/requirement/${requirement.id}`}>
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">View</span>
+                            </Link>
+                          </Button>
+                          {(() => {
+                            const processingCount = getResponsesByRequirementId(requirement.id.toString())
+                              .filter(r => r.status === 'new' || r.status === 'viewed').length;
+                            return processingCount > 0 ? (
+                              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] h-4 min-w-4 px-1 leading-none">
+                                {processingCount}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
                         <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                           <Link to={`/edit-requirement/${requirement.id}`}>
                             <Edit className="h-4 w-4" />

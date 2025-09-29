@@ -179,8 +179,6 @@ const RequirementDetails = () => {
         if (requirement) {
             if (status === 'accepted') {
                 updateRequirementStatus(requirement.id, 'closed');
-            } else if (status === 'rejected') {
-                updateRequirementStatus(requirement.id, 'closed');
             }
         }
 

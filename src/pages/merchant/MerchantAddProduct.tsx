@@ -536,7 +536,6 @@ const MerchantAddProduct = () => {
                                 </Label>
                             </div>
 
-
                             {/* <div className="space-y-2">
                                 <Label htmlFor="stockAvailable">Stock Available *</Label>
                                 <Input
@@ -588,22 +587,32 @@ const MerchantAddProduct = () => {
                                             }}
                                             initialFocus
                                             className={cn("p-3 pointer-events-auto")}
+                                            classNames={{
+                                                day_selected:
+                                                    "bg-purple-600 text-white hover:bg-purple-600 hover:text-white focus:bg-purple-600 focus:text-white",
+                                                day_today:
+                                                    "bg-purple-100 text-purple-700",
+                                                nav_button:
+                                                    "h-7 w-7 bg-transparent p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50",
+                                                caption_label:
+                                                    "text-sm font-semibold text-purple-700",
+                                            }}
                                             disabled={(date) => date < new Date()}
                                         />
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Product Description</Label>
-                            <Textarea
-                                id="description"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                placeholder="Describe your product, including specifications, quality, etc."
-                                rows={4}
-                            />
+                            <div className="space-y-2">
+                                <Label htmlFor="description">Product Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    placeholder="Describe your product, including specifications, quality, etc."
+                                    rows={4}
+                                />
+                            </div>
                         </div>
 
                         {/* Image Upload */}

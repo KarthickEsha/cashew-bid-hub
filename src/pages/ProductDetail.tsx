@@ -24,6 +24,7 @@ import { useResponses } from '@/hooks/useResponses';
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useSearchParams } from 'react-router-dom';
 
 const ProductDetail = () => {
   // Hooks must be called at the top level
@@ -39,6 +40,8 @@ const ProductDetail = () => {
 
   const { getOrderByResponseId } = useOrders();
   const { responses, getResponsesByProductId } = useResponses();
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get('from');
 
   // State hooks - all hooks must be called unconditionally at the top level
   const [isLoading, setIsLoading] = useState(true);
@@ -130,7 +133,7 @@ const ProductDetail = () => {
 
       // Get all responses for the current product
       const productResponses = getResponsesByProductId(id);
-
+      debugger
       // Combine orders and responses into enquiries
       const combinedEnquiries = [
         ...productOrders.map(order => ({
@@ -157,7 +160,6 @@ const ProductDetail = () => {
           orderId: getOrderByResponseId(response.id)?.id
         }))
       ];
-
       // Sort by date (newest first)
       combinedEnquiries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setEnquiries(combinedEnquiries);
@@ -252,8 +254,10 @@ const ProductDetail = () => {
   }
 
   const handleBack = () => {
-    if (role === "processor") navigate("/merchant/products");
-    else navigate("/marketplace");
+    debugger
+    if (from === 'merchant-orders') return navigate('/merchant/buyer-response');
+    if (role === 'processor') return navigate('/merchant/products');
+    return navigate('/marketplace');
   };
 
   const handlePlaceBid = async () => {
@@ -292,8 +296,10 @@ const ProductDetail = () => {
         merchantId: product.merchantId || 'unknown',
         customerName: user?.fullName || profile?.name || 'Anonymous Buyer',
         quantity: bidQuantity ? `${bidQuantity} ${product.unit}` : 'Enquiry only',
-        unitPrice: bidPrice ? bidPrice : '0',
-        totalAmount: (parseFloat(bidQuantity || '0') * parseFloat(bidPrice || '0')).toFixed(2),
+        unitPrice: bidPrice != "" ? bidPrice : `${product.price}`,
+        totalAmount: bidPrice != "" ?
+          (parseFloat(bidQuantity || '0') * parseFloat(bidPrice || '0')).toFixed(2) :
+          (parseFloat(bidQuantity) * product.price).toFixed(2),
         status: 'Processing' as const,
         orderDate: now,
         deliveryDate: deliveryDate.toISOString().split('T')[0],
@@ -301,6 +307,7 @@ const ProductDetail = () => {
         grade: product.grade || 'N/A',
         origin: typeof product.location === 'string' ? product.location : 'Unknown',
         buyerRemarks: bidMessage || 'Bid placed',
+        source: 'Market Place',
         statusHistory: [
           {
             status: 'Processing',
@@ -310,7 +317,7 @@ const ProductDetail = () => {
           }
         ]
       };
-
+      debugger
       // Create enquiry
       const enquiry = {
         id: Date.now().toString(),
@@ -323,7 +330,9 @@ const ProductDetail = () => {
         source: 'marketplace' as const,
         productName: product.grade ? `${product.grade} Cashews` : 'Raw Cashews',
         grade: product.grade != "N/A" ? product.grade : "Raw Cashews",
-        price: bidPrice ? parseFloat(bidPrice) : 0,
+        price: bidPrice != "" ?
+          (parseFloat(bidQuantity || '0') * parseFloat(bidPrice || '0')).toFixed(2) :
+          (parseFloat(bidQuantity) * product.price).toFixed(2),
         orderId: `ORD-${Date.now()}` // Link to the order
       };
 
@@ -352,7 +361,9 @@ const ProductDetail = () => {
           grade: product.grade || 'N/A',
           quantity: `${bidQuantity} ${product.unit}`,
           origin: typeof product.location === 'string' ? product.location.toLowerCase() : 'any',
-          expectedPrice: parseFloat(bidPrice),
+          expectedPrice: bidPrice != "" ?
+            (parseFloat(bidQuantity || '0') * parseFloat(bidPrice || '0')).toFixed(2) :
+            (parseFloat(bidQuantity) * product.price).toFixed(2),
           minSupplyQuantity: bidQuantity,
           deliveryLocation: profile?.address || 'Not specified',
           city: profile?.city || 'Not specified',

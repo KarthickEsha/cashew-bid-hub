@@ -54,23 +54,16 @@ const Marketplace = () => {
     const [sortConfig, setSortConfig] = useState<{
         key: string;
         direction: 'asc' | 'desc';
-    } | null>(null); // 🔹 state for sorting
+    } | null>(null);
+
+    useEffect(() => {
+        setSortConfig({ key: 'expiry', direction: 'desc' });
+    }, []);
 
     // Get products and delete function from inventory
-
     const { products: inventoryProducts, deleteProduct } = useInventory();
-
     // Get merchant's company name from profile
     const { profile } = useProfile();
-    const merchantCompanyName = profile?.companyName || "Your Company Name";
-
-    // Handle product deletion (for merchants)
-    const handleDeleteProduct = (productId: string) => {
-        deleteProduct(productId);
-        // The inventoryProducts will automatically update due to the useInventory hook
-    };
-
-    // Combine demo products with merchant products
     const products = useMemo(() => {
         const demoProducts = [
 
@@ -95,6 +88,7 @@ const Marketplace = () => {
             pricePerKg: `$${product.price}`,
             pricingType: "fixed",
             expiry: product.expireDate,
+            createdAt: product.createdAt,
             rating: 4.5, // Default rating
             verified: true,
             description: product.description || 'Premium quality cashews',
@@ -108,7 +102,9 @@ const Marketplace = () => {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(6);
-    const itemsToShow = filteredProducts;
+    const itemsToShow = filteredProducts.sort((a, b) => {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
     const totalPages = Math.ceil(itemsToShow.length / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const currentProducts = itemsToShow.slice(startIndex, startIndex + pageSize);
@@ -120,7 +116,6 @@ const Marketplace = () => {
             direction = 'desc';
         }
         setSortConfig({ key, direction });
-
         const sortedProducts = [...filteredProducts].sort((a, b) => {
             let aValue: any = a[key as keyof typeof a];
             let bValue: any = b[key as keyof typeof b];
@@ -135,6 +130,9 @@ const Marketplace = () => {
             } else if (key === 'expiry') {
                 aValue = new Date(a.expiry);
                 bValue = new Date(b.expiry);
+            } else if (key === 'createdAt') {
+                aValue = new Date(a.createdAt as any);
+                bValue = new Date(b.createdAt as any);
             } else if (key === 'rating') {
                 aValue = a.rating;
                 bValue = b.rating;
@@ -142,7 +140,6 @@ const Marketplace = () => {
                 aValue = String(aValue).toLowerCase();
                 bValue = String(bValue).toLowerCase();
             }
-
             if (aValue < bValue) {
                 return direction === 'asc' ? -1 : 1;
             }
@@ -156,6 +153,17 @@ const Marketplace = () => {
         setCurrentPage(1);
     };
 
+  // Default to recent-first ordering whenever products change
+  useEffect(() => {
+    const sorted = [...products].sort((a: any, b: any) => {
+      const aDate = new Date(a.createdAt || 0).getTime();
+      const bDate = new Date(b.createdAt || 0).getTime();
+      return bDate - aDate; // desc
+    });
+    setFilteredProducts(sorted);
+    setCurrentPage(1);
+  }, [products]);
+
     const getSortIcon = (key: string) => {
         if (!sortConfig || sortConfig.key !== key) {
             return <ArrowUpDown size={16} className="text-muted-foreground" />;
@@ -164,7 +172,6 @@ const Marketplace = () => {
             ? <ArrowUp size={16} className="text-primary" />
             : <ArrowDown size={16} className="text-primary" />;
     };
-
     useEffect(() => {
         if (bidAmount && quantity) {
             setTotalValue(Number(bidAmount) * Number(quantity));

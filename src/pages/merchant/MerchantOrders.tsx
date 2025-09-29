@@ -17,7 +17,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 import { useInventory } from "@/hooks/useInventory";
-
+import { useNavigate } from "react-router-dom";
 // Utility function to format currency in Indian Rupees
 const formatINR = (amount: number | string): string => {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -44,6 +44,7 @@ const MerchantOrders = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Get orders for current merchant
   const merchantOrders = allOrders;
@@ -129,7 +130,7 @@ const MerchantOrders = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortField, sortDirection, pageSize]);
-
+   debugger
   // Calculate pagination
   const totalPages = Math.ceil(displayedOrders.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -269,6 +270,18 @@ const MerchantOrders = () => {
   };
 
   const handleViewDetails = (order: any) => {
+    const source = String(order?.source || '').toLowerCase();
+  
+    // If order came from Market Place, go to product details page
+    if (source.includes('market')) {
+      const pid = (order as any).productId;
+      if (pid) {
+        navigate(`/product/${pid}?from=merchant-orders`);
+        return;
+      }
+    }
+  
+    // Otherwise, show the existing inline popup
     setSelectedOrder(order);
     setIsDialogOpen(true);
   };

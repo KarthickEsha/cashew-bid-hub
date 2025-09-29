@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit, MessageSquare, ShoppingCart, Trash2, TrendingUp, ArrowUpDown, ArrowUp, ArrowDown, Package } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Product, Location } from '@/types/user';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { useOrders } from '@/hooks/useOrders';
+import { useResponses } from '@/hooks/useResponses';
+
 
 interface ProductListTableProps {
   products: Product[];
@@ -28,8 +33,11 @@ const ProductListTable = ({
   onBidClick,
   isMerchantView = false
 }: ProductListTableProps) => {
+  const { orders: allOrders, addOrder, updateOrderStatus } = useOrders();
+  const { responses, getResponsesByProductId } = useResponses();
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [enquiryCounts, setEnquiryCounts] = useState<Record<string, { pending: number; processing: number; total: number }>>({});
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -39,6 +47,43 @@ const ProductListTable = ({
       setSortDirection('asc');
     }
   };
+
+  useEffect(() => {
+    try {
+      const counts: Record<string, { pending: number; processing: number; total: number }> = {};
+
+      // Initialize for all products
+      products.forEach((p) => {
+        counts[p.id] = { pending: 0, processing: 0, total: 0 };
+      });
+
+      products.forEach((p) => {
+        const pid = String(p.id);
+
+        // Responses for this product
+        const productResponses = getResponsesByProductId(pid) || [];
+        const pendingResp = productResponses.filter(
+          (r) => r.status === 'new' || r.status === 'viewed'
+        ).length;
+        // Note: accepted responses are intentionally NOT counted
+
+        // Orders for this product (active only)
+        const productOrders = allOrders.filter(
+          (order) => order.productId === pid && order.status !== 'Cancelled' && order.status !== 'Delivered'  && order.status !== 'Confirmed' 
+        );
+        const processingOrders = productOrders.length;
+
+        counts[pid].pending = pendingResp;
+        counts[pid].processing = processingOrders;
+        counts[pid].total = pendingResp + processingOrders; // exclude accepted-only and completed/cancelled orders
+      });
+
+      setEnquiryCounts(counts);
+    } catch {
+      setEnquiryCounts({});
+    }
+  }, [products, allOrders, responses, getResponsesByProductId]);
+
 
   const sortedProducts = [...products].sort((a, b) => {
     if (!sortField) return 0;
@@ -176,13 +221,26 @@ const ProductListTable = ({
               </TableCell> */}
               <TableCell>
                 <div className="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onViewClick(product)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onViewClick(product)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+
+                    {(enquiryCounts[product.id]?.total ?? 0) > 0 && (
+                      <span className="absolute -top-1 -right-1">
+                        <Badge
+                          variant={(enquiryCounts[product.id]?.pending ?? 0) > 0 ? 'destructive' : 'default'}
+                          className="h-4 min-w-4 px-1 text-[10px] leading-4 rounded-full"
+                        >
+                          {enquiryCounts[product.id]?.total}
+                        </Badge>
+                      </span>
+                    )}
+                  </div>
                   {isMerchantView && (
                     <>
                       <Button

@@ -100,7 +100,7 @@ export const useOrders = create<OrdersState>()(
           id: orderId,
           createdAt: now,
           updatedAt: now,
-          source: 'My Requirement',
+          source: orderData.status,
           buyerRemarks: orderData.buyerRemarks || '',
           statusHistory: orderData.statusHistory || [{
             status: orderData.status,
