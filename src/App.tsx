@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -34,6 +34,15 @@ import { useProfile } from "./hooks/useProfile";
 import ViewAllProducts from "./pages/ViewAllProducts";
 import Login from "./pages/Login";
 import { ReactNode } from "react";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminProtectedRoute from "./pages/admin/AdminProtectedRoute";
+import AdminMerchants from "./pages/admin/AdminMerchants";
+import AdminBuyers from "./pages/admin/AdminBuyers";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminSubscribers from "./pages/admin/AdminSubscribers";
 
 interface LayoutProps {
   children: ReactNode;
@@ -53,13 +62,32 @@ const AppContent = () => {
   const { isSignedIn } = useAuth();
   const { role } = useRole();
   const { profile } = useProfile();
-  
+  const location = useLocation();
+
+  // Admin area: bypass Clerk auth and regular Login entirely
+  if (location.pathname.startsWith("/admin")) {
+    return (
+      <Routes>
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route element={<AdminProtectedRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/merchants" element={<AdminMerchants />} />
+            <Route path="/admin/buyers" element={<AdminBuyers />} />
+            <Route path="/admin/products" element={<AdminProducts />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
+            <Route path="/admin/subscribers" element={<AdminSubscribers />} />
+          </Route>
+        </Route>
+        <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
+      </Routes>
+    );
+  }
+
   // Show login if not signed in
   if (!isSignedIn) {
     return <Login />;
   }
-  
-  // Show profile setup if profile is null or not complete
   if (!profile || !profile.isProfileComplete) {
     return <ProfileSetup />;
   }
