@@ -28,29 +28,31 @@ const Dashboard = () => {
   const { orders } = useOrders();
   const [newResponseCount, setNewResponseCount] = useState(0);
   const { responses } = useResponses();
+  const [showAllActivity, setShowAllActivity] = useState(false);
 
   // Get dynamic data from requirements
   const requirements = getMyRequirements();
   const activeRequirements = requirements.filter(req => req.status === 'active').length;
   const draftRequirements = requirements.filter(req => req.status === 'draft').length;
-  const totalResponses = newResponseCount
-
+  const totalResponses = responses.length
   // Get dynamic order counts
   const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
- const confirmedOrders = orders.filter(order => order.productId && order.productId.trim() !== '' && order.status === 'Confirmed').length;
+  const confirmedOrders = orders.filter(order => order.productId && order.productId.trim() !== '' && order.status === 'Confirmed').length;
   const pendingOrders = orders.filter(order => order.status === 'Processing').length;
 
   // Calculate total value (mock calculation - in real app this would come from orders)
   const totalValue = requirements.reduce((acc, req) => {
-    const price = parseFloat(req.budgetRange?.replace(/[₹,]/g, '') || '0');
-    const quantity = parseFloat(req.quantity?.replace(/[kg,]/g, '') || '0');
-    return acc + (price * quantity / 1000); // Convert to tons for calculation
+    // budgetRange is like "₹8,000/kg" or similar. Extract numeric part safely.
+    const priceNum = typeof req.budgetRange === 'number'
+      ? req.budgetRange
+      : parseFloat(String(req.budgetRange ?? '0').replace(/[^\d.]/g, '') || '0');
+    // quantity could be a number or a formatted string like "1,000" or "1000kg"
+    const quantityNum = typeof req.quantity === 'number'
+      ? req.quantity
+      : parseFloat(String(req.quantity ?? '0').replace(/[^\d.]/g, '') || '0');
+    return acc + (priceNum * quantityNum / 1000); // Convert to tons for calculation
   }, 0);
-  useEffect(() => {
-    // Count new/unread responses
-    const count = responses.length;
-    setNewResponseCount(count);
-  }, [responses]);
+
   const stats = [
     {
       title: t('dashboard.myRequirements'),
@@ -85,27 +87,74 @@ const Dashboard = () => {
     }
   ];
 
-  // Generate recent activity based on requirements
-  const recentActivity = [
-    ...requirements.slice(0, 2).map(req => ({
-      type: "requirement",
-      message: t('dashboard.activity.requirementPosted', { grade: req.grade, quantity: req.quantity }),
-      time: t('dashboard.activity.recently'),
-      status: req.status
-    })),
-    {
-      type: "order",
-      message: t('dashboard.activity.orderPlaced', { type: 'Vietnam Origin Cashews', quantity: '1000kg' }),
-      time: t('dashboard.activity.hoursAgo', { hours: 5 }),
-      status: "pending"
-    },
-    {
-      type: "response",
-      message: t('dashboard.activity.supplierResponded'),
-      time: t('dashboard.activity.daysAgo', { days: 1 }),
-      status: "new"
+
+
+  // Helper to convert timestamps to localized relative strings using i18n keys
+  const relativeTime = (isoOrDate: string) => {
+    try {
+      const date = new Date(isoOrDate);
+      const diffMs = Date.now() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffMins < 5) return t('dashboard.activity.recently');
+      if (diffHours < 24) return t('dashboard.activity.hoursAgo', { count: diffHours || 1 });
+      return t('dashboard.activity.daysAgo', { count: diffDays || 1 });
+    } catch {
+      return t('dashboard.activity.recently');
     }
-  ];
+  };
+
+  // Build recent activity from live data
+  const recentOrders = [...orders]
+    .filter(o => (o.productId ?? '').trim() !== '')
+    .sort((a, b) => new Date(b.createdAt || b.orderDate).getTime() - new Date(a.createdAt || a.orderDate).getTime())
+    .map(o => {
+      const createdAt = o.createdAt || o.orderDate;
+      return {
+      type: 'order',
+      message: t('dashboard.activity.orderPlaced', {
+        type: o.productName || o.origin || 'Cashews',
+        quantity: o.quantity
+      }),
+      time: relativeTime(createdAt),
+      status: o.status,
+      createdAt: createdAt
+    }; 
+    });
+
+  const recentResponses = [...responses]
+    .filter(r => r.status !== 'skipped')
+    .sort((a, b) => new Date(b.createdAt || b.responseDate).getTime() - new Date(a.createdAt || a.responseDate).getTime())
+    .map(r => {
+      const createdAt = r.createdAt || r.responseDate;
+      return {
+      type: 'response',
+      message: t('dashboard.activity.supplierResponded'),
+      time: relativeTime(createdAt),
+      status: r.status,
+      createdAt: createdAt
+    };
+    });
+
+  // Generate recent activity
+  const recentActivity = [
+    ...requirements.map(req => {
+      const createdAt = req.createdAt || req.createdDate || new Date().toISOString();
+      return {
+        type: 'requirement',
+        message: t('dashboard.activity.requirementPosted', { grade: req.grade, quantity: req.quantity }),
+        time: relativeTime(createdAt),
+        status: req.status,
+        createdAt: createdAt
+      };
+    }),
+    ...recentOrders,
+    ...recentResponses,
+  ].sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
+
+  // Limit activity items unless toggled to show all
+  const displayedActivity = showAllActivity ? recentActivity : recentActivity.slice(0, 5);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -161,14 +210,14 @@ const Dashboard = () => {
         {/* Recent Activity */}
         <Card className="lg:col-span-2">
           <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock size={20} className="mr-2" />
-                {t('dashboard.recentActivity')}
-              </CardTitle>
+            <CardTitle className="flex items-center">
+              <Clock size={20} className="mr-2" />
+              {t('dashboard.recentActivity')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
+              {displayedActivity.map((activity, index) => (
                 <div key={index} className="flex items-start space-x-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors">
                   <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -187,8 +236,13 @@ const Dashboard = () => {
               ))}
             </div>
             <div className="mt-4">
-              <Button variant="ghost" size="sm" className="w-full">
-                {t('dashboard.viewAllActivity')}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={() => setShowAllActivity(prev => !prev)}
+              >
+                {showAllActivity ? 'Show Less' : t('dashboard.viewAllActivity')}
                 <ArrowRight size={14} className="ml-2" />
               </Button>
             </div>

@@ -28,7 +28,7 @@ import {
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Product } from "@/types/user";
+import { Product, ProductType } from "@/types/user";
 
 const Marketplace = () => {
     const { toast } = useToast();
@@ -48,7 +48,8 @@ const Marketplace = () => {
     const [bidAmount, setBidAmount] = useState<number | "">("");
     const [quantity, setQuantity] = useState<number | "">("");
     const [totalValue, setTotalValue] = useState<number>(0);
-
+    const [currentProductType, setCurrentProductType] = useState<ProductType>();
+    const { profile } = useProfile();
     const [showFilters, setShowFilters] = useState(false); // 🔹 state for filter toggle
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card'); // 🔹 state for view toggle
     const [sortConfig, setSortConfig] = useState<{
@@ -59,11 +60,17 @@ const Marketplace = () => {
     useEffect(() => {
         setSortConfig({ key: 'expiry', direction: 'desc' });
     }, []);
-
+    useEffect(() => {
+        if (profile?.productType && profile.productType !== "Both") {
+          setCurrentProductType(profile.productType);
+        } else {
+          setCurrentProductType("RCN")
+        }
+      }, [profile?.productType]);
     // Get products and delete function from inventory
     const { products: inventoryProducts, deleteProduct } = useInventory();
     // Get merchant's company name from profile
-    const { profile } = useProfile();
+    
     const products = useMemo(() => {
         const demoProducts = [
 
@@ -88,6 +95,7 @@ const Marketplace = () => {
             pricePerKg: `$${product.price}`,
             pricingType: "fixed",
             expiry: product.expireDate,
+            type: product.type,
             createdAt: product.createdAt,
             rating: 4.5, // Default rating
             verified: true,
@@ -102,7 +110,8 @@ const Marketplace = () => {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(6);
-    const itemsToShow = filteredProducts.sort((a, b) => {
+    debugger
+    const itemsToShow = filteredProducts.filter((p) => p.type === currentProductType).sort((a, b) => {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
     const totalPages = Math.ceil(itemsToShow.length / pageSize);
@@ -164,6 +173,12 @@ const Marketplace = () => {
     setCurrentPage(1);
   }, [products]);
 
+  const formatWithCommas = (val: any) => {
+    if (val === null || val === undefined) return "0";
+    const num = typeof val === 'number' ? val : parseInt(String(val).replace(/,/g, ''), 10);
+    if (isNaN(num)) return String(val);
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
     const getSortIcon = (key: string) => {
         if (!sortConfig || sortConfig.key !== key) {
             return <ArrowUpDown size={16} className="text-muted-foreground" />;
@@ -568,7 +583,7 @@ const Marketplace = () => {
                                             <div>
                                                 <span className="text-muted-foreground">Price:</span>
                                                 <div className="font-semibold text-primary">
-                                                    ₹{String(product.pricePerKg).replace('$', '')}/kg
+                                                    ₹{Number(String(product.pricePerKg).replace('$', '')).toLocaleString("en-IN")}/kg
                                                 </div>
                                             </div>
                                             {/* <div>
@@ -672,10 +687,10 @@ const Marketplace = () => {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="font-medium">
-                                                {product.quantity} {product.quantityUnit}
+                                                {formatWithCommas(product.quantity)} {product.quantityUnit}
                                             </TableCell>
                                             <TableCell className="font-semibold text-primary">
-                                               ₹{String(product.pricePerKg).replace('$', '')}/kg
+                                               ₹{Number(String(product.pricePerKg).replace('$', '')).toLocaleString("en-IN")}/kg
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
                                                 {new Date(product.expiry).toLocaleDateString()}

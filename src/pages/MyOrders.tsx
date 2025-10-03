@@ -102,6 +102,17 @@ const MyOrders = () => {
       direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
   };
+  
+  const formatWithCommas = (val: any) => {
+    if (val === null || val === undefined) return "0";
+    const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[^0-9.-]+/g, ""));
+    if (isNaN(num)) return String(val);
+    return new Intl.NumberFormat('en-IN').format(num);
+  }
+
+  const formatINR = (val: any) => `₹${new Intl.NumberFormat('en-IN').format(
+    typeof val === 'number' ? val : parseFloat(String(val).replace(/[^0-9.-]+/g, "")) || 0
+  )}`;
 
   const getSortIcon = (field: SortField) => {
     if (sortConfig.field !== field) {
@@ -129,7 +140,6 @@ const MyOrders = () => {
 
   // filtering
   const filteredAndSortedOrders = useMemo(() => {
-    debugger
     const filtered = allOrders.filter((order) => {
       const searchTermLower = searchTerm.toLowerCase();
       const productName = order.productName || '';
@@ -321,7 +331,7 @@ const MyOrders = () => {
                     </div>
                   </TableCell>
                   <TableCell>{order.merchantName}</TableCell>
-                  <TableCell className="text-right">{order.quantity}</TableCell>
+                  <TableCell className="text-right">{formatWithCommas(order.quantity)} Kg</TableCell>
                   <TableCell className="text-right font-medium">
                     ₹{new Intl.NumberFormat('en-IN').format(Number(order.totalAmount))}
                   </TableCell>
@@ -330,7 +340,7 @@ const MyOrders = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span>{format(new Date(order.orderDate), 'MMM d, yyyy')}</span>
+                      <span>{format(new Date(order.orderDate), 'MM/dd/yyyy')}</span>
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(order.orderDate), 'h:mm a')}
                       </span>
@@ -495,10 +505,10 @@ const MyOrders = () => {
                     <Package className="mr-2 h-5 w-5 text-green-500" /> Product Information
                   </h3>
                   <p><strong>Product:</strong> {selectedOrder.productName}</p>
-                  <p><strong>Quantity:</strong> {selectedOrder.quantity}</p>
-                  <p><strong>Unit Price:</strong> {selectedOrder.unitPrice}</p>
+                  <p><strong>Quantity:</strong> {formatWithCommas(selectedOrder.quantity)} Kg</p>
+                  <p><strong>Unit Price:</strong> {formatINR(selectedOrder.unitPrice)}</p>
                   <p>
-                    <strong> Total Amount:</strong> {selectedOrder.totalAmount}
+                    <strong> Total Amount:</strong> {formatINR(selectedOrder.totalAmount)}
                   </p>
                 </div>
 

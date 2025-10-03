@@ -551,6 +551,23 @@ const ProductDetail = () => {
               </div>
             </CardHeader>
             <CardContent className="pt-4">
+              {Array.isArray((product as any).images) && (product as any).images.length > 0 && (
+                <div className="mb-6">
+                  <div className="text-sm text-muted-foreground font-medium mb-2">Images</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {(product as any).images.map((src: string, idx: number) => (
+                      <a key={idx} href={src} target="_blank" rel="noreferrer">
+                        <img
+                          src={src}
+                          alt={`Product image ${idx + 1}`}
+                          className="w-full h-28 md:h-32 object-cover rounded-lg border"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className="flex items-center space-x-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
                   <div className="p-2 bg-primary/10 rounded-lg">

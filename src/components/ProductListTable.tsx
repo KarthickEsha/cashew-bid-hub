@@ -88,8 +88,8 @@ const ProductListTable = ({
   const sortedProducts = [...products].sort((a, b) => {
     if (!sortField) return 0;
 
-    let aValue = a[sortField as keyof Product];
-    let bValue = b[sortField as keyof Product];
+    let aValue = a[sortField as keyof Product] as any;
+    let bValue = b[sortField as keyof Product] as any;
 
     if (typeof aValue === 'string') {
       aValue = aValue.toLowerCase();
@@ -126,6 +126,7 @@ const ProductListTable = ({
     <Table className="w-full border-collapse">
       <TableHeader>
         <TableRow>
+          <SortableHeader field="name">Product</SortableHeader>
           {currentProductType === "Kernel" ? (
             <>
               <SortableHeader field="grade">Grade</SortableHeader>
@@ -153,6 +154,21 @@ const ProductListTable = ({
         {sortedProducts.length > 0 ? (
           sortedProducts.map((product) => (
             <TableRow key={product.id}>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={Array.isArray((product as any).images) && (product as any).images[0] ? (product as any).images[0] : '/placeholder.svg'}
+                    alt={product.name || 'Product'}
+                    className="h-10 w-10 rounded object-cover bg-muted"
+                  />
+                  {/* <div className="min-w-[120px]">
+                    <div className="font-medium text-sm leading-tight">{product.name || product.grade || 'Product'}</div>
+                    {product.grade && (
+                      <div className="text-xs text-muted-foreground">{product.grade}</div>
+                    )}
+                  </div> */}
+                </div>
+              </TableCell>
               {currentProductType === "Kernel" ? (
                 <>
                   <TableCell>{product.grade || "-"}</TableCell>
@@ -187,7 +203,6 @@ const ProductListTable = ({
                   </TableCell>
                 </>
               )}
-
               {/* Enquiries and Buyer Responses */}
               {/* <TableCell>
                 <div
@@ -268,7 +283,7 @@ const ProductListTable = ({
         ) : (
           <TableRow>
             <TableCell
-              colSpan={currentProductType === "Kernel" ? 8 : 7} // Kernel: 8 columns, RCN: 7 columns
+              colSpan={currentProductType === "Kernel" ? 9 : 8} // +1 to account for the new Product (image) column
               className="text-center py-6 text-muted-foreground"
             >
               <div className="text-center py-8">

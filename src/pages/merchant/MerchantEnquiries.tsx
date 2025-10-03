@@ -97,31 +97,42 @@ const MerchantEnquiries = () => {
   };
 
   // Sort enquiries
-  const sortEnquiries = (enquiries: any[]) => {
-    if (!sortField) return enquiries;
+  // Keep 'active' first, then apply header sorting, fallback to createdAt desc
+const sortEnquiries = (enqs: any[]) => {
+  return [...enqs].sort((a, b) => {
+    // 1) Status priority: active first
+    const aPri = a.status === 'active' ? 0 : 1;
+    const bPri = b.status === 'active' ? 0 : 1;
+    if (aPri !== bPri) return aPri - bPri;
 
-    return [...enquiries].sort((a, b) => {
-      let aValue = a[sortField];
-      let bValue = b[sortField];
+    // 2) If no selected column, sort by createdAt desc (newest first)
+    if (!sortField) {
+      const aDate = new Date(a.createdAt || a.lastModified || 0).getTime();
+      const bDate = new Date(b.createdAt || b.lastModified || 0).getTime();
+      return bDate - aDate;
+    }
 
-      // Handle different data types
-      if (sortField === 'deliveryDeadline') {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
-      } else if (sortField === 'quantity') {
-        // Extract numeric value from quantity string (e.g., "100kg" -> 100)
-        aValue = parseInt(aValue.replace(/[^0-9]/g, '')) || 0;
-        bValue = parseInt(bValue.replace(/[^0-9]/g, '')) || 0;
-      } else if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
+    // 3) Sort by selected column with proper type handling
+    let aValue: any = a[sortField];
+    let bValue: any = b[sortField];
 
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  };
+    if (sortField === 'deliveryDeadline') {
+      aValue = new Date(aValue || 0).getTime();
+      bValue = new Date(bValue || 0).getTime();
+    } else if (sortField === 'quantity' || sortField === 'expectedPrice') {
+      // numeric fields: strip non-numeric
+      aValue = parseFloat(String(aValue ?? '0').replace(/[^0-9.]/g, '')) || 0;
+      bValue = parseFloat(String(bValue ?? '0').replace(/[^0-9.]/g, '')) || 0;
+    } else if (typeof aValue === 'string' && typeof bValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+};
 
   // State for enquiries
   const [enquiries, setEnquiries] = useState(() => {
@@ -328,10 +339,17 @@ const MerchantEnquiries = () => {
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, filteredEnquiries.length);
 
-  const sortedEnquiries = filteredEnquiries.sort((a, b) => {
-    // Assuming each enquiry has a 'createdAt' field as a date string or Date object
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  let sortedEnquiries = [...filteredEnquiries].sort((a, b) => {
+    // Priority: show 'active' status first
+    if (sortField === '') {
+      const aPri = a.status === 'active' ? 0 : 1;
+      const bPri = b.status === 'active' ? 0 : 1;
+      if (aPri !== bPri) return aPri - bPri;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+   });
+
+  sortedEnquiries = sortEnquiries(filteredEnquiries);
 
   // Apply pagination
   const paginatedEnquiries = sortedEnquiries.slice(startIndex, endIndex);
@@ -459,8 +477,8 @@ const MerchantEnquiries = () => {
   const validateQuantity = (quantity: string) => {
     if (!selectedEnquiry) return false;
 
-    const requiredQty = Number(selectedEnquiry.quantity.replace(/[^0-9]/g, '')); // Extract numeric part
-    const availableQty = Number(quantity);
+    const requiredQty = Number(String(selectedEnquiry.quantity).replace(/[^0-9.]/g, '')); // Extract numeric part
+    const availableQty = Number(String(quantity).replace(/,/g, ''));
 
     if (isNaN(availableQty)) {
       setQuantityError('Please enter a valid quantity');
@@ -485,17 +503,23 @@ const MerchantEnquiries = () => {
   };
 
   const handlePriceChange = (e) => {
-    const value = e.target.value;
-    setMerchantPrice(value);
+    const raw = e.target.value.replace(/[^0-9.,]/g, ''); // allow digits, comma, dot
+    const normalized = raw.replace(/,/g, '');            // for numeric validation
+    const [intPart = '', decPart] = normalized.split('.');
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const formatted = decPart !== undefined ? `${formattedInt}.${decPart}` : formattedInt;
 
-    // Validation logic
-    if (!selectedEnquiry.allowLowerBid && parseFloat(value) < selectedEnquiry.expectedPrice) {
+    // Show formatted with commas in the input
+    setMerchantPrice(formatted);
+
+    // Validation against expectedPrice using numeric value
+    const numericValue = parseFloat(normalized || '0');
+    if (!selectedEnquiry.allowLowerBid && !isNaN(numericValue) && numericValue < selectedEnquiry.expectedPrice) {
       setError(`Price cannot be lower than expected price ₹${selectedEnquiry.expectedPrice}`);
     } else {
       setError(""); // clear error if valid
     }
-  }
-
+  };
   const handleSubmitResponse = async () => {
     console.group('=== HANDLE SUBMIT RESPONSE ===');
     console.log('Action type:', actionType);
@@ -685,6 +709,14 @@ const MerchantEnquiries = () => {
     }
   };
 
+    
+  // Format a numeric value with commas for display (e.g., 1000 -> 1,000)
+  const formatWithCommas = (val: any) => {
+    if (val === null || val === undefined) return "0";
+    const num = typeof val === 'number' ? val : parseInt(String(val).replace(/,/g, ''), 10);
+    if (isNaN(num)) return String(val);
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
   type ResponseStatus = 'new' | 'viewed' | 'accepted' | 'rejected' | 'skipped';
 
   const handleStatusChange = async (responseId: string, newStatus: ResponseStatus) => {
@@ -906,8 +938,10 @@ const MerchantEnquiries = () => {
                 <TableRow key={enquiry.id}>
                   <TableCell className="font-medium">{enquiry.customerName}</TableCell>
                   <TableCell>{enquiry.productName}</TableCell>
-                  <TableCell>{enquiry.quantity}</TableCell>
-                  <TableCell>₹{enquiry.expectedPrice}/kg</TableCell>
+                  <TableCell className="text-right">
+                      {formatWithCommas(enquiry.quantity)} kg
+                    </TableCell>
+                  <TableCell>₹{formatWithCommas(enquiry.expectedPrice)}/kg</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span>{new Date(enquiry.deliveryDeadline).toLocaleDateString()}</span>
@@ -1024,15 +1058,15 @@ const MerchantEnquiries = () => {
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Required Qty</Label>
-                  <p className="font-medium">{selectedEnquiry.quantity} Kg</p>
+                  <p className="font-medium">{formatWithCommas(selectedEnquiry.quantity)} kg</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Minimum Qty</Label>
-                  <p className="font-medium">{selectedEnquiry.minSupplyQuantity} Kg</p>
+                  <p className="font-medium">{formatWithCommas(selectedEnquiry.minSupplyQuantity)} Kg</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Expected Price</Label>
-                  <p className="font-medium">₹{selectedEnquiry.expectedPrice}/kg</p>
+                  <p className="font-medium">₹{formatWithCommas(selectedEnquiry.expectedPrice)}/kg</p>
                 </div>
 
               </div>
@@ -1076,27 +1110,35 @@ const MerchantEnquiries = () => {
                       <Label className="text-sm font-medium">Supply Quantity (kg) *</Label>
                       <Input
                         id="availableQuantity"
-                        type="number"
+                        type="text"
                         placeholder={`Min: ${selectedEnquiry?.minSupplyQuantity}kg | Max: ${selectedEnquiry?.quantity}kg`}
                         value={availableQuantity}
                         onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          setAvailableQuantity(e.target.value);
+                          // allow digits, comma, and one decimal point
+                          const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                          const normalized = raw.replace(/,/g, '');
+                          const [intPart, decPart] = normalized.split('.');
+                          const formattedInt = intPart ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+                          const formatted = decPart !== undefined ? `${formattedInt}.${decPart}` : formattedInt;
+                          setAvailableQuantity(formatted);
 
-                          if (!value) {
+                          const valueNum = Number(normalized);
+                          const minQty = Number(String(selectedEnquiry?.minSupplyQuantity).toString().replace(/[^0-9.]/g, '')) || 0;
+                          const maxQty = Number(String(selectedEnquiry?.quantity).toString().replace(/[^0-9.]/g, ''));
+
+                          if (!normalized) {
                             setQuantityError("Quantity is required");
-                          } else if (value < selectedEnquiry?.minSupplyQuantity) {
-                            setQuantityError(`Quantity should not be less than ${selectedEnquiry?.minSupplyQuantity}kg`);
-                          } else if (value > selectedEnquiry?.quantity) {
-                            setQuantityError(`Quantity should not exceed ${selectedEnquiry?.quantity}kg`);
+                          } else if (isNaN(valueNum)) {
+                            setQuantityError('Please enter a valid quantity');
+                          } else if (valueNum < minQty) {
+                            setQuantityError(`Quantity should not be less than ${minQty}kg`);
+                          } else if (!isNaN(maxQty) && valueNum > maxQty) {
+                            setQuantityError(`Quantity should not exceed ${maxQty}kg`);
                           } else {
                             setQuantityError(""); // clear error
                           }
                         }}
                         className={`border-input ${quantityError ? 'border-red-500' : ''}`}
-                        min={selectedEnquiry?.minQuantity || 0}
-                        max={selectedEnquiry?.quantity || undefined}
-                        step="0.01"
                       />
                       {quantityError && (
                         <p className="text-sm text-red-500 mt-1">{quantityError}</p>
@@ -1107,13 +1149,11 @@ const MerchantEnquiries = () => {
                       <Label className="text-sm font-medium">Your Price (₹) *</Label>
                       <Input
                         id="merchantPrice"
-                        type="number"
+                        type="text"
                         placeholder="Enter your price per kg"
                         value={merchantPrice}
                         onChange={handlePriceChange}
-                        className={`border - input ${error ? "border-red-500" : ""}`}
-                        min="0"
-                        step="0.01"
+                        className={`border-input ${error ? "border-red-500" : ""}`}
                       />
                       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
                     </div>

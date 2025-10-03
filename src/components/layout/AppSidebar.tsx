@@ -68,7 +68,7 @@ export function AppSidebar() {
       setCurrentProductType("RCN")
     }
   }, [responses, profile?.productType]);
-  const activeProductsCount = products.filter(p => p.status === 'active').length;
+  const activeProductsCount = products.filter(p => p.status === 'active' && p.type === currentProductType).length;
   const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
   const mainNavItems: NavItem[] = [
     { path: "/", label: t('sidebar.mainNav.dashboard'), icon: Home },

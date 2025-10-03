@@ -67,17 +67,17 @@ const MyRequirements = () => {
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const getStatusIcon = (status: string) => {
-    return status.toLowerCase() === 'confirmed' 
-      ? <CheckCircle size={16} className="text-green-500" /> 
+    return status.toLowerCase() === 'confirmed'
+      ? <CheckCircle size={16} className="text-green-500" />
       : <Clock size={16} className="text-blue-500" />;
   };
 
   const getStatusColor = (status: string) => {
-    return status.toLowerCase() === 'confirmed' 
-      ? "bg-green-100 text-green-800" 
+    return status.toLowerCase() === 'confirmed'
+      ? "bg-green-100 text-green-800"
       : "bg-blue-100 text-blue-800";
   };
-  
+
   const getDisplayStatus = (status: string) => {
     return status.toLowerCase() === 'closed' ? 'Closed' : 'Active';
   };
@@ -161,7 +161,15 @@ const MyRequirements = () => {
 
     setFilteredRequirements(temp);
     setCurrentPage(1);
-  };
+  }
+
+  // Format a numeric value with commas for display (e.g., 1000 -> 1,000)
+  const formatWithCommas = (val: any) => {
+    if (val === null || val === undefined) return "0";
+    const num = typeof val === 'number' ? val : parseInt(String(val).replace(/,/g, ''), 10);
+    if (isNaN(num)) return String(val);
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
 
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -169,16 +177,16 @@ const MyRequirements = () => {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-  };
+  }
 
   const getSortIcon = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) {
       return <ArrowUpDown className="ml-1 h-3 w-3" />;
     }
-    return sortConfig.direction === 'asc' 
-      ? <ArrowUp className="ml-1 h-3 w-3" /> 
+    return sortConfig.direction === 'asc'
+      ? <ArrowUp className="ml-1 h-3 w-3" />
       : <ArrowDown className="ml-1 h-3 w-3" />;
-  };
+  }
 
   // Run filters automatically when dependencies change
   useEffect(() => {
@@ -346,7 +354,7 @@ const MyRequirements = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => requestSort('title')}
                 >
@@ -355,7 +363,7 @@ const MyRequirements = () => {
                     {getSortIcon('title')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => requestSort('grade')}
                 >
@@ -373,7 +381,7 @@ const MyRequirements = () => {
                     {getSortIcon('deliveryLocation')}
                   </div>
                 </TableHead> */}
-                <TableHead 
+                <TableHead
                   className="text-right cursor-pointer hover:bg-muted/50"
                   onClick={() => requestSort('quantity')}
                 >
@@ -382,7 +390,7 @@ const MyRequirements = () => {
                     {getSortIcon('quantity')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => requestSort('priceRange')}
                 >
@@ -391,7 +399,7 @@ const MyRequirements = () => {
                     {getSortIcon('priceRange')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => requestSort('statusPriority')}
                 >
@@ -400,7 +408,7 @@ const MyRequirements = () => {
                     {getSortIcon('statusPriority')}
                   </div>
                 </TableHead>
-                <TableHead 
+                <TableHead
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => requestSort('lastModified')}
                 >
@@ -447,7 +455,7 @@ const MyRequirements = () => {
                       <Badge variant="outline">{requirement.grade || 'N/A'}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {requirement.quantity} kg
+                      {formatWithCommas(requirement.quantity)} kg
                     </TableCell>
                     <TableCell>
                       {requirement.budgetRange || 'N/A'}
@@ -502,9 +510,9 @@ const MyRequirements = () => {
                   </TableRow>
                 ))
               )}
-              </TableBody>
-            </Table>
-          
+            </TableBody>
+          </Table>
+
           {/* Pagination removed from table view as per requirements */}
         </Card>
       ) : filteredRequirements.length === 0 ? (

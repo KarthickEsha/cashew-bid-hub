@@ -32,7 +32,7 @@ const RequirementDetails = () => {
     const navigate = useNavigate();
     const { profile, setProfile } = useProfile();
     const { toast } = useToast();
-    const { getMyRequirements, updateRequirementStatus } = useRequirements();
+    const { getMyRequirements, updateRequirementStatus, updateRequirement } = useRequirements();
     const {
         getResponsesByRequirementId,
         updateResponseStatus,
@@ -172,47 +172,68 @@ const RequirementDetails = () => {
     };
 
     // Handle status update for response
-    const handleStatusUpdate = (responseId: string, status: 'new' | 'viewed' | 'accepted' | 'rejected', remarks: string = '') => {
-        // Update the response status in the backend
+    const handleStatusUpdate = (
+        responseId: string,
+        status: 'new' | 'viewed' | 'accepted' | 'rejected',
+        remarks: string = ''
+      ) => {
+        // 1) Update response status in your store/backend
         updateResponseStatus(responseId, status, remarks);
-        // Update requirement status based on response status
-        if (requirement) {
-            if (status === 'accepted') {
-                updateRequirementStatus(requirement.id, 'closed');
+      
+        // 2) If accepted, reduce requirement quantity and close when zero
+        if (requirement && status === 'accepted') {
+          const resp = responses.find(r => r.id === responseId);
+          const currentQty = Number(String(requirement.quantity).toString().replace(/[^0-9.]/g, '')) || 0;
+          const acceptedQty = Number(String(resp?.quantity ?? '0').toString().replace(/[^0-9.]/g, '')) || 0;
+          const newQty = Math.max(0, currentQty - acceptedQty);
+      
+          try {
+            const updatedRequirement = {
+              ...requirement,
+              quantity: newQty,
+              status: newQty <= 0 ? 'closed' : requirement.status,
+            } as any;
+      
+            // Persist both the quantity and, if needed, status
+            updateRequirement(String(requirement.id), updatedRequirement);
+            if (newQty <= 0) {
+              updateRequirementStatus(requirement.id, 'closed');
             }
+          } catch {
+            // Fallback: at least close if zero
+            if (newQty <= 0) {
+              updateRequirementStatus(requirement.id, 'closed');
+            }
+          }
         }
-
-        // Convert status to lowercase to match the type
+      
+        // 3) Normalize type
         const normalizedStatus = status as 'new' | 'viewed' | 'accepted' | 'rejected';
-
-        // Update the local state to reflect the change
-        setResponses(prevResponses =>
-            prevResponses.map(response =>
-                response.id === responseId
-                    ? {
-                        ...response,
-                        status: normalizedStatus,
-                        ...(remarks ? { remarks } : {})
-                    }
-                    : response
-            )
+      
+        // 4) Update local responses UI list
+        setResponses(prev =>
+          prev.map(r =>
+            r.id === responseId
+              ? { ...r, status: normalizedStatus, ...(remarks ? { remarks } : {}) }
+              : r
+          )
         );
-
-        // If we're viewing this response in the detail view, update that too
+      
+        // 5) Update selected response UI if open
         if (selectedResponse?.id === responseId) {
-            setSelectedResponse(prev => ({
-                ...prev!,
-                status,
-                ...(remarks ? { remarks } : {})
-            }));
+          setSelectedResponse(prev => ({
+            ...prev!,
+            status,
+            ...(remarks ? { remarks } : {}),
+          }));
         }
-
+      
         toast({
-            title: "Status Updated",
-            description: `Response status changed to ${status}`,
+          title: 'Status Updated',
+          description: `Response status changed to ${status}`,
         });
         setShowResponseDetail(false);
-    };
+      };
 
     return (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

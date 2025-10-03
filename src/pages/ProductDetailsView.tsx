@@ -34,7 +34,12 @@ const ProductDetailsView = () => {
     website: "www.goldencashew.com",
     description: "Leading exporter of premium quality cashews with over 14 years of experience in the industry. We specialize in W320, W240, and SW240 grades with international certifications.",
     certifications: ["ISO 22000", "HACCP", "FSSAI", "USDA Organic"],
-    logo: "/api/placeholder/80/80"
+    logo: "/api/placeholder/80/80",
+    images: [
+      "/api/placeholder/300/200",
+      "/api/placeholder/300/200",
+      "/api/placeholder/300/200"
+    ]
   };
 
   // Mock products data for this merchant
@@ -187,6 +192,27 @@ const ProductDetailsView = () => {
                     </Badge>
                   ))}
                 </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="font-semibold mb-2">Images</h4>
+                {merchant.images && merchant.images.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {merchant.images.map((src: string, idx: number) => (
+                      <a key={idx} href={src} target="_blank" rel="noreferrer">
+                        <img
+                          src={src}
+                          alt={`Merchant image ${idx + 1}`}
+                          className="w-full h-24 object-cover rounded border"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No images uploaded.</p>
+                )}
               </div>
 
               <div className="pt-2">

@@ -53,6 +53,9 @@ const ProfileSetup = () => {
       case 'phone':
         if (value && !/^[0-9]{10}$/.test(String(value).replace(/[\s\-\(\)]/g, ''))) {
           newErrors.phone = 'Please enter a valid 10-digit phone number';
+        } else if (value == "") {
+          newErrors.phone = 'Phone Number Required'
+
         } else {
           delete newErrors.phone;
         }
@@ -154,7 +157,8 @@ const ProfileSetup = () => {
     formData.state &&
     formData.country &&
     formData.pincode &&
-    formData.description
+    formData.description &&
+    formData.phone.length == 10
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
@@ -243,12 +247,13 @@ const ProfileSetup = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">Phone Number *</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="Enter your phone number"
+                  maxLength={10}
                   className={errors.phone ? 'border-destructive' : ''}
                 />
                 {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
@@ -360,53 +365,53 @@ const ProfileSetup = () => {
                     </Label>
                   </div>
                 </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State *</Label>
-                    <Input
-                      id="state"
-                      value={formData.state}
-                      onChange={(e) => handleInputChange('state', e.target.value)}
-                      placeholder="Enter state"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country *</Label>
-                    <Select
-                      value={formData.country}
-                      onValueChange={(value) => handleInputChange('country', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="India">India</SelectItem>
-                        <SelectItem value="United States">United States</SelectItem>
-                        <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                        <SelectItem value="Canada">Canada</SelectItem>
-                        <SelectItem value="Australia">Australia</SelectItem>
-                        <SelectItem value="Germany">Germany</SelectItem>
-                        <SelectItem value="France">France</SelectItem>
-                        <SelectItem value="Japan">Japan</SelectItem>
-                        <SelectItem value="China">China</SelectItem>
-                        <SelectItem value="Brazil">Brazil</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pincode">Pincode *</Label>
-                    <Input
-                      id="pincode"
-                      type="number"
-                      value={formData.pincode}
-                      onChange={(e) => handleInputChange('pincode', e.target.value)}
-                      placeholder="Enter pincode"
-                      className={errors.pincode ? 'border-destructive' : ''}
-                      required
-                    />
-                    {errors.pincode && <p className="text-sm text-destructive">{errors.pincode}</p>}
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State *</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => handleInputChange('state', e.target.value)}
+                    placeholder="Enter state"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country *</Label>
+                  <Select
+                    value={formData.country}
+                    onValueChange={(value) => handleInputChange('country', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="India">India</SelectItem>
+                      <SelectItem value="United States">United States</SelectItem>
+                      <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                      <SelectItem value="Canada">Canada</SelectItem>
+                      <SelectItem value="Australia">Australia</SelectItem>
+                      <SelectItem value="Germany">Germany</SelectItem>
+                      <SelectItem value="France">France</SelectItem>
+                      <SelectItem value="Japan">Japan</SelectItem>
+                      <SelectItem value="China">China</SelectItem>
+                      <SelectItem value="Brazil">Brazil</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pincode">Pincode *</Label>
+                  <Input
+                    id="pincode"
+                    type="number"
+                    value={formData.pincode}
+                    onChange={(e) => handleInputChange('pincode', e.target.value)}
+                    placeholder="Enter pincode"
+                    className={errors.pincode ? 'border-destructive' : ''}
+                    required
+                  />
+                  {errors.pincode && <p className="text-sm text-destructive">{errors.pincode}</p>}
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -468,7 +473,7 @@ const ProfileSetup = () => {
               size="lg"
               disabled={!isFormValid}
             >
-            Save
+              Save
             </Button>
           </CardContent>
         </Card>

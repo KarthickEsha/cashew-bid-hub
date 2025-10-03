@@ -114,7 +114,7 @@ const Responses = () => {
   const [selectedResponse, setSelectedResponse] = useState<ResponseWithDetails | null>(null);
   const [responseToDelete, setResponseToDelete] = useState<{id: string, name: string} | null>(null);
   const { responses, updateResponseStatus, deleteResponse } = useResponses();
-  const { requirements } = useRequirements();
+  const { requirements ,updateRequirement,updateRequirementStatus } = useRequirements();
   const [isLoading, setIsLoading] = useState(false);
   const [sortField, setSortField] = useState<string>('responseDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -194,6 +194,14 @@ const Responses = () => {
     .sort((a, b) => {
       if (!sortField) return 0;
 
+      // Priority: when using default date sort, show 'new' status first
+      if (sortField === 'responseDate') {
+        const aIsNew = a.status?.toLowerCase() === 'new';
+        const bIsNew = b.status?.toLowerCase() === 'new';
+        if (aIsNew && !bIsNew) return -1;
+        if (bIsNew && !aIsNew) return 1;
+      }
+
       let aValue = a[sortField as keyof typeof a];
       let bValue = b[sortField as keyof typeof b];
 
@@ -232,22 +240,45 @@ const Responses = () => {
   const currentResponses = filteredResponses.slice(startIndex, startIndex + itemsPerPage);
 
   // Handle status update
-  const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'rejected') => {
-    try {
-      await updateResponseStatus(responseId, status);
-      toast({
-        title: 'Success',
-        description: `Response ${status} successfully`,
-      });
-    } catch (error) {
-      console.error('Error updating response status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update response status',
-        variant: 'destructive',
-      });
+  // Handle status update
+const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'rejected') => {
+  try {
+    // When accepting, reduce requirement quantity and close if zero
+    if (status === 'accepted') {
+      const resp = responses.find(r => r.id === responseId);
+      if (resp) {
+        const req = requirements.find(r => r.id === resp.requirementId);
+        if (req) {
+          // Coerce both quantities to numbers safely (supporting strings like "1,000" or "1000kg")
+          const reqQty = parseFloat(String((req as any).quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
+          const respQty = parseFloat(String(resp.quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
+          const newQty = Math.max(0, reqQty - respQty);
+
+          // Update requirement quantity (store expects string quantity)
+          updateRequirement(req.id, { quantity: String(newQty) } as any);
+
+          // If quantity exhausted, close the requirement
+          if (newQty === 0) {
+            updateRequirementStatus(req.id, 'closed');
+          }
+        }
+      }
     }
-  };
+
+    await updateResponseStatus(responseId, status);
+    toast({
+      title: 'Success',
+      description: `Response ${status} successfully`,
+    });
+  } catch (error) {
+    console.error('Error updating response status:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to update response status',
+      variant: 'destructive',
+    });
+  }
+};;
 
   // Handle delete response
   const handleDeleteResponse = async (responseId: string) => {
@@ -463,7 +494,7 @@ const Responses = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {format(parseISO(response.responseDate), 'MMM d, yyyy')}
+                    {format(parseISO(response.responseDate), 'MM/dd/yyyy')}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
