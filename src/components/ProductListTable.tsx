@@ -121,7 +121,12 @@ const ProductListTable = ({
       </div>
     </TableHead>
   );
-
+  const formatWithCommas = (val: any) => {
+    if (val === null || val === undefined) return "0";
+    const num = typeof val === 'number' ? val : parseInt(String(val).replace(/,/g, ''), 10);
+    if (isNaN(num)) return String(val);
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
   return (
     <Table className="w-full border-collapse">
       <TableHeader>
@@ -178,7 +183,7 @@ const ProductListTable = ({
                         product.availableQty === 0 ? "text-red-600" : "text-green-600"
                       }
                     >
-                      {product.availableQty} {product.unit}
+                      {formatWithCommas(product.availableQty)} {product.unit}
                     </span>
                   </TableCell>
                   <TableCell>₹{product.price.toLocaleString("en-IN")}</TableCell>

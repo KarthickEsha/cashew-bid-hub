@@ -503,7 +503,23 @@ const ProductDetail = () => {
     }
   };
 
+  // Helpers to format numbers with Indian locale (en-IN) for display
+  // while keeping raw numeric strings in state for calculations
+  const formatNumberIND = (value: string) => {
+    if (value === '' || value === '.') return value;
+    const noCommas = value.replace(/,/g, '');
+    const num = Number(noCommas);
+    if (isNaN(num)) return '';
+    const [intPart, decPart] = noCommas.split('.');
+    const formattedInt = new Intl.NumberFormat('en-IN').format(Number(intPart || '0'));
+    return decPart !== undefined ? `${formattedInt}.${decPart}` : formattedInt;
+  };
 
+  const normalizeNumberInput = (input: string) => {
+    const noCommas = input.replace(/,/g, '');
+    const parts = noCommas.replace(/[^0-9.]/g, '').split('.');
+    return parts[0] + (parts.length > 1 ? '.' + parts.slice(1).join('') : '');
+  };
 
   return (
     <div className={`${role === 'processor' ? 'w-full' : 'max-w-7xl'} mx-auto px-4 py-6`}>
@@ -657,17 +673,15 @@ const ProductDetail = () => {
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-foreground">Quantity ({product.unit})</label>
                     <div>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        max={product.availableQty}
-                        value={bidQuantity}
+                    <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={formatNumberIND(bidQuantity)}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          setBidQuantity(value); // always update, so user can type freely
+                          const raw = normalizeNumberInput(e.target.value);
+                          setBidQuantity(raw);
                         }}
-                        placeholder={`Min: ${product.minOrderQty || 1}, Max: ${product.availableQty} ${product.unit}`}
+                        placeholder={`Min: ${product.minOrderQty || 1}, Max: ${product.availableQty.toLocaleString()} ${product.unit}`}
                         className={`border-primary/20 focus:border-primary ${(bidQuantity &&
                           parseFloat(bidQuantity) > product.availableQty) ||
                           (bidQuantity &&
@@ -701,9 +715,13 @@ const ProductDetail = () => {
                         Your Expected Price (₹/{product.unit})
                       </label>
                       <Input
-                        type="number"
-                        value={bidPrice}
-                        onChange={(e) => setBidPrice(e.target.value)}
+                        type="text"
+                        inputMode="decimal"
+                        value={formatNumberIND(bidPrice)}
+                        onChange={(e) => {
+                          const raw = normalizeNumberInput(e.target.value);
+                          setBidPrice(raw);
+                        }}
                         placeholder="Enter your expected price"
                         className="border-primary/20 focus:border-primary"
                       />

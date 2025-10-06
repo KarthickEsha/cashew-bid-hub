@@ -264,7 +264,7 @@ export function MerchantSidebar() {
             onClick={() => signOut()}
           >
             <LogOut size={16} />
-            {!collapsed && <span className="ml-2">Logout</span>}
+            {!collapsed && <span className="ml-2">Sign Out</span>}
           </Button>
         </div>
       </SidebarContent>

@@ -574,7 +574,7 @@ const MerchantAddProduct = () => {
                                             )}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {expireDate ? format(expireDate, "PPP") : <span>Pick date</span>}
+                                            {expireDate ? format(expireDate, "PPP") : <span>Pick a date</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">

@@ -136,7 +136,13 @@ const MerchantOrders = () => {
   const totalPages = Math.ceil(displayedOrders.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedOrders = displayedOrders.slice(startIndex, startIndex + pageSize);
-
+  
+  const formatWithCommas = (val: any) => {
+    if (val === null || val === undefined) return "0";
+    const num = typeof val === 'number' ? val : parseInt(String(val).replace(/,/g, ''), 10);
+    if (isNaN(num)) return String(val);
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
   const handleAcceptOrder = async (orderId: string) => {
     try {
       // First get the order details
@@ -151,7 +157,6 @@ const MerchantOrders = () => {
         throw new Error('Invalid quantity format');
       }
       const quantity = parseFloat(quantityMatch[0]);
-      debugger
       // Get the product ID from the order
       // Note: You'll need to ensure the productId is stored in the order when it's created
       const productId = (order as any).productId; // Cast to any since productId might not be in the type yet
@@ -474,8 +479,8 @@ const MerchantOrders = () => {
                       <TableCell>{order.source || 'Market Place'}</TableCell>
                       <TableCell>
                         {order.quantity?.toString().toLowerCase().includes("kg")
-                          ? order.quantity
-                          : `${order.quantity} kg`}
+                          ? formatWithCommas(order.quantity) 
+                          : `${formatWithCommas(order.quantity)} kg`}
                       </TableCell>
                       <TableCell>{formatINR(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}</TableCell>
                       <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>

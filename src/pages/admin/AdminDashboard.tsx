@@ -1,16 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { XAxis, YAxis, CartesianGrid, AreaChart, Area, ResponsiveContainer } from "recharts";
-import { merchants, products } from "@/data/mockdata";
+import { merchants } from "@/data/mockdata";
 import { Users, Store, Package, Bell } from "lucide-react";
-import React from "react";
+import React, { useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useProfile } from "@/hooks/useProfile";
+import { useRequirements } from "@/hooks/useRequirements";
+import { useRole as useRoleStore } from "@/hooks/useRole";
+import { useInventory } from "@/hooks/useInventory";
+import { useNavigate } from "react-router-dom";
 
-// Fallback simple counts (replace with real API integration later)
-const buyersCount = 42;
-const merchantsCount = Array.isArray(merchants) ? merchants.length : 0;
-const productsCount = Array.isArray(products) ? products.length : 0;
-const subscribersCount = 18; // TODO: replace with real subscribers data
+// TODO: replace with real subscribers data when backend available
+const subscribersCount = 18;
 
 // Monthly revenue/subscribers for the spline chart
 const revenueData = [
@@ -41,8 +43,14 @@ const chartConfig = {
   subscribers: { label: "Subscribers", color: "hsl(var(--chart-2))" },
 } as const;
 
-const KPI = ({ title, value, icon }: { title: string; value: number; icon: React.ReactNode }) => (
-  <Card>
+const KPI = ({ title, value, icon, onClick }: { title: string; value: number; icon: React.ReactNode; onClick?: () => void }) => (
+  <Card
+    onClick={onClick}
+    className={onClick ? "cursor-pointer hover:bg-accent/30 transition-colors" : undefined}
+    role={onClick ? "button" : undefined}
+    tabIndex={onClick ? 0 : undefined}
+    onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+  >
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
       {icon}
@@ -54,14 +62,55 @@ const KPI = ({ title, value, icon }: { title: string; value: number; icon: React
 );
 
 const AdminDashboard = () => {
+   const navigate = useNavigate();
+  const { profile } = useProfile();
+  const { role } = useRoleStore();
+  const effectiveRole = role || profile?.role;
+  const { getRequirementsAsEnquiries } = useRequirements();
+  const { getProductStats } = useInventory();
+
+  // Compute buyers count from unique requirement owners (fallback to 0 if none)
+  const buyersCount = useMemo(() => {
+    // Only show count based on selected user type
+    if (effectiveRole === 'buyer' || effectiveRole === 'both') return 1;
+    return 0;
+  }, [effectiveRole]);
+
+  // Compute merchants count: if user is a processor (merchant), count self; else total known merchants
+  const merchantsCount = useMemo(() => {
+    if (effectiveRole === 'processor' || effectiveRole === 'both') return 1;
+    return 0;
+  }, [effectiveRole]);
+
+  const productsCount = getProductStats().totalProducts;
   return (
     <div className="space-y-6">
       {/* KPI cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <KPI title="Total Buyers" value={buyersCount} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
-        <KPI title="Total Merchants" value={merchantsCount} icon={<Store className="h-4 w-4 text-muted-foreground" />} />
-        <KPI title="Active Stocks" value={productsCount} icon={<Package className="h-4 w-4 text-muted-foreground" />} />
-        <KPI title="Active Subscribers" value={subscribersCount} icon={<Bell className="h-4 w-4 text-muted-foreground" />} />
+        <KPI
+          title="Total Buyers"
+          value={buyersCount}
+          icon={<Users className="h-4 w-4 text-muted-foreground" />}
+          onClick={() => navigate("/admin/buyers")}
+        />
+        <KPI
+          title="Total Merchants"
+          value={merchantsCount}
+          icon={<Store className="h-4 w-4 text-muted-foreground" />}
+          onClick={() => navigate("/admin/merchants")}
+        />
+        <KPI
+          title="Active Stocks"
+          value={productsCount}
+          icon={<Package className="h-4 w-4 text-muted-foreground" />}
+          onClick={() => navigate("/admin/products")}
+        />
+        <KPI
+          title="Active Subscribers"
+          value={subscribersCount}
+          icon={<Bell className="h-4 w-4 text-muted-foreground" />}
+          onClick={() => navigate("/admin/subscribers")}
+        />
       </div>
 
       {/* Two-column layout: left table, right chart modal trigger */}

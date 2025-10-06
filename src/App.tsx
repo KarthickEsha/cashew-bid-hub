@@ -39,10 +39,12 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminProtectedRoute from "./pages/admin/AdminProtectedRoute";
 import AdminMerchants from "./pages/admin/AdminMerchants";
+import AdminMerchantDetails from "./pages/admin/AdminMerchantDetails";
 import AdminBuyers from "./pages/admin/AdminBuyers";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminSubscribers from "./pages/admin/AdminSubscribers";
+import AdminBuyerDetails from "./pages/admin/AdminBuyerDetails";
 
 interface LayoutProps {
   children: ReactNode;
@@ -63,7 +65,6 @@ const AppContent = () => {
   const { role } = useRole();
   const { profile } = useProfile();
   const location = useLocation();
-
   // Admin area: bypass Clerk auth and regular Login entirely
   if (location.pathname.startsWith("/admin")) {
     return (
@@ -73,7 +74,9 @@ const AppContent = () => {
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/merchants" element={<AdminMerchants />} />
+            <Route path="/admin/merchants/:merchantId" element={<AdminMerchantDetails />} />
             <Route path="/admin/buyers" element={<AdminBuyers />} />
+            <Route path="/admin/buyers/:buyerId" element={<AdminBuyerDetails />} />
             <Route path="/admin/products" element={<AdminProducts />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
             <Route path="/admin/subscribers" element={<AdminSubscribers />} />
@@ -83,8 +86,6 @@ const AppContent = () => {
       </Routes>
     );
   }
-
-  // Show login if not signed in
   if (!isSignedIn) {
     return <Login />;
   }

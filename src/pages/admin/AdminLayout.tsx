@@ -14,6 +14,15 @@ const AdminLayout = () => {
     navigate("/admin", { replace: true });
   };
 
+  // Temporary admin profile data. Replace with real data when available.
+  const adminProfile = {
+    name: "Admin User",
+    email: "admin@example.com",
+    phone: "+1 (555) 010-1234",
+    id: "ADM-0001",
+    photoUrl: "https://api.dicebear.com/8.x/initials/svg?seed=AD&backgroundType=gradientLinear"
+  };
+
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-[240px_1fr]">
       <aside className="border-r bg-muted/20 flex flex-col">
@@ -39,10 +48,14 @@ const AdminLayout = () => {
           </NavLink>
         </nav>
         <div className="mt-auto px-2 pb-4">
-          <Button variant="destructive" className="w-full" onClick={signOut}>
+          <Button
+            className="w-full bg-transparent hover:bg-orange-100 text-red-600"
+            onClick={signOut}
+          >
             <LogOut className="h-4 w-4 mr-2" /> Sign out
           </Button>
         </div>
+
       </aside>
 
       <div className="flex flex-col min-h-screen">
@@ -53,7 +66,7 @@ const AdminLayout = () => {
               <SheetTrigger asChild>
                 <button aria-label="Admin profile" className="inline-flex items-center justify-center rounded-full h-8 w-8 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="" alt="Admin" />
+                    <AvatarImage src={adminProfile.photoUrl} alt={adminProfile.name} />
                     <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
                 </button>
@@ -62,12 +75,28 @@ const AdminLayout = () => {
                 <SheetHeader>
                   <SheetTitle>Admin</SheetTitle>
                 </SheetHeader>
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Status</span>
-                    <span className="font-medium">Signed in</span>
+                <div className="mt-4 space-y-3 text-sm">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={adminProfile.photoUrl} alt={adminProfile.name} />
+                      <AvatarFallback>AD</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="text-base font-semibold">{adminProfile.name}</div>
+                      <div className="text-muted-foreground">Signed in</div>
+                    </div>
                   </div>
-                  {/* Add real admin details when available, e.g., name/email/role */}
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="col-span-1 text-muted-foreground">Email</span>
+                    <span className="col-span-2 break-all font-medium">{adminProfile.email}</span>
+
+                    <span className="col-span-1 text-muted-foreground">Phone</span>
+                    <span className="col-span-2 font-medium">{adminProfile.phone}</span>
+
+                    <span className="col-span-1 text-muted-foreground">ID</span>
+                    <span className="col-span-2 font-medium">{adminProfile.id}</span>
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>
