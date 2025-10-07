@@ -7,6 +7,7 @@ import React from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { XAxis, YAxis, CartesianGrid, AreaChart, Area, ResponsiveContainer } from "recharts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const AdminMerchantDetails = () => {
   const { profile } = useProfile();
@@ -33,11 +34,10 @@ const AdminMerchantDetails = () => {
   const merchantProducts = React.useMemo(() => {
     const id = merchant?.id;
     if (!id) return [] as typeof mockProducts;
-    return mockProducts.filter((p) => p.merchantId === id);
+    return mockProducts;
   }, [merchant]);
 
-  const [showAllProducts, setShowAllProducts] = React.useState(false);
-  const displayedProducts = showAllProducts ? merchantProducts : merchantProducts.slice(0, 3);
+  // Table view will show all products for this merchant
 
   // Mock date-wise stock sold data (fallback if backend is not ready)
   const salesData = React.useMemo(() => {
@@ -154,51 +154,48 @@ const AdminMerchantDetails = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" /> Products ({productCount})
+              <Package className="h-5 w-5" /> Products 
             </CardTitle>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate("/admin/products")}> 
                 <ExternalLink className="h-4 w-4 mr-2" /> Open Products Page
               </Button>
-            </div>
+            </div> */}
           </div>
         </CardHeader>
         <CardContent>
           {merchantProducts.length === 0 ? (
             <div className="text-sm text-muted-foreground">No products found for this merchant.</div>
           ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {displayedProducts.map((p) => (
-                  <div key={p.id} className="border rounded-lg p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="font-semibold truncate" title={p.name}>{p.name}</div>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{p.pricingType || 'fixed'}</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">Grade: <span className="font-medium text-foreground">{p.grade}</span></div>
-                    <div className="text-sm text-muted-foreground">Quantity: <span className="font-medium text-foreground">{p.quantity}</span></div>
-                    {p.pricePerTon && (
-                      <div className="text-sm text-muted-foreground">Price/Ton: <span className="font-medium text-foreground">{p.pricePerTon}</span></div>
-                    )}
-                    {p.expiry && (
-                      <div className="text-xs text-muted-foreground">Expiry: {p.expiry}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {merchantProducts.length > 3 && (
-                <div className="flex justify-center">
-                  <Button variant="ghost" onClick={() => setShowAllProducts(!showAllProducts)}>
-                    {showAllProducts ? "Show less" : `View all products (${merchantProducts.length})`}
-                  </Button>
-                </div>
-              )}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Grade</TableHead>
+                    <TableHead>Price/Ton</TableHead>
+                    <TableHead>Pricing Type</TableHead>
+                    <TableHead>Expiry</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {merchantProducts.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.name}</TableCell>
+                      <TableCell>{p.grade || '—'}</TableCell>
+                      <TableCell>{p.quantity || '—'}</TableCell>
+                      <TableCell>{p.pricePerTon || '—'}</TableCell>
+                      <TableCell className="capitalize">{p.pricingType || 'fixed'}</TableCell>
+                      <TableCell>{p.expiry || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
       </Card>
     </div>
-  );
-};
+)};
 
 export default AdminMerchantDetails;
