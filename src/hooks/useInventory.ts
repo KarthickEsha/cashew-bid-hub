@@ -19,7 +19,6 @@ interface InventoryState {
     totalStock: { rcn: number; kernel: number };
   };
 }
-debugger
 export const useInventory = create<InventoryState>()(
   persist(
     (set, get) => ({
@@ -41,6 +40,7 @@ export const useInventory = create<InventoryState>()(
             images: Array.isArray(product.images) ? product.images : [],
             pricingType: product.pricingType || 'fixed',
             status: 'active',
+            allowBuyerOffers: product.allowBuyerOffers ?? false,
             enquiries: 0,
             orders: 0,
             buyerResponses: 0,

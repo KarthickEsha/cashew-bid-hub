@@ -32,6 +32,7 @@ import {
     AlertCircle,
     TrendingUp,
 } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 const MerchantProducts = () => {
     const navigate = useNavigate();
@@ -56,15 +57,17 @@ const MerchantProducts = () => {
     const [currentProductType, setCurrentProductType] =
         useState<ProductType>(getInitialProductType());
 
-    // Filter products based on current type (always filter by selected type)
+    // Products loaded from API (stocks)
+    const [apiProducts, setApiProducts] = useState<Product[]>([]);
+
+    // Filter products based on current type (prefer API-loaded stocks if present)
     const filteredProductsByType = useMemo(() => {
         if (!profile) return [];
 
-        // Always filter by the current product type when posting stocks
-        let filtered = products.filter((p) => p.type === currentProductType);
-
+        const source = apiProducts.length > 0 ? apiProducts : products;
+        let filtered = source.filter((p) => p.type === currentProductType);
         return filtered;
-    }, [products, currentProductType, profile]);
+    }, [products, apiProducts, currentProductType, profile]);
 
     // filters state
     const [filters, setFilters] = useState({
@@ -197,25 +200,92 @@ const MerchantProducts = () => {
         }
     }, [products]);
 
+    // Load stocks from backend API and map to Product shape expected by ProductListTable
+    useEffect(() => {
+        const loadStocks = async () => {
+            try {
+                setIsLoading(true);
+                // Backend returns: { status, data: stocks[], message }
+                const resp = await apiFetch("/api/stocks/get-all-stocks", { method: "GET" });
+                const stocks = Array.isArray(resp?.data) ? resp.data : [];
+
+                // Map backend stock to Product
+                // Backend fields: grade, origin, availableqty, minimumqty, sellingprice, location, description, created_at
+                const mapped: Product[] = stocks.map((s: any, idx: number) => ({
+                    id: String(s.id || s._id || idx),
+                    name: s.description || s.grade || "Stock",
+                    type: s.type,
+                    grade: s.grade,
+                    stock: Number(s.availableqty ?? 0),
+                    price: Number(s.sellingprice ?? 0),
+                    unit: "kg",
+                    location: s.location || s.origin || "",
+                    expireDate: s.expiredate ? String(s.expiredate).slice(0, 10) : "",
+                    status: (s.availableqty ?? 0) > 0 ? "active" : "out_of_stock",
+                    enquiries: 0,
+                    orders: 0,
+                    buyerResponses: 0,
+                    availableQty: Number(s.availableqty ?? 0), // used by table
+                    images: [],
+                    yearOfCrop: s.yearofcrop ? String(s.yearofcrop) : undefined,
+                   nutCount: s.netcount ? `${s.netcount} kg` : undefined,
+                    outTurn: s.outturn ? `${s.outturn} %` : undefined,
+                    origin: s.origin,
+                }));
+
+                setApiProducts(mapped);
+            } catch (err: any) {
+                toast({
+                    title: "Failed to load stocks",
+                    description: err?.message || "Please try again.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadStocks();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const handleDeleteClick = (productId: string) => {
         setProductToDelete(productId);
         setIsDeleteDialogOpen(true);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (!productToDelete) return;
 
         try {
-            deleteProduct(productToDelete);
-            setAllProducts(prev => prev.filter(p => p.id !== productToDelete));
+            // If the product exists in API-loaded list, delete from backend
+            const existsInApi = apiProducts.some(p => p.id === productToDelete);
+
+            if (existsInApi) {
+                await apiFetch(`/api/stocks/delete-stock/${productToDelete}`, {
+                    method: "DELETE",
+                });
+                // Remove locally from apiProducts-driven view
+                setApiProducts(prev => prev.filter(p => p.id !== productToDelete));
+                setFilteredProducts(prev => prev.filter(p => p.id !== productToDelete));
+            } else {
+                // Fallback to local inventory store deletion
+                deleteProduct(productToDelete);
+                setAllProducts(prev => prev.filter(p => p.id !== productToDelete));
+                setFilteredProducts(prev => prev.filter(p => p.id !== productToDelete));
+            }
+
             toast({
                 title: "Success",
-                description: "Product has been deleted successfully.",
+                description: "Stock deleted successfully",
             });
-        } catch (error) {
+
+            // Notify other parts of the app (e.g., sidebar) to refresh stock counts
+            window.dispatchEvent(new CustomEvent('stocks:changed'));
+        } catch (error: any) {
             toast({
                 title: "Error",
-                description: "Failed to delete product. Please try again.",
+                description: error?.message || "Failed to delete product. Please try again.",
                 variant: "destructive",
             });
         } finally {

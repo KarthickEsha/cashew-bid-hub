@@ -24,7 +24,7 @@ const MerchantRejectedOrders = () => {
 
   // Get rejected orders (responses with rejected status)
   const rejectedOrders = useMemo(() => {
-    debugger
+
     const enquiries = getRequirementsAsEnquiries();
     return responses
       .filter(response => response.status === 'rejected')

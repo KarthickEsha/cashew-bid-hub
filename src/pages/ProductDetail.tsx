@@ -133,7 +133,6 @@ const ProductDetail = () => {
 
       // Get all responses for the current product
       const productResponses = getResponsesByProductId(id);
-      debugger
       // Combine orders and responses into enquiries
       const combinedEnquiries = [
         ...productOrders.map(order => ({
@@ -254,7 +253,6 @@ const ProductDetail = () => {
   }
 
   const handleBack = () => {
-    debugger
     if (from === 'merchant-orders') return navigate('/merchant/buyer-response');
     if (role === 'processor') return navigate('/merchant/products');
     return navigate('/marketplace');
@@ -284,7 +282,6 @@ const ProductDetail = () => {
       const now = new Date().toISOString();
       const deliveryDate = new Date();
       deliveryDate.setDate(deliveryDate.getDate() + 7); // 7 days from now
-      debugger
       // Create order data
       const orderData = {
         id: `ORD-${Date.now()}`,
@@ -317,7 +314,6 @@ const ProductDetail = () => {
           }
         ]
       };
-      debugger
       // Create enquiry
       const enquiry = {
         id: Date.now().toString(),

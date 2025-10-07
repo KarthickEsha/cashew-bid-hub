@@ -166,7 +166,6 @@ const StockResponse = (): JSX.Element => {
             ? <ArrowUp className="h-4 w-4 text-primary" />
             : <ArrowDown className="h-4 w-4 text-primary" />;
     };
-    debugger
     // Filter and sort enquiries
     const filteredEnquiries = useMemo(() => {
         let result = [...enquiries];

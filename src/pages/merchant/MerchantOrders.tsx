@@ -51,7 +51,6 @@ const MerchantOrders = () => {
 
   // Calculate displayed orders based on filters and sorting
   const displayedOrders = useMemo(() => {
-    debugger
     if (!merchantOrders) return [];
     let result = [...merchantOrders];
 
@@ -131,7 +130,7 @@ const MerchantOrders = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortField, sortDirection, pageSize]);
-   debugger
+
   // Calculate pagination
   const totalPages = Math.ceil(displayedOrders.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;

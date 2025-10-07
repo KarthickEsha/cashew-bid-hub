@@ -32,6 +32,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { useInventory } from "@/hooks/useInventory"; // Add this line to import useInventory hook
 import { ProductType } from "@/types/user";
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 import { useProfile } from "@/hooks/useProfile";
 
 const navItems = [
@@ -97,7 +98,7 @@ export function MerchantSidebar() {
   const { getRequirementsAsEnquiries } = useRequirements();
   const { responses, getStockEnquiriesCount } = useResponses();
   const { orders } = useOrders();
-  const { products } = useInventory(); // Add this line to get products
+  const { products } = useInventory(); // local store fallback
 
   // Filter out skipped responses and get counts
   const activeResponses = responses.filter(r => r.status !== 'skipped');
@@ -123,6 +124,7 @@ export function MerchantSidebar() {
   const ordersCount = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length;
   const stockEnquiriesCount = getStockEnquiriesCount();
   const [currentProductType, setCurrentProductType] = useState<ProductType>();
+  const [apiProducts, setApiProducts] = useState<any[]>([]);
   const { profile } = useProfile();
   useEffect(() => {
     if (profile?.productType && profile.productType !== "Both") {
@@ -131,9 +133,70 @@ export function MerchantSidebar() {
       setCurrentProductType("RCN")
     }
   }, [profile?.productType]);
-  // Count products by status
-  const activeProductsCount = products.filter(p => p.status === 'active' && p.type == currentProductType).length;
-  const outOfStockProductsCount = products.filter(p => p.status === 'out_of_stock').length;
+
+  // Load stocks from backend API for counts
+  useEffect(() => {
+    const loadStocks = async () => {
+      try {
+        const resp = await apiFetch("/api/stocks/get-all-stocks", { method: "GET" });
+        const stocks = Array.isArray((resp as any)?.data) ? (resp as any).data : Array.isArray(resp) ? resp : [];
+        const mapped = stocks.map((s: any, idx: number) => ({
+          id: String(s.id || s._id || idx),
+          type: s.type || "Kernel",
+          availableqty: Number(s.availableqty ?? 0),
+          status: (s.availableqty ?? 0) > 0 ? "active" : "out_of_stock",
+          grade: s.grade,
+        }));
+        setApiProducts(mapped);
+      } catch (e) {
+        // silently ignore; sidebar falls back to local products
+      }
+    };
+
+    // initial load
+    loadStocks();
+
+    // refresh when a global stocks change event is dispatched
+    const onStocksChanged = () => loadStocks();
+    window.addEventListener('stocks:changed', onStocksChanged as EventListener);
+
+    // Also refresh when navigating to products page
+    const unlistenNav = () => {
+      if (location.pathname === '/merchant/products') {
+        loadStocks();
+      }
+    };
+    // Observe path changes by reacting to location.pathname via another effect below
+
+    return () => {
+      window.removeEventListener('stocks:changed', onStocksChanged as EventListener);
+    };
+  }, []);
+
+  // When route changes to products, refresh API list so counts are up-to-date
+  useEffect(() => {
+    const refreshIfProducts = async () => {
+      if (location.pathname === '/merchant/products') {
+        try {
+          const resp = await apiFetch('/api/stocks/get-all-stocks', { method: 'GET' });
+          const stocks = Array.isArray((resp as any)?.data) ? (resp as any).data : Array.isArray(resp) ? resp : [];
+          const mapped = stocks.map((s: any, idx: number) => ({
+            id: String(s.id || s._id || idx),
+            type: s.type || 'Kernel',
+            availableqty: Number(s.availableqty ?? 0),
+            status: (s.availableqty ?? 0) > 0 ? 'active' : 'out_of_stock',
+            grade: s.grade,
+          }));
+          setApiProducts(mapped);
+        } catch {}
+      }
+    };
+    refreshIfProducts();
+  }, [location.pathname]);
+  // Count products by status from API (fallback to local inventory)
+  const sourceProducts: any[] = apiProducts.length > 0 ? apiProducts : products;
+  const activeProductsCount = sourceProducts.filter(p => p.status === 'active' && (!currentProductType || p.type === currentProductType)).length;
+  const outOfStockProductsCount = sourceProducts.filter(p => p.status === 'out_of_stock' && (!currentProductType || p.type === currentProductType)).length;
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>

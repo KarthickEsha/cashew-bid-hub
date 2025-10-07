@@ -110,7 +110,6 @@ const Marketplace = () => {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(6);
-    debugger
     const itemsToShow = filteredProducts.filter((p) => p.type === currentProductType).sort((a, b) => {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
