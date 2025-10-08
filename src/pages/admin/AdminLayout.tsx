@@ -50,7 +50,14 @@ const AdminLayout = () => {
         <div className="mt-auto px-2 pb-4">
           <Button
             className="w-full bg-transparent hover:bg-orange-100 text-red-600"
-            onClick={signOut}
+            onClick={() => {
+              signOut()
+              // Clear all local storage data
+              localStorage.clear();
+
+              // Optionally clear sessionStorage too
+              sessionStorage.clear();
+            }}
           >
             <LogOut className="h-4 w-4 mr-2" /> Sign out
           </Button>

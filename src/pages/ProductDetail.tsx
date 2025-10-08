@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useSearchParams } from 'react-router-dom';
+import { apiFetch } from "@/lib/api";
 
 const ProductDetail = () => {
   // Hooks must be called at the top level
@@ -97,10 +98,66 @@ const ProductDetail = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        // 1) Try backend: get stock by product ID
+        if (id) {
+          try {
+            const resp = await apiFetch(`/api/stocks/get-stock/${encodeURIComponent(id)}`, { method: "GET" });
+            const s = (resp as any)?.data;
+            if (s) {
+              // Map backend stock to Product shape
+              const mapped: Product = {
+                id: String(s.id || s._id || id),
+                name: s.description || s.grade || "Stock",
+                type: s.type,
+                grade: s.grade,
+                stock: Number(s.availableqty ?? 0),
+                price: Number(s.sellingprice ?? 0),
+                unit: "kg",
+                location: s.location || s.origin || "",
+                expireDate: s.expiredate ? String(s.expiredate).slice(0, 10) : "",
+                status: (s.availableqty ?? 0) > 0 ? "active" : "out_of_stock",
+                enquiries: 0,
+                orders: 0,
+                buyerResponses: 0,
+                allowBuyerOffers: true,
+                images: Array.isArray(s.images) ? s.images : [],
+                availableQty: Number(s.availableqty ?? 0),
+                yearOfCrop: s.yearofcrop ? String(s.yearofcrop) : undefined,
+                nutCount: s.netcount ? `${s.netcount} kg` : undefined,
+                outTurn: s.outturn ? `${s.outturn} %` : undefined,
+                origin: s.origin,
+                minOrderQty: s.minimumqty ? Number(s.minimumqty) : undefined,
+                pricingType: s.pricingType || undefined,
+                merchantId: s.merchantId || undefined,
+                description: s.description || undefined,
+              } as any;
+
+              setProduct(mapped);
+              const merchantData = merchants.find((m) => m.id === mapped.merchantId) || {
+                id: user?.id || 'default-merchant',
+                name: profile?.companyName || 'Unknown Merchant',
+                rating: 4.5,
+                totalOrders: 0,
+                location: profile?.city || 'Unknown',
+                verified: false,
+                responseTime: 'Within 24 hours',
+                phone: profile?.phone || 'N/A',
+                email: profile?.email || 'N/A',
+                website: 'www.kriyatec.in',
+                description: 'Merchant information not available'
+              };
+              setMerchant(merchantData);
+              return; // Done via backend
+            }
+          } catch (e) {
+            // Ignore and fallback to local inventory
+          }
+        }
+
+        // 2) Fallback: local inventory lookup
         const foundProduct = inventoryProducts.find((p) => p.id === id);
         if (foundProduct) {
           setProduct(foundProduct);
-          // In a real app, you would fetch merchant data based on product.merchantId or similar
           const merchantData = merchants.find((m) => m.id === foundProduct.merchantId) || {
             id: user?.id || 'default-merchant',
             name: profile?.companyName || 'Unknown Merchant',

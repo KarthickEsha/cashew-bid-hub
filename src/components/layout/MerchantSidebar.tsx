@@ -32,7 +32,6 @@ import { useOrders } from "@/hooks/useOrders";
 import { useInventory } from "@/hooks/useInventory"; // Add this line to import useInventory hook
 import { ProductType } from "@/types/user";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
 import { useProfile } from "@/hooks/useProfile";
 
 const navItems = [
@@ -124,8 +123,10 @@ export function MerchantSidebar() {
   const ordersCount = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length;
   const stockEnquiriesCount = getStockEnquiriesCount();
   const [currentProductType, setCurrentProductType] = useState<ProductType>();
-  const [apiProducts, setApiProducts] = useState<any[]>([]);
+  // Counts persisted by MerchantProducts
+  const [stockCounts, setStockCounts] = useState<Record<string, { active: number; out_of_stock: number }>>({});
   const { profile } = useProfile();
+  const STOCK_COUNTS_KEY = "stocks_counts_v1";
   useEffect(() => {
     if (profile?.productType && profile.productType !== "Both") {
       setCurrentProductType(profile.productType);
@@ -134,69 +135,45 @@ export function MerchantSidebar() {
     }
   }, [profile?.productType]);
 
-  // Load stocks from backend API for counts
+  // Read counts from localStorage and keep in sync (no API re-fetch here)
   useEffect(() => {
-    const loadStocks = async () => {
+    const readCounts = () => {
       try {
-        const resp = await apiFetch("/api/stocks/get-all-stocks", { method: "GET" });
-        const stocks = Array.isArray((resp as any)?.data) ? (resp as any).data : Array.isArray(resp) ? resp : [];
-        const mapped = stocks.map((s: any, idx: number) => ({
-          id: String(s.id || s._id || idx),
-          type: s.type || "Kernel",
-          availableqty: Number(s.availableqty ?? 0),
-          status: (s.availableqty ?? 0) > 0 ? "active" : "out_of_stock",
-          grade: s.grade,
-        }));
-        setApiProducts(mapped);
-      } catch (e) {
-        // silently ignore; sidebar falls back to local products
-      }
+        const raw = localStorage.getItem(STOCK_COUNTS_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed?.counts) setStockCounts(parsed.counts);
+      } catch { /* ignore */ }
     };
 
-    // initial load
-    loadStocks();
+    // Initial read
+    readCounts();
 
-    // refresh when a global stocks change event is dispatched
-    const onStocksChanged = () => loadStocks();
+    // Refresh when MerchantProducts updates counts
+    const onStocksChanged = () => readCounts();
     window.addEventListener('stocks:changed', onStocksChanged as EventListener);
 
-    // Also refresh when navigating to products page
-    const unlistenNav = () => {
-      if (location.pathname === '/merchant/products') {
-        loadStocks();
-      }
+    // Cross-tab updates
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STOCK_COUNTS_KEY) readCounts();
     };
-    // Observe path changes by reacting to location.pathname via another effect below
+    window.addEventListener('storage', onStorage);
 
     return () => {
       window.removeEventListener('stocks:changed', onStocksChanged as EventListener);
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
 
-  // When route changes to products, refresh API list so counts are up-to-date
-  useEffect(() => {
-    const refreshIfProducts = async () => {
-      if (location.pathname === '/merchant/products') {
-        try {
-          const resp = await apiFetch('/api/stocks/get-all-stocks', { method: 'GET' });
-          const stocks = Array.isArray((resp as any)?.data) ? (resp as any).data : Array.isArray(resp) ? resp : [];
-          const mapped = stocks.map((s: any, idx: number) => ({
-            id: String(s.id || s._id || idx),
-            type: s.type || 'Kernel',
-            availableqty: Number(s.availableqty ?? 0),
-            status: (s.availableqty ?? 0) > 0 ? 'active' : 'out_of_stock',
-            grade: s.grade,
-          }));
-          setApiProducts(mapped);
-        } catch {}
-      }
-    };
-    refreshIfProducts();
-  }, [location.pathname]);
-  // Count products by status from API (fallback to local inventory)
-  const sourceProducts: any[] = apiProducts.length > 0 ? apiProducts : products;
-  const activeProductsCount = sourceProducts.filter(p => p.status === 'active' && (!currentProductType || p.type === currentProductType)).length;
-  const outOfStockProductsCount = sourceProducts.filter(p => p.status === 'out_of_stock' && (!currentProductType || p.type === currentProductType)).length;
+  // No API re-fetch on route change; counts come from MerchantProducts
+  // Derive counts from persisted counts; fallback to local inventory if unavailable
+  const typeKey = currentProductType || 'RCN';
+  const activeProductsCount =
+    stockCounts[typeKey]?.active ??
+    products.filter(p => p.status === 'active' && (!currentProductType || p.type === currentProductType)).length;
+  const outOfStockProductsCount =
+    stockCounts[typeKey]?.out_of_stock ??
+    products.filter(p => p.status === 'out_of_stock' && (!currentProductType || p.type === currentProductType)).length;
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -324,7 +301,16 @@ export function MerchantSidebar() {
             variant="ghost"
             size="sm"
             className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
-            onClick={() => signOut()}
+            onClick={() => {
+              signOut()
+              // Clear all local storage data
+              localStorage.clear();
+
+              // Optionally clear sessionStorage too
+              sessionStorage.clear();
+            }
+
+            }
           >
             <LogOut size={16} />
             {!collapsed && <span className="ml-2">Sign Out</span>}

@@ -30,7 +30,7 @@ import RoleSwitcher from "@/components/RoleSwitcher";
 import { useTranslation } from "react-i18next";
 import { useOrders } from "@/hooks/useOrders";
 import { useRequirements } from "@/hooks/useRequirements";
-import { useInventory } from "@/hooks/useInventory";
+import { apiFetch } from "@/lib/api";
 import { ProductType } from "@/types/user";
 import { useProfile } from "@/hooks/useProfile";
 
@@ -54,7 +54,7 @@ export function AppSidebar() {
   const requirements = getMyRequirements();
   const [newResponseCount, setNewResponseCount] = useState(0);
   const navigate = useNavigate();
-  const { products } = useInventory();
+  const [stocks, setStocks] = useState<any[]>([]);
   const [currentProductType, setCurrentProductType] = useState<ProductType>();
   const { profile } = useProfile();
 
@@ -68,13 +68,41 @@ export function AppSidebar() {
       setCurrentProductType("RCN")
     }
   }, [responses, profile?.productType]);
-  const activeProductsCount = products.filter(p => p.status === 'active' && p.type === currentProductType).length;
+
+  // Load marketplace stocks from localStorage first, then refresh from API
+  useEffect(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('marketplace_stocks') || '[]');
+      if (Array.isArray(cached)) setStocks(cached);
+    } catch {}
+
+    const fetchStocks = async () => {
+      try {
+        const resp: any = await apiFetch('/api/stocks/get-all-stocks', { method: 'GET' });
+        const list: any[] = Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
+        // Normalize minimal fields we need for counting
+        const mapped = list.map((s: any) => {
+          const availableqty = Number(s?.availableqty ?? 0);
+          const type = s?.type || 'RCN';
+          const status = availableqty > 0 ? 'active' : 'out_of_stock';
+          return { id: s?.id || s?._id, type, availableqty, status };
+        });
+        setStocks(mapped);
+        localStorage.setItem('marketplace_stocks', JSON.stringify(mapped));
+      } catch {
+        // ignore
+      }
+    };
+    fetchStocks();
+  }, []);
+
+  const activeProductsCount = stocks.filter(s => (s.status === 'active' || (s.availableqty ?? 0) > 0) && s.type === currentProductType).length;
   const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
   const mainNavItems: NavItem[] = [
     { path: "/", label: t('sidebar.mainNav.dashboard'), icon: Home },
-    { path: "/marketplace", label: t('sidebar.mainNav.marketplace'), icon: Store , badge: activeProductsCount},
+    { path: "/marketplace", label: t('sidebar.mainNav.marketplace'), icon: Store, badge: activeProductsCount },
     { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail, badge: ordersCount }
-    
+
   ];
 
 
@@ -188,7 +216,14 @@ export function AppSidebar() {
               variant="ghost"
               size="sm"
               className={collapsed ? "w-8 h-8 p-0" : "w-full justify-start"}
-              onClick={item.onClick}
+              onClick={() => {
+                item.onClick()
+                // Clear all local storage data
+                localStorage.clear();
+
+                // Optionally clear sessionStorage too
+                sessionStorage.clear();
+              }}
             >
               <item.icon className="h-4 w-4" />
               {!collapsed && <span className="ml-2">{item.label}</span>}

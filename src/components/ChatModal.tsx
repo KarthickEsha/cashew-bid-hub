@@ -61,15 +61,16 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType, enqui
       
       addResponse({
         requirementId: enquiry.id.toString(),
+        productName: enquiry.productName || productName,
         merchantId: user?.id || 'anonymous',
         merchantName,
         merchantLocation,
         price: `₹${enquiry.expectedPrice || 0}/kg`,
         responseDate: new Date().toISOString().split('T')[0],
         status: 'new',
-        grade: enquiry.grade || '',
-        quantity: enquiry.quantity || '',
-        origin: enquiry.origin || '',
+        grade: String(enquiry.grade ?? ''),
+        quantity: String(enquiry.quantity ?? ''),
+        origin: String(enquiry.origin ?? ''),
         certifications: ['ISO 22000', 'HACCP'],
         deliveryTime: '15 days',
         contact: profile?.phone || 'Contact not provided',
@@ -93,7 +94,7 @@ const ChatModal = ({ isOpen, onClose, customerName, productName, userType, enqui
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="merchant-theme max-w-md h-[600px] flex flex-col p-0 bg-popover">`
+      <DialogContent className="merchant-theme max-w-md h-[600px] flex flex-col p-0 bg-popover">
         <DialogHeader className="px-4 py-3 border-b">
           <DialogTitle className="flex items-center gap-3">
             <Avatar className="w-8 h-8">

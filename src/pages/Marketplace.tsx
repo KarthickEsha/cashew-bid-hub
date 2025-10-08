@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from "react";
-import { useInventory } from "@/hooks/useInventory";
 import { useProfile } from "@/hooks/useProfile";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useOrders } from "@/hooks/useOrders";
@@ -29,6 +28,7 @@ import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Product, ProductType } from "@/types/user";
+import { apiFetch } from "@/lib/api";
 
 const Marketplace = () => {
     const { toast } = useToast();
@@ -67,44 +67,47 @@ const Marketplace = () => {
           setCurrentProductType("RCN")
         }
       }, [profile?.productType]);
-    // Get products and delete function from inventory
-    const { products: inventoryProducts, deleteProduct } = useInventory();
-    // Get merchant's company name from profile
-    
-    const products = useMemo(() => {
-        const demoProducts = [
+    // Backend stocks mapped to marketplace display items
+    const [products, setProducts] = useState<any[]>([]);
 
-        ];
-
-        // Convert inventory products to marketplace format
-        const merchantProducts = inventoryProducts.map((product, index) => ({
-            id: product.id,
-            merchantName: product.merchantName || "Your Company Name", // Hardcoded company name
-            location: typeof product.location === 'string'
-                ? product.location
-                : [
-                    (product.location as any)?.city,
-                    (product.location as any)?.region,
-                    (product.location as any)?.country
-                ].filter(Boolean).join(', '),
-            origin: product.origin || 'Not specified',
-            grade: product.grade || 'RAW Cashews',
-            quantity: product.availableQty,
-            quantityUnit: product.unit || 'kg',
-            pricePerTon: `$${product.price * 1000}`, // Assuming price is per kg
-            pricePerKg: `$${product.price}`,
-            pricingType: "fixed",
-            expiry: product.expireDate,
-            type: product.type,
-            createdAt: product.createdAt,
-            rating: 4.5, // Default rating
-            verified: true,
-            description: product.description || 'Premium quality cashews',
-            status: product.status || 'active'
-        }));
-
-        return [...demoProducts, ...merchantProducts];
-    }, [inventoryProducts]);
+    useEffect(() => {
+        const loadStocks = async () => {
+            try {
+                const resp: any = await apiFetch(`/api/stocks/get-all-stocks`, { method: "GET" });
+                const list: any[] = Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
+                const mapped = list.map((s: any) => {
+                    const price = Number(s?.sellingprice ?? 0);
+                    const availableqty = Number(s?.availableqty ?? 0);
+                    const location = s?.location || s?.origin || '';
+                    const createdAt = s?.createdAt || s?.createdat || new Date().toISOString();
+                    return {
+                        id: String(s?.id || s?._id || Math.random().toString(36).slice(2)),
+                        merchantName: s?.merchantName || profile?.companyName || "Your Company Name",
+                        location: typeof location === 'string' ? location : String(location ?? ''),
+                        origin: s?.origin || 'Not specified',
+                        grade: s?.grade || 'RAW Cashews',
+                        quantity: availableqty,
+                        quantityUnit: 'kg',
+                        pricePerTon: `$${price * 1000}`,
+                        pricePerKg: `$${price}`,
+                        pricingType: s?.pricingType || "fixed",
+                        expiry: s?.expiredate ? String(s?.expiredate).slice(0, 10) : '',
+                        type: s?.type || 'RCN',
+                        createdAt,
+                        rating: 4.5,
+                        verified: true,
+                        description: s?.description || 'Premium quality cashews',
+                        status: availableqty > 0 ? 'active' : 'out_of_stock'
+                    };
+                });
+                setProducts(mapped);
+            } catch (e) {
+                // On error, keep empty list; you may toast if desired
+                setProducts([]);
+            }
+        };
+        loadStocks();
+    }, []);
 
     const [filteredProducts, setFilteredProducts] = useState(products);
 

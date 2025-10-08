@@ -193,7 +193,7 @@ const ProductListTable = ({
                       : (product.location as Location).city || (product.location as Location).region || (product.location as Location).country || 'N/A'
                     }
                   </TableCell>
-                  <TableCell>{product.expireDate}</TableCell>
+                  <TableCell>{format(new Date(product.expireDate), 'dd-MM-yyyy')}</TableCell>
                 </>
               ) : (
                 <>

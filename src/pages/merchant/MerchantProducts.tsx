@@ -59,15 +59,27 @@ const MerchantProducts = () => {
 
     // Products loaded from API (stocks)
     const [apiProducts, setApiProducts] = useState<Product[]>([]);
+    // Keep per-type API lists so we can render empty when a type has no results
+    type StockType = 'RCN' | 'Kernel';
+    const [apiByType, setApiByType] = useState<Record<StockType, Product[] | undefined>>({
+        RCN: undefined,
+        Kernel: undefined,
+    });
+    // LocalStorage key for sidebar counts
+    const STOCK_COUNTS_KEY = "stocks_counts_v1";
 
     // Filter products based on current type (prefer API-loaded stocks if present)
     const filteredProductsByType = useMemo(() => {
         if (!profile) return [];
 
-        const source = apiProducts.length > 0 ? apiProducts : products;
-        let filtered = source.filter((p) => p.type === currentProductType);
-        return filtered;
-    }, [products, apiProducts, currentProductType, profile]);
+        // If we've fetched for the current type (even if it returned 0), use that explicitly
+        const fetchedForType = apiByType[currentProductType];
+        if (fetchedForType !== undefined) {
+            return fetchedForType;
+        }
+        // Otherwise (before first fetch), fallback to local inventory filtered by type
+        return products.filter(p => p.type === currentProductType);
+    }, [products, apiProducts, apiByType, currentProductType, profile]);
 
     // filters state
     const [filters, setFilters] = useState({
@@ -205,8 +217,8 @@ const MerchantProducts = () => {
         const loadStocks = async () => {
             try {
                 setIsLoading(true);
-                // Backend returns: { status, data: stocks[], message }
-                const resp = await apiFetch("/api/stocks/get-all-stocks", { method: "GET" });
+                // Prefer backend type filtering if supported
+                const resp = await apiFetch(`/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}`, { method: "GET" });
                 const stocks = Array.isArray(resp?.data) ? resp.data : [];
 
                 // Map backend stock to Product
@@ -233,13 +245,41 @@ const MerchantProducts = () => {
                     origin: s.origin,
                 }));
 
-                setApiProducts(mapped);
+                // Enforce client-side type filter for safety
+                const byType = mapped.filter(p => p.type === currentProductType);
+                setApiProducts(byType);
+                setApiByType(prev => ({ ...prev, [currentProductType]: byType }));
+
+                // Compute and persist counts for the CURRENT type only (preserve other type)
+                try {
+                    const currentCounts = {
+                        active: byType.filter(i => i.status === "active").length,
+                        out_of_stock: byType.filter(i => i.status === "out_of_stock").length,
+                    };
+                    let existing: any = undefined;
+                    try {
+                        const raw = localStorage.getItem(STOCK_COUNTS_KEY);
+                        existing = raw ? JSON.parse(raw) : undefined;
+                    } catch { }
+                    const prevCounts = existing?.counts || {};
+                    const merged = {
+                        counts: {
+                            ...prevCounts,
+                            [currentProductType]: currentCounts,
+                        },
+                        updatedAt: Date.now(),
+                    };
+                    localStorage.setItem(STOCK_COUNTS_KEY, JSON.stringify(merged));
+                } catch { /* ignore storage errors */ }
+
+                // Let listeners (sidebar) refresh counts
+                window.dispatchEvent(new CustomEvent('stocks:changed'));
             } catch (err: any) {
-                toast({
-                    title: "Failed to load stocks",
-                    description: err?.message || "Please try again.",
-                    variant: "destructive",
-                });
+                // toast({
+                //     title: "Failed to load stocks",
+                //     description: err?.message || "Please try again.",
+                //     variant: "destructive",
+                // });
             } finally {
                 setIsLoading(false);
             }
@@ -247,7 +287,7 @@ const MerchantProducts = () => {
 
         loadStocks();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [currentProductType]);
 
     const handleDeleteClick = (productId: string) => {
         setProductToDelete(productId);
@@ -265,13 +305,55 @@ const MerchantProducts = () => {
                 await apiFetch(`/api/stocks/delete-stock/${productToDelete}`, {
                     method: "DELETE",
                 });
-                // Remove locally from apiProducts-driven view
-                setApiProducts(prev => prev.filter(p => p.id !== productToDelete));
+                // Remove locally from apiProducts-driven view and persist counts
+                // Remove locally and update per-type cache
+                setApiProducts(prev => {
+                    const next = prev.filter(p => p.id !== productToDelete);
+                    setApiByType(prevCache => ({ ...prevCache, [currentProductType]: next }));
+                    try {
+                        const countsByType = ["RCN", "Kernel"].reduce((acc, t) => {
+                            const items = next.filter(p => p.type === (t as ProductType));
+                            acc[t] = {
+                                active: items.filter(i => i.status === "active").length,
+                                out_of_stock: items.filter(i => i.status === "out_of_stock").length,
+                            } as any;
+                            return acc;
+                        }, {} as Record<string, { active: number; out_of_stock: number }>);
+                        localStorage.setItem(
+                            STOCK_COUNTS_KEY,
+                            JSON.stringify({ counts: countsByType, updatedAt: Date.now() })
+                        );
+                    } catch { }
+                    // notify sidebar
+                    window.dispatchEvent(new CustomEvent('stocks:changed'));
+                    return next;
+                });
                 setFilteredProducts(prev => prev.filter(p => p.id !== productToDelete));
             } else {
                 // Fallback to local inventory store deletion
                 deleteProduct(productToDelete);
-                setAllProducts(prev => prev.filter(p => p.id !== productToDelete));
+                setAllProducts(prev => {
+                    const next = prev.filter(p => p.id !== productToDelete);
+                    // Persist counts based on whatever list is currently driving the UI
+                    const source = apiProducts.length > 0 ? apiProducts : next;
+                    try {
+                        const countsByType = ["RCN", "Kernel"].reduce((acc, t) => {
+                            const items = source.filter((p: any) => p.type === t);
+                            acc[t] = {
+                                active: items.filter((i: any) => i.status === "active").length,
+                                out_of_stock: items.filter((i: any) => i.status === "out_of_stock").length,
+                            } as any;
+                            return acc;
+                        }, {} as Record<string, { active: number; out_of_stock: number }>);
+                        localStorage.setItem(
+                            STOCK_COUNTS_KEY,
+                            JSON.stringify({ counts: countsByType, updatedAt: Date.now() })
+                        );
+                    } catch { }
+                    // notify sidebar
+                    window.dispatchEvent(new CustomEvent('stocks:changed'));
+                    return next;
+                });
                 setFilteredProducts(prev => prev.filter(p => p.id !== productToDelete));
             }
 

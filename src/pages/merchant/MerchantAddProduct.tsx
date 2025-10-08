@@ -277,7 +277,6 @@ const MerchantAddProduct = () => {
         }
 
         try {
-            debugger;
             setIsSubmitting(true);
 
             // Build base payload (JSON). If backend needs multipart, switch to FormData using imageFiles.

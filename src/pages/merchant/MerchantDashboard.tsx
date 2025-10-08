@@ -8,8 +8,9 @@ import { useUser } from "@clerk/clerk-react";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
 import ProductTypeToggle from "@/components/ProductTypeToggle";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ProductType } from "@/types/user";
+import { apiFetch } from "@/lib/api";
 
 const MerchantDashboard = () => {
   const { getProductStats } = useInventory();
@@ -20,6 +21,11 @@ const MerchantDashboard = () => {
   const { getResponsesByRequirementId, getSubmittedQuotesCount } = useResponses();
   const stats = getProductStats();
   const navigate = useNavigate();
+
+  // Persisted stock counts (shared with MerchantSidebar and written by MerchantProducts)
+  type StatusCounts = { active: number; out_of_stock: number };
+  const STOCK_COUNTS_KEY = "stocks_counts_v1";
+  const [stockCounts, setStockCounts] = useState<Record<string, StatusCounts>>({});
 
   // Get count of submitted quotes for the current merchant
   const submittedQuotesCount = useMemo(() => {
@@ -45,19 +51,83 @@ const MerchantDashboard = () => {
 
   const [currentProductType, setCurrentProductType] = useState<ProductType>(getInitialProductType());
 
-  // Calculate display stats based on current type
-  const getDisplayStats = () => {
-    if (profile?.productType === 'Both') {
-      return currentProductType === 'RCN'
-        ? { products: stats.rcnProducts, stock: stats.totalStock.rcn }
-        : { products: stats.kernelProducts, stock: stats.totalStock.kernel };
-    }
+  // Read counts from localStorage initially and keep in sync with events
+  useEffect(() => {
+    const readCounts = () => {
+      try {
+        const raw = localStorage.getItem(STOCK_COUNTS_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed?.counts) setStockCounts(parsed.counts);
+      } catch { /* ignore */ }
+    };
 
-    // For single type users, show their specific type
-    if (profile?.productType === 'RCN') {
-      return { products: stats.rcnProducts, stock: stats.totalStock.rcn };
+    readCounts();
+    const onStocksChanged = () => readCounts();
+    window.addEventListener('stocks:changed', onStocksChanged as EventListener);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STOCK_COUNTS_KEY) readCounts();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('stocks:changed', onStocksChanged as EventListener);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
+  // Ensure counts exist for the currently selected type; if missing, fetch and persist
+  useEffect(() => {
+    const ensureCountsForType = async (type: ProductType) => {
+      const hasCounts = stockCounts[type]?.active !== undefined || stockCounts[type]?.out_of_stock !== undefined;
+      if (hasCounts) return;
+      try {
+        const resp = await apiFetch(`/api/stocks/get-all-stocks?type=${encodeURIComponent(type)}`, { method: 'GET' });
+        const items = Array.isArray(resp?.data) ? resp.data : [];
+        // Compute counts by status; "active" if availableqty > 0 else "out_of_stock"
+        const mapped = items.map((s: any) => ({
+          status: (Number(s?.availableqty ?? 0) > 0) ? 'active' : 'out_of_stock',
+          type: s?.type,
+        })).filter(p => p.type === type);
+        const counts: StatusCounts = {
+          active: mapped.filter(p => p.status === 'active').length,
+          out_of_stock: mapped.filter(p => p.status === 'out_of_stock').length,
+        };
+        // Merge and persist to localStorage using the shared schema
+        let existing: any = undefined;
+        try {
+          const raw = localStorage.getItem(STOCK_COUNTS_KEY);
+          existing = raw ? JSON.parse(raw) : undefined;
+        } catch { /* ignore */ }
+        const prevCounts = existing?.counts || {};
+        const merged = { counts: { ...prevCounts, [type]: counts }, updatedAt: Date.now() };
+        localStorage.setItem(STOCK_COUNTS_KEY, JSON.stringify(merged));
+        setStockCounts(merged.counts);
+        // notify listeners (e.g., sidebar)
+        window.dispatchEvent(new CustomEvent('stocks:changed'));
+      } catch {
+        // ignore errors on dashboard; fallback UI below will use inventory store
+      }
+    };
+    ensureCountsForType(currentProductType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProductType]);
+
+  // Calculate display stats based on current type using persisted API-backed counts
+  const getDisplayStats = () => {
+    const typeKey = profile?.productType === 'Both' ? currentProductType : (profile?.productType || 'RCN');
+    const persisted = stockCounts[typeKey];
+    // Total stocks for the selected type = active + out_of_stock
+    const totalFromPersisted = persisted ? (persisted.active + persisted.out_of_stock) : undefined;
+    if (typeKey === 'RCN') {
+      return {
+        products: totalFromPersisted ?? stats.rcnProducts,
+        stock: stats.totalStock.rcn,
+      };
     } else {
-      return { products: stats.kernelProducts, stock: stats.totalStock.kernel };
+      return {
+        products: totalFromPersisted ?? stats.kernelProducts,
+        stock: stats.totalStock.kernel,
+      };
     }
   };
 
