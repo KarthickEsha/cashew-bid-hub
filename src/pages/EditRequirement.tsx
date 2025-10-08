@@ -18,6 +18,7 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useRequirements } from "@/hooks/useRequirements";
+import { apiFetch } from "@/lib/api";
 import { useProfile } from "@/hooks/useProfile";
 import { useUser } from "@clerk/clerk-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -88,7 +89,7 @@ const productPrices = {
 const EditRequirement = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getRequirementById, updateRequirement } = useRequirements();
+  const { updateRequirement } = useRequirements();
   const { profile } = useProfile();
   const { user } = useUser();
 
@@ -97,12 +98,12 @@ const EditRequirement = () => {
     quantity: "",
     origin: "",
     targetDate: undefined as Date | undefined,
-    minSupplyQuantity: "",
+    minimumqty: "",
     expectedPrice: "",
     deliveryLocation: "",
     city: "",
     country: "",
-    specifications: "",
+    description: "",
     deliveryDeadline: undefined as Date | undefined,
     requirementExpiry: undefined as Date | undefined,
     allowLowerBid: false
@@ -138,41 +139,67 @@ const EditRequirement = () => {
     setPriceError("");
     return true;
   };
-  // Fetch requirement data
+  // Fetch requirement data from API by ID (do not use local storage)
   useEffect(() => {
-    if (id) {
-      const requirement = getRequirementById(id);
-      if (requirement) {
+    let mounted = true;
+    const load = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        // Adjust path if your backend differs
+        const data: any = await apiFetch(`/api/requirement/get-requirement/${id}`);
+
+        // Normalize potential backend payload shapes
+        const item = Array.isArray(data) ? data[0] : (data?.data ?? data);
+        if (!item) throw new Error('Requirement not found');
+
+        const grade = item.grade || item.productGrade || item.product?.grade || '';
+        const quantity = String(item.requiredqty ?? item.qty ?? item.totalQuantity ?? item.quantity ?? '');
+        const origin = (item.origin || item.preferredOrigin || item.source || '').toString().toLowerCase();
+        const expectedPrice = String(item.expectedprice ?? item.price ?? item.expected_price ?? item.expectedPrice ?? '');
+        const deliveryLocation = item.deliveryLocation || item.location || '';
+        const city = item.city || '';
+        const country = item.country || '';
+        const description = item.description || item.specifications || item.specs || '';
+        const allowLowerBid = Boolean(
+          item.lowerbit ?? item.LowerBit ?? item.allowLowerBid ?? item.allow_lower_bid ?? false
+        );
+        const minimumqty = String(item.minimumqty ?? item.min_qty ?? '');
+        const deliveryDeadline = item.deliveryDeadline || item.deliverydate || item.requirementExpiry || '';
+
+        if (!mounted) return;
         setFormData({
-          grade: requirement.grade,
-          quantity: requirement.quantity ? requirement.quantity.toString() : "",
-          origin: requirement.origin,
+          grade,
+          quantity,
+          origin,
           targetDate: undefined,
-          minSupplyQuantity: requirement.minSupplyQuantity ? requirement.minSupplyQuantity.toString() : "",
-          expectedPrice: requirement.expectedPrice.toString(),
-          deliveryLocation: requirement.deliveryLocation,
-          city: requirement.city,
-          country: requirement.country,
-          specifications: requirement.specifications,
-
-          deliveryDeadline: requirement.deliveryDeadline ? new Date(requirement.deliveryDeadline) : undefined,
-          requirementExpiry: requirement.requirementExpiry ? new Date(requirement.requirementExpiry) : undefined,
-          allowLowerBid: requirement.allowLowerBid
+          minimumqty,
+          expectedPrice,
+          deliveryLocation,
+          city,
+          country,
+          description,
+          deliveryDeadline: deliveryDeadline ? new Date(deliveryDeadline) : undefined,
+          requirementExpiry: deliveryDeadline ? new Date(deliveryDeadline) : undefined,
+          allowLowerBid,
         });
-      } else {
-        // Requirement not found, redirect back
+      } catch (e) {
+        console.error('Failed to load requirement:', e);
         navigate('/my-requirements');
+      } finally {
+        if (mounted) setLoading(false);
       }
-      setLoading(false);
-    }
-  }, [id, getRequirementById, navigate]);
+    };
+    load();
+    return () => { mounted = false; };
+  }, [id, navigate]);
 
-  const handleSubmit = (isDraft = false) => {
+  const handleSubmit = async (isDraft = false) => {
     if (!id) return;
 
     // Parse formatted numbers back to raw numbers for submission
     const quantity = formData.quantity ? parseFormattedNumber(formData.quantity) : '';
-    const minSupplyQuantity = formData.minSupplyQuantity ? parseFormattedNumber(formData.minSupplyQuantity) : '';
+    const minSupplyQuantity = formData.minimumqty ? parseFormattedNumber(formData.minimumqty) : '';
     const expectedPrice = formData.expectedPrice ? parseFormattedNumber(formData.expectedPrice) : '';
 
     // Validate required fields
@@ -199,7 +226,7 @@ const EditRequirement = () => {
       city: formData.city,
       country: formData.country,
       deliveryDeadline: formData.deliveryDeadline ? format(formData.deliveryDeadline, 'yyyy-MM-dd') : '',
-      specifications: formData.specifications,
+      specifications: formData.description,
       allowLowerBid: formData.allowLowerBid,
       date: format(new Date(), 'yyyy-MM-dd'),
       status: 'active' as const,
@@ -207,21 +234,37 @@ const EditRequirement = () => {
       customerName
     };
 
-    // Update requirement
-    updateRequirement(id, requirementData);
+    try {
+      // Call backend update API
+      await apiFetch(`/api/requirement/update-requirement/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(requirementData),
+      });
 
-    // Show success message and redirect
-    toast({
-      title: isDraft ? "Draft Saved" : "Requirement Updated",
-      description: isDraft
-        ? "Your requirement has been saved as a draft."
-        : "Your requirement has been updated successfully!",
-    });
+      // Optionally sync local store if needed elsewhere
+      try {
+        updateRequirement(id, requirementData as any);
+      } catch (_) { /* ignore */ }
 
-    // Navigate after a short delay to allow the toast to be seen
-    setTimeout(() => {
-      navigate('/my-requirements');
-    }, 1500);
+      // Show success message and redirect
+      toast({
+        title: isDraft ? "Draft Saved" : "Requirement Updated",
+        description: isDraft
+          ? "Your requirement has been saved as a draft."
+          : "Your requirement has been updated successfully!",
+      });
+
+      setTimeout(() => {
+        navigate('/my-requirements');
+      }, 800);
+    } catch (e) {
+      console.error('Update failed:', e);
+      toast({
+        title: 'Update failed',
+        description: 'Could not update the requirement. Please try again.',
+        variant: 'destructive' as any,
+      });
+    }
   };
 
   const handleBack = () => {
@@ -336,11 +379,11 @@ const EditRequirement = () => {
                   <Input
                     id="minSupplyQuantity"
                     placeholder="e.g., 100"
-                    value={formData.minSupplyQuantity ? formatNumber(formData.minSupplyQuantity) : ''}
+                    value={formData.minimumqty ? formatNumber(formData.minimumqty) : ''}
                     onChange={(e) => {
                       const value = e.target.value;
                       const unformattedValue = parseFormattedNumber(value);
-                      setFormData({ ...formData, minSupplyQuantity: unformattedValue });
+                      setFormData({ ...formData, minimumqty: unformattedValue });
                     }}
                     className="mt-1"
                     inputMode="numeric"
@@ -473,8 +516,8 @@ const EditRequirement = () => {
                 <Textarea
                   id="specifications"
                   placeholder="e.g., Moisture content: 5% max, Kernel size: 320 pieces/kg, No broken kernels"
-                  value={formData.specifications}
-                  onChange={(e) => setFormData({ ...formData, specifications: e.target.value })}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={4}
                 />
               </div>

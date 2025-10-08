@@ -211,7 +211,13 @@ const MerchantAddProduct = () => {
                     location: s.location || s.origin || '',
                     origin: s.origin || '',
                     description: s.description || '',
-                    allowBuyerOffers: Boolean(s.allowbuyeroffers ?? s.allowBuyerOffers ?? false),
+                    allowBuyerOffers: Boolean(
+                        s.allowbuyeroffers ??
+                        s.allowBuyerOffers ??
+                        s.negotiateprice ??
+                        s.negotiatePrice ??
+                        false
+                    ),
                     // Prefer snake_case keys from backend, fallback to camelCase if present
                     yearOfCrop: String(s.yearofcrop ?? s.yearOfCrop ?? ''),
                     nutCount: String(s.netcount ?? s.nutCount ?? ''),
@@ -298,6 +304,7 @@ const MerchantAddProduct = () => {
                 enquiries: 0,
                 orders: 0,
                 origin: formData.origin || '',
+                negotiatePrice: formData.allowBuyerOffers || false,    
                 availableQty: parseFloat(formData.availableQty) || 0,
                 minOrderQty: parseFloat(formData.minOrderQty) || 1,
             };
@@ -333,7 +340,7 @@ const MerchantAddProduct = () => {
                     Origin: formData.origin || '',
                     Location: formData.location,
                     AvailableQty: parseFloat(formData.availableQty) || 0,
-                    AllowBuyerOffers: !!formData.allowBuyerOffers,
+                    NegotiatePrice: formData.allowBuyerOffers || false,
                     Expiredate: new Date(expireDate).toISOString()
                 };
 
@@ -350,7 +357,6 @@ const MerchantAddProduct = () => {
                     netcount: currentProductType === 'RCN' ? parseInt(formData.nutCount || '0', 10) : 0,
                     outturn: currentProductType === 'RCN' ? parseInt(formData.outTurn || '0', 10) : 0,
                     yearofcrop: currentProductType === 'RCN' ? parseInt(formData.yearOfCrop || '0', 10) : 0,
-
                     origin: formData.origin || '',
                     availableqty: parseInt(formData.availableQty || '0', 10),
                     minimumqty: parseInt(formData.minOrderQty || '1', 10),
@@ -358,6 +364,7 @@ const MerchantAddProduct = () => {
                     location: formData.location,
                     expiredate: new Date(expireDate).toISOString(), // RFC3339 string is OK for time.Time
                     description: formData.description || '',
+                    negotiateprice: !!formData.allowBuyerOffers,
                     type: currentProductType,
                 };
 

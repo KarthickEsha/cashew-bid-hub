@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useResponses } from './useResponses';
+import { apiFetch } from '@/lib/api';
 
 export interface Requirement {
   id: string;
@@ -43,7 +44,8 @@ interface RequirementsState {
   getRequirementById: (id: string) => Requirement | undefined;
   getRequirementsAsEnquiries: () => any[];
   getMyRequirements: () => any[];
-  deleteRequirement: (id: string) => void;
+  deleteRequirement: (id: string) => Promise<void>;
+  fetchAllRequirements: () => Promise<void>;
 }
 
 // Product-based fixed prices by origin (₹ per kg)
@@ -101,6 +103,91 @@ export const useRequirements = create<RequirementsState>()(
   persist(
     (set, get) => ({
       requirements: [],
+      
+      // Load requirements from API and persist to the store (and localStorage)
+      fetchAllRequirements: async () => {
+        try {
+          const data = await apiFetch('/api/requirement/get-all-requirements');
+
+          // Cache raw payload separately if needed elsewhere
+          try {
+            localStorage.setItem('all_requirements_raw', JSON.stringify(data));
+          } catch (_) {
+            // ignore storage errors
+          }
+
+          // Normalize various possible payload shapes
+          const list: any[] = Array.isArray(data)
+            ? data
+            : Array.isArray((data as any)?.items)
+              ? (data as any).items
+              : Array.isArray((data as any)?.data)
+                ? (data as any).data
+                : [];
+
+          const toRequirement = (item: any): Requirement => {
+            const id = String(item.id ?? item._id ?? Date.now() + Math.random());
+            const createdAt = item.createdAt || item.created_at || new Date().toISOString();
+            const updatedAt = item.updatedAt || item.updated_at || createdAt;
+
+            const grade = item.grade || item.productGrade || item.product?.grade || 'W320';
+            const quantity = String(item.requiredqty ?? item.qty ?? item.totalQuantity ?? '0');
+            const origin = (item.origin || item.preferredOrigin || item.source || 'any').toString().toLowerCase();
+            const expectedPrice = Number(item.expectedprice ?? item.price ?? item.expected_price ?? 0);
+            const deliveryLocation = item.deliveryLocation || item.location || '';
+            const city = item.city || '';
+            const state = item.state || '';
+            const country = item.country || '';
+            const deliveryDeadline = item.deliverydate;
+            const status = (item.status || 'active') as Requirement['status'];
+            const specifications = item.specifications || item.specs || '';
+            const allowLowerBid = Boolean(item.allowLowerBid ?? item.allow_lower_bid ?? false);
+            const minSupplyQuantity = String(item.minSupplyQuantity ?? item.min_qty ?? '0');
+            const customerName = item.customerName || item.buyerName || 'Anonymous Buyer';
+            const productName = item.productName || `${grade} Cashews`;
+            const fixedPrice = Number(item.fixedPrice ?? 0);
+            const isDraft = Boolean(item.isDraft ?? (status === 'draft'));
+
+            return {
+              id,
+              customerName,
+              productName,
+              grade,
+              quantity,
+              origin,
+              expectedPrice,
+              minSupplyQuantity,
+              deliveryLocation,
+              city,
+              state,
+              country,
+              deliveryDeadline,
+              specifications,
+              allowLowerBid,
+              message: item.message || '',
+              date: (createdAt || '').split('T')[0],
+              status,
+              fixedPrice,
+              isDraft,
+              createdAt,
+              // Extra fields for MyRequirements compatibility
+              title: item.title || `${quantity} of ${grade} Cashews`,
+              preferredOrigin: item.preferredOrigin || origin,
+              budgetRange: typeof item.budgetRange === 'string' ? item.budgetRange : `₹${expectedPrice?.toLocaleString?.() || expectedPrice}/kg`,
+              requirementExpiry: deliveryDeadline,
+              responsesCount: Number(item.responsesCount ?? 0),
+              createdDate: createdAt,
+              lastModified: updatedAt,
+            } as Requirement;
+          };
+
+          const normalized = list.map(toRequirement);
+          set({ requirements: normalized });
+        } catch (err) {
+          console.error('Failed to fetch requirements:', err);
+          // Do not throw to avoid breaking UI
+        }
+      },
 
       addRequirement: (requirement) => {
         console.group('=== addRequirement ===');
@@ -381,10 +468,21 @@ export const useRequirements = create<RequirementsState>()(
         }));
       },
 
-      deleteRequirement: (id) => {
-        set((state) => ({
-          requirements: state.requirements.filter(req => req.id !== id)
-        }));
+      deleteRequirement: async (id) => {
+        // Optimistic update
+        const previous = get().requirements;
+        set({ requirements: previous.filter(req => req.id !== id) });
+
+        try {
+          await apiFetch(`/api/requirement/delete-requirement/${id}`, {
+            method: 'DELETE',
+          });
+        } catch (error) {
+          console.error('Failed to delete requirement. Rolling back state.', error);
+          // Rollback on failure
+          set({ requirements: previous });
+          throw error;
+        }
       },
     }),
     {

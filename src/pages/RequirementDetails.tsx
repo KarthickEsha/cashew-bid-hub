@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,7 @@ import {
     Users
 } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
+import { apiFetch } from '@/lib/api';
 
 const RequirementDetails = () => {
     const { id } = useParams();
@@ -42,18 +43,111 @@ const RequirementDetails = () => {
     // State for managing responses
     const [responses, setResponses] = useState(getResponsesByRequirementId(id || ''));
 
+    // Requirement state fetched from API
+    const [requirement, setRequirement] = useState<any | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let mounted = true;
+        const load = async () => {
+            if (!id) return;
+            setLoading(true);
+            setError(null);
+            try {
+                const data: any = await apiFetch(`/api/requirement/get-requirement/${id}`);
+                // Normalize payload shape
+                const item = Array.isArray(data) ? data[0] : (data?.data ?? data);
+                if (!item) throw new Error('Requirement not found');
+
+                const nid = String(item.id ?? item._id ?? id);
+                const grade = item.grade || item.productGrade || item.product?.grade || 'W320';
+                const quantity = String(item.requiredqty ?? item.qty ?? item.totalQuantity ?? item.quantity ?? '0');
+                const origin = (item.origin || item.preferredOrigin || item.source || 'any').toString();
+                const expectedPrice = Number(item.expectedprice ?? item.price ?? item.expected_price ?? item.expectedPrice ?? 0);
+                const deliveryLocation = item.deliveryLocation || item.location || '';
+                const deliveryDeadline = item.deliveryDeadline || item.deliverydate || item.requirementExpiry || '';
+                const status = (item.status || 'active').toString();
+                const createdAt = item.createdAt || item.created_at || new Date().toISOString();
+
+                const normalized = {
+                    id: nid,
+                    title: item.title || `${quantity} of ${grade} Cashews`,
+                    grade,
+                    quantity,
+                    preferredOrigin: origin,
+                    budgetRange: `₹${(expectedPrice as number)?.toLocaleString?.() || expectedPrice}/kg`,
+                    requirementExpiry: deliveryDeadline,
+                    deliveryLocation,
+                    deliveryDeadline,
+                    status,
+                    createdDate: createdAt,
+                    lastModified: item.updatedAt || item.updated_at || createdAt,
+                };
+
+                if (mounted) setRequirement(normalized);
+            } catch (e: any) {
+                console.error('Failed to fetch requirement:', e);
+                if (mounted) setError(e?.message || 'Failed to load requirement');
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        };
+        load();
+        return () => { mounted = false; };
+    }, [id]);
+
     // State for managing responses popup
     const [showAllResponses, setShowAllResponses] = useState(false);
     const [showResponseDetail, setShowResponseDetail] = useState(false);
     const [selectedResponse, setSelectedResponse] = useState<any>(null);
     const [orders, setOrders] = useState<any[]>([]);
 
-    // Get requirements and find the one with matching ID
-    const requirements = getMyRequirements();
-    const requirement = requirements.find(req => req.id.toString() === id);
+    // Format date exactly as provided by backend (avoid timezone shifts)
+    const formatDateExact = (input: any) => {
+        if (!input) return '-';
+        try {
+            const s = String(input);
 
-    // If requirement not found, show error state
-    if (!requirement) {
+            // If ISO-like string
+            if (s.includes('T')) {
+                const datePart = s.split('T')[0]; // yyyy-MM-dd
+                const [year, month, day] = datePart.split('-');
+                return `${day}-${month}-${year}`; // DD-MM-YYYY
+            }
+
+            // If already yyyy-MM-dd
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+                const [year, month, day] = s.split('-');
+                return `${day}-${month}-${year}`; // DD-MM-YYYY
+            }
+
+            // Fallback: return original string
+            return s;
+        } catch {
+            return String(input);
+        }
+    };
+
+
+    // Loading and error states
+    if (loading) {
+        return (
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div className="flex items-center gap-4 mb-6">
+                    <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+                        <ArrowLeft size={16} className="mr-2" />
+                        Back to My Requirements
+                    </Button>
+                </div>
+                <Card className="p-10 text-center">
+                    <h1 className="text-xl font-semibold text-foreground mb-2">Loading requirement...</h1>
+                </Card>
+            </div>
+        );
+    }
+
+    if (error || !requirement) {
         return (
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="flex items-center gap-4 mb-6">
@@ -65,7 +159,7 @@ const RequirementDetails = () => {
                 <Card className="p-10 text-center">
                     <h1 className="text-2xl font-bold text-foreground mb-2">Requirement Not Found</h1>
                     <p className="text-muted-foreground mb-4">
-                        The requirement you're looking for doesn't exist or has been deleted.
+                        {error || "The requirement you're looking for doesn't exist or has been deleted."}
                     </p>
                     <Button onClick={() => navigate('/my-requirements')}>
                         Back to My Requirements
@@ -176,64 +270,64 @@ const RequirementDetails = () => {
         responseId: string,
         status: 'new' | 'viewed' | 'accepted' | 'rejected',
         remarks: string = ''
-      ) => {
+    ) => {
         // 1) Update response status in your store/backend
         updateResponseStatus(responseId, status, remarks);
-      
+
         // 2) If accepted, reduce requirement quantity and close when zero
         if (requirement && status === 'accepted') {
-          const resp = responses.find(r => r.id === responseId);
-          const currentQty = Number(String(requirement.quantity).toString().replace(/[^0-9.]/g, '')) || 0;
-          const acceptedQty = Number(String(resp?.quantity ?? '0').toString().replace(/[^0-9.]/g, '')) || 0;
-          const newQty = Math.max(0, currentQty - acceptedQty);
-      
-          try {
-            const updatedRequirement = {
-              ...requirement,
-              quantity: newQty,
-              status: newQty <= 0 ? 'closed' : requirement.status,
-            } as any;
-      
-            // Persist both the quantity and, if needed, status
-            updateRequirement(String(requirement.id), updatedRequirement);
-            if (newQty <= 0) {
-              updateRequirementStatus(requirement.id, 'closed');
+            const resp = responses.find(r => r.id === responseId);
+            const currentQty = Number(String(requirement.quantity).toString().replace(/[^0-9.]/g, '')) || 0;
+            const acceptedQty = Number(String(resp?.quantity ?? '0').toString().replace(/[^0-9.]/g, '')) || 0;
+            const newQty = Math.max(0, currentQty - acceptedQty);
+
+            try {
+                const updatedRequirement = {
+                    ...requirement,
+                    quantity: newQty,
+                    status: newQty <= 0 ? 'closed' : requirement.status,
+                } as any;
+
+                // Persist both the quantity and, if needed, status
+                updateRequirement(String(requirement.id), updatedRequirement);
+                if (newQty <= 0) {
+                    updateRequirementStatus(requirement.id, 'closed');
+                }
+            } catch {
+                // Fallback: at least close if zero
+                if (newQty <= 0) {
+                    updateRequirementStatus(requirement.id, 'closed');
+                }
             }
-          } catch {
-            // Fallback: at least close if zero
-            if (newQty <= 0) {
-              updateRequirementStatus(requirement.id, 'closed');
-            }
-          }
         }
-      
+
         // 3) Normalize type
         const normalizedStatus = status as 'new' | 'viewed' | 'accepted' | 'rejected';
-      
+
         // 4) Update local responses UI list
         setResponses(prev =>
-          prev.map(r =>
-            r.id === responseId
-              ? { ...r, status: normalizedStatus, ...(remarks ? { remarks } : {}) }
-              : r
-          )
+            prev.map(r =>
+                r.id === responseId
+                    ? { ...r, status: normalizedStatus, ...(remarks ? { remarks } : {}) }
+                    : r
+            )
         );
-      
+
         // 5) Update selected response UI if open
         if (selectedResponse?.id === responseId) {
-          setSelectedResponse(prev => ({
-            ...prev!,
-            status,
-            ...(remarks ? { remarks } : {}),
-          }));
+            setSelectedResponse(prev => ({
+                ...prev!,
+                status,
+                ...(remarks ? { remarks } : {}),
+            }));
         }
-      
+
         toast({
-          title: 'Status Updated',
-          description: `Response status changed to ${status}`,
+            title: 'Status Updated',
+            description: `Response status changed to ${status}`,
         });
         setShowResponseDetail(false);
-      };
+    };
 
     return (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -301,7 +395,7 @@ const RequirementDetails = () => {
                                     <div>
                                         <div className="text-sm text-muted-foreground">Delivery Deadline</div>
                                         <div className="font-medium">
-                                            {new Date(requirement.requirementExpiry).toLocaleDateString()}
+                                            {formatDateExact(requirement.requirementExpiry)}
                                         </div>
                                     </div>
                                 </div>
@@ -324,7 +418,7 @@ const RequirementDetails = () => {
                         <CardContent>
                             <p className="text-sm leading-relaxed">
                                 Looking for premium quality {requirement.grade} cashews from {requirement.preferredOrigin}.
-                                Required quantity: {requirement.quantity}. Delivery to {requirement.deliveryLocation} by {new Date(requirement.deliveryDeadline).toLocaleDateString()}.
+                                Required quantity: {requirement.quantity}. Delivery to {requirement.deliveryLocation} by {formatDateExact(requirement.deliveryDeadline)}.
                             </p>
                         </CardContent>
                     </Card>

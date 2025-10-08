@@ -44,7 +44,7 @@ import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
 
 const MyRequirements = () => {
-  const { getMyRequirements, deleteRequirement } = useRequirements();
+  const { getMyRequirements, deleteRequirement, fetchAllRequirements } = useRequirements();
   const { getResponseCount, getResponsesByRequirementId } = useResponses();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
@@ -59,7 +59,12 @@ const MyRequirements = () => {
     direction: 'asc' | 'desc';
   } | null>({ key: 'statusPriority', direction: 'desc' });
 
-  // Get requirements from the hook
+  // Load from API on mount, then get requirements from the hook
+  useEffect(() => {
+    fetchAllRequirements?.().catch((e) => console.error('Failed loading requirements:', e));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const requirements = getMyRequirements();
 
   // Delete popup state
@@ -120,7 +125,7 @@ const MyRequirements = () => {
         let bValue: any = b[sortConfig.key as keyof typeof b];
 
         // Handle date sorting
-        if (sortConfig.key === 'createdAt' || sortConfig.key === 'lastModified') {
+        if (sortConfig.key === 'createdAt' || sortConfig.key === 'lastModified' || sortConfig.key === 'requirementExpiry') {
           aValue = new Date(aValue as string).getTime();
           bValue = new Date(bValue as string).getTime();
         }
@@ -171,6 +176,30 @@ const MyRequirements = () => {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
 
+  // Safely format a date (string or Date) without timezone shifts
+  // Prefer formatting date-only strings (yyyy-MM-dd) directly to dd-MM-yyyy
+  const formatDateSafe = (input: any) => {
+    if (!input) return '-';
+    try {
+      const str = String(input);
+      // If we have an ISO or date-like string, take the date part
+      const datePart = str.length >= 10 ? str.slice(0, 10) : str;
+      const parts = datePart.split('-');
+      if (parts.length === 3) {
+        const [y, m, d] = parts;
+        if (y.length === 4) {
+          return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
+        }
+      }
+      // Fallback to locale formatting
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) return d.toLocaleDateString();
+      return '-';
+    } catch {
+      return '-';
+    }
+  };
+
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -203,11 +232,16 @@ const MyRequirements = () => {
   const currentRequirements = filteredRequirements.slice(startIndex, endIndex);
 
   // Handle delete confirm
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteId !== null) {
-      deleteRequirement(deleteId.toString());
-      setDeleteId(null);
-      setDeleteOpen(false);
+      try {
+        await deleteRequirement(deleteId.toString());
+      } catch (e) {
+        console.error('Delete failed:', e);
+      } finally {
+        setDeleteId(null);
+        setDeleteOpen(false);
+      }
     }
   };
 
@@ -410,11 +444,11 @@ const MyRequirements = () => {
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => requestSort('lastModified')}
+                  onClick={() => requestSort('requirementExpiry')}
                 >
                   <div className="flex items-center">
-                    Last Updated
-                    {getSortIcon('lastModified')}
+                    Delivery Date
+                    {getSortIcon('requirementExpiry')}
                   </div>
                 </TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
@@ -466,7 +500,7 @@ const MyRequirements = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(requirement.lastModified).toLocaleDateString()}
+                      {formatDateSafe(requirement.requirementExpiry)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -596,10 +630,7 @@ const MyRequirements = () => {
                   </div> */}
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Calendar size={14} className="mr-1" />
-                    Expires:{" "}
-                    {new Date(
-                      requirement.requirementExpiry
-                    ).toLocaleDateString()}
+                    Expires: {formatDateSafe(requirement.requirementExpiry)}
                   </div>
                 </div>
                 <div className="pt-3 border-t border-border">

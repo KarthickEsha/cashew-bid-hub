@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 
 // Origin countries
 const origins = [
@@ -93,6 +94,7 @@ const PostRequirement = () => {
   const [quantityError, setQuantityError] = useState("");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [numberError, setNumberError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Format number with commas
   const formatNumberWithCommas = (value: string) => {
@@ -101,6 +103,21 @@ const PostRequirement = () => {
     // Add commas as thousands separators
     return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
+
+  // Determine if all required fields are filled and there are no blocking errors
+  const isFormValid = Boolean(
+    formData.grade &&
+    formData.quantity &&
+    formData.origin &&
+    formData.expectedPrice &&
+    formData.deliveryLocation &&
+    formData.city &&
+    formData.country &&
+    formData.deliveryDeadline &&
+    !priceError &&
+    !quantityError &&
+    !numberError
+  );
 
   // Validate if input contains only numbers and commas
   const isValidNumberInput = (value: string) => {
@@ -198,7 +215,7 @@ const PostRequirement = () => {
     return true;
   };
 
-  const handleSubmit = (isDraft = false) => {
+  const handleSubmit = async (isDraft = false) => {
     // Reset errors
     setQuantityError('');
     setNumberError('');
@@ -225,7 +242,7 @@ const PostRequirement = () => {
     // Prepare requirement data
     const requirementData = {
       grade: formData.grade,
-      quantity: formData.quantity,
+      requiredqty: formData.quantity,
       origin: formData.origin,
       expectedPrice: formData.expectedPrice,
       minSupplyQuantity: formData.minSupplyQuantity,
@@ -241,21 +258,67 @@ const PostRequirement = () => {
       customerName
     };
 
-    // Save to local storage
-    addRequirement(requirementData);
+    // Helper to strip commas and convert to numbers for API payload
+    const toNumber = (val: string) => {
+      const n = Number((val || '').toString().replace(/,/g, ''));
+      return isNaN(n) ? 0 : n;
+    };
 
-    // Show success message and redirect
     if (isDraft) {
+      // Save drafts locally only (no API call as per requirement)
+      addRequirement(requirementData);
       toast({
         title: t('postRequirement.title'),
         description: t('postRequirement.successDraft'),
       });
-    } else {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // Build API payload matching backend model (models.CreateRequirementRequest)
+      const payload = {
+        grade: formData.grade,
+        origin: formData.origin,
+        requiredqty: toNumber(formData.quantity),
+        minimumqty: toNumber(formData.minSupplyQuantity),
+        expectedprice: Number(toNumber(formData.expectedPrice)),
+        deliverydate: formData.deliveryDeadline ? formData.deliveryDeadline.toISOString() : null,
+        location: formData.deliveryLocation,
+        country: formData.country,
+        city: formData.city,
+        description: formData.specifications,
+        // Send new boolean to backend as per models.CreateRequirementRequest (json:"lowerbit")
+        lowerbit: formData.allowLowerBid,
+      };
+
+      // Call backend API (note: routes are grouped under /api)
+      const resp = await apiFetch(`/api/requirement/post-requirement`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      // Optionally save locally for UI consistency (using returned data if available)
+      addRequirement({
+        ...requirementData,
+        status: 'pending',
+        // If backend returns dates/ids, you can merge them here
+      });
+
       toast({
         title: t('postRequirement.title'),
-        description: t('postRequirement.successPosted'),
+        description: resp?.message,
       });
-      navigate('/my-requirements'); // Redirect to dashboard after successful submission
+      navigate('/my-requirements');
+    } catch (err: any) {
+      toast({
+        title: t('postRequirement.title'),
+        description: err?.message || 'Failed to post requirement. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -576,7 +639,7 @@ const PostRequirement = () => {
               <Save size={16} className="mr-2" />
               {t('postRequirement.saveDraft')}
             </Button>
-            <Button onClick={() => handleSubmit(false)} size="lg">
+            <Button onClick={() => handleSubmit(false)} size="lg" disabled={!isFormValid || isSubmitting}>
               <Send size={16} className="mr-2" />
               {t('postRequirement.postRequirementBtn')}
             </Button>
