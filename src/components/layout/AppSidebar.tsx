@@ -69,43 +69,48 @@ export function AppSidebar() {
     }
   }, [responses, profile?.productType]);
 
-  // Load marketplace stocks from localStorage first, then refresh from API
+  // Load marketplace stocks from localStorage (per type), then refresh from API with type
   useEffect(() => {
+    if (!currentProductType) return;
+    const cacheKey = `marketplace_stocks_${currentProductType}`;
     try {
-      const cached = JSON.parse(localStorage.getItem('marketplace_stocks') || '[]');
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || '[]');
       if (Array.isArray(cached)) setStocks(cached);
     } catch {}
 
     const fetchStocks = async () => {
       try {
-        const resp: any = await apiFetch('/api/stocks/get-all-stocks', { method: 'GET' });
+        const url = `/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}`;
+        const resp: any = await apiFetch(url, { method: 'GET' });
         const list: any[] = Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
         // Normalize minimal fields we need for counting
         const mapped = list.map((s: any) => {
           const availableqty = Number(s?.availableqty ?? 0);
-          const type = s?.type || 'RCN';
+          const rawType = String(s?.type ?? 'RCN');
+          const type = rawType.toLowerCase().startsWith('kern') ? 'Kernel' : 'RCN';
           const status = availableqty > 0 ? 'active' : 'out_of_stock';
           return { id: s?.id || s?._id, type, availableqty, status };
         });
         setStocks(mapped);
-        localStorage.setItem('marketplace_stocks', JSON.stringify(mapped));
+        localStorage.setItem(cacheKey, JSON.stringify(mapped));
       } catch {
         // ignore
       }
     };
     fetchStocks();
-  }, []);
+  }, [currentProductType]);
 
-  const activeProductsCount = stocks.filter(s => (s.status === 'active' || (s.availableqty ?? 0) > 0) && s.type === currentProductType).length;
+  const activeProductsCount = stocks.filter(
+    s => (s.status === 'active' || (s.availableqty ?? 0) > 0) && s.type === currentProductType
+  ).length;
   const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
+
   const mainNavItems: NavItem[] = [
     { path: "/", label: t('sidebar.mainNav.dashboard'), icon: Home },
     { path: "/marketplace", label: t('sidebar.mainNav.marketplace'), icon: Store, badge: activeProductsCount },
     { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail, badge: ordersCount }
 
   ];
-
-
 
   const myActivityItems: NavItem[] = [
     // { path: "/my-requests", label: t('sidebar.myActivity.myRequests'), icon: MessageSquare, badge: 0 },

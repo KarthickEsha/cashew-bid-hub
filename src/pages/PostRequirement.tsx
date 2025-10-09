@@ -103,6 +103,10 @@ const PostRequirement = () => {
     // Add commas as thousands separators
     return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
+  // Build an RFC3339 timestamp at UTC midnight for the selected date to avoid timezone shifts
+  const toUtcMidnightIso = (d: Date) =>
+    new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+
 
   // Determine if all required fields are filled and there are no blocking errors
   const isFormValid = Boolean(
@@ -284,7 +288,7 @@ const PostRequirement = () => {
         requiredqty: toNumber(formData.quantity),
         minimumqty: toNumber(formData.minSupplyQuantity),
         expectedprice: Number(toNumber(formData.expectedPrice)),
-        deliverydate: formData.deliveryDeadline ? formData.deliveryDeadline.toISOString() : null,
+        deliverydate: formData.deliveryDeadline ? toUtcMidnightIso(formData.deliveryDeadline) : null,
         location: formData.deliveryLocation,
         country: formData.country,
         city: formData.city,

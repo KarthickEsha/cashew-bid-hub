@@ -45,6 +45,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminSubscribers from "./pages/admin/AdminSubscribers";
 import AdminBuyerDetails from "./pages/admin/AdminBuyerDetails";
+import AuthBootstrap from "./components/AuthBootstrap";
 
 interface LayoutProps {
   children: ReactNode;
@@ -138,6 +139,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <AuthBootstrap />
             <AppContent />
           </BrowserRouter>
         </TooltipProvider>

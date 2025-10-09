@@ -329,19 +329,22 @@ const MerchantAddProduct = () => {
             if (isEditMode && editProductId) {
                 // Map to backend-required keys for update
                 const updateStockPayload = {
-                    Grade: currentProductType === 'Kernel' ? formData.grade : '',
-                    NetCount: formData.nutCount || '',
-                    YearOfCrop: formData.yearOfCrop || new Date().getFullYear().toString(),
-                    OutTurn: formData.outTurn || '',
-                    Minimumqty: parseFloat(formData.minOrderQty) || 1,
-                    SellingPrice: parseFloat(formData.price) || 0,
-                    Description: formData.description || '',
-                    Type: currentProductType,
-                    Origin: formData.origin || '',
-                    Location: formData.location,
-                    AvailableQty: parseFloat(formData.availableQty) || 0,
-                    NegotiatePrice: formData.allowBuyerOffers || false,
-                    Expiredate: new Date(expireDate).toISOString()
+                    // Keep payload consistent with create-stock (snake_case, proper types)
+                    grade: currentProductType === 'Kernel' ? formData.grade : "",
+
+                    // RCN-only fields mapped and typed
+                    netcount: currentProductType === 'RCN' ? parseInt(formData.nutCount || '0', 10) : 0,
+                    outturn: currentProductType === 'RCN' ? parseInt(formData.outTurn || '0', 10) : 0,
+                    yearofcrop: currentProductType === 'RCN' ? parseInt(formData.yearOfCrop || '0', 10) : 0,
+                    origin: formData.origin || '',
+                    availableqty: parseInt(formData.availableQty || '0', 10),
+                    minimumqty: parseInt(formData.minOrderQty || '1', 10),
+                    sellingprice: parseFloat(formData.price || '0'),
+                    location: formData.location,
+                    expiredate: new Date(expireDate).toISOString(),
+                    description: formData.description || '',
+                    negotiateprice: !!formData.allowBuyerOffers,
+                    type: currentProductType,
                 };
 
                 await apiFetch(`/api/stocks/update-stock/${editProductId}`, {

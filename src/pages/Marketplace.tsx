@@ -50,8 +50,8 @@ const Marketplace = () => {
     const [totalValue, setTotalValue] = useState<number>(0);
     const [currentProductType, setCurrentProductType] = useState<ProductType>();
     const { profile } = useProfile();
-    const [showFilters, setShowFilters] = useState(false); // 🔹 state for filter toggle
-    const [viewMode, setViewMode] = useState<'card' | 'list'>('card'); // 🔹 state for view toggle
+    const [showFilters, setShowFilters] = useState(false);
+    const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
     const [sortConfig, setSortConfig] = useState<{
         key: string;
         direction: 'asc' | 'desc';
@@ -60,26 +60,31 @@ const Marketplace = () => {
     useEffect(() => {
         setSortConfig({ key: 'expiry', direction: 'desc' });
     }, []);
+
     useEffect(() => {
-        if (profile?.productType && profile.productType !== "Both") {
-          setCurrentProductType(profile.productType);
+        if (profile?.productType && profile.productType !== 'Both') {
+            setCurrentProductType(profile.productType);
         } else {
-          setCurrentProductType("RCN")
+            setCurrentProductType('RCN');
         }
-      }, [profile?.productType]);
+    }, [profile?.productType]);
+
     // Backend stocks mapped to marketplace display items
     const [products, setProducts] = useState<any[]>([]);
 
     useEffect(() => {
+        if (!currentProductType) return;
         const loadStocks = async () => {
             try {
-                const resp: any = await apiFetch(`/api/stocks/get-all-stocks`, { method: "GET" });
+                const resp: any = await apiFetch(`/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}`, { method: "GET" });
                 const list: any[] = Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
                 const mapped = list.map((s: any) => {
                     const price = Number(s?.sellingprice ?? 0);
                     const availableqty = Number(s?.availableqty ?? 0);
                     const location = s?.location || s?.origin || '';
                     const createdAt = s?.createdAt || s?.createdat || new Date().toISOString();
+                    const rawType = String(s?.type ?? 'RCN');
+                    const normalizedType = rawType.toLowerCase().startsWith('kern') ? 'Kernel' : 'RCN';
                     return {
                         id: String(s?.id || s?._id || Math.random().toString(36).slice(2)),
                         merchantName: s?.merchantName || profile?.companyName || "Your Company Name",
@@ -92,7 +97,7 @@ const Marketplace = () => {
                         pricePerKg: `$${price}`,
                         pricingType: s?.pricingType || "fixed",
                         expiry: s?.expiredate ? String(s?.expiredate).slice(0, 10) : '',
-                        type: s?.type || 'RCN',
+                        type: normalizedType,
                         createdAt,
                         rating: 4.5,
                         verified: true,
@@ -107,7 +112,7 @@ const Marketplace = () => {
             }
         };
         loadStocks();
-    }, []);
+    }, [currentProductType]);
 
     const [filteredProducts, setFilteredProducts] = useState(products);
 
@@ -115,7 +120,7 @@ const Marketplace = () => {
     const [pageSize, setPageSize] = useState(6);
     const itemsToShow = filteredProducts.filter((p) => p.type === currentProductType).sort((a, b) => {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
+    });
     const totalPages = Math.ceil(itemsToShow.length / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const currentProducts = itemsToShow.slice(startIndex, startIndex + pageSize);
@@ -164,23 +169,23 @@ const Marketplace = () => {
         setCurrentPage(1);
     };
 
-  // Default to recent-first ordering whenever products change
-  useEffect(() => {
-    const sorted = [...products].sort((a: any, b: any) => {
-      const aDate = new Date(a.createdAt || 0).getTime();
-      const bDate = new Date(b.createdAt || 0).getTime();
-      return bDate - aDate; // desc
-    });
-    setFilteredProducts(sorted);
-    setCurrentPage(1);
-  }, [products]);
+    // Default to recent-first ordering whenever products change
+    useEffect(() => {
+        const sorted = [...products].sort((a: any, b: any) => {
+            const aDate = new Date(a.createdAt || 0).getTime();
+            const bDate = new Date(b.createdAt || 0).getTime();
+            return bDate - aDate; // desc
+        });
+        setFilteredProducts(sorted);
+        setCurrentPage(1);
+    }, [products]);
 
-  const formatWithCommas = (val: any) => {
-    if (val === null || val === undefined) return "0";
-    const num = typeof val === 'number' ? val : parseInt(String(val).replace(/,/g, ''), 10);
-    if (isNaN(num)) return String(val);
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
+    const formatWithCommas = (val: any) => {
+        if (val === null || val === undefined) return "0";
+        const num = typeof val === 'number' ? val : parseInt(String(val).replace(/,/g, ''), 10);
+        if (isNaN(num)) return String(val);
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
     const getSortIcon = (key: string) => {
         if (!sortConfig || sortConfig.key !== key) {
             return <ArrowUpDown size={16} className="text-muted-foreground" />;
@@ -363,7 +368,6 @@ const Marketplace = () => {
         setShowQuickOrderDialog(false);
         setSelectedProduct(null);
     };
-
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Header */}
@@ -376,6 +380,16 @@ const Marketplace = () => {
                 </div>
                 {/* 🔹 Filter and View Toggle Buttons */}
                 <div className="flex items-center space-x-2">
+                    {/* Product Type Selector */}
+                    <Select value={currentProductType} onValueChange={(v) => setCurrentProductType(v as ProductType)}>
+                        <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Product Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="RCN">RCN</SelectItem>
+                            <SelectItem value="Kernel">Kernel</SelectItem>
+                        </SelectContent>
+                    </Select>
                     {/* View Toggle Button */}
                     <div className="flex border rounded-md">
                         <Button
@@ -692,7 +706,7 @@ const Marketplace = () => {
                                                 {formatWithCommas(product.quantity)} {product.quantityUnit}
                                             </TableCell>
                                             <TableCell className="font-semibold text-primary">
-                                               ₹{Number(String(product.pricePerKg).replace('$', '')).toLocaleString("en-IN")}/kg
+                                                ₹{Number(String(product.pricePerKg).replace('$', '')).toLocaleString("en-IN")}/kg
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
                                                 {new Date(product.expiry).toLocaleDateString()}

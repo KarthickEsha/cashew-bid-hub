@@ -22,17 +22,34 @@ import { useResponses } from "@/hooks/useResponses";
 import { useUser } from "@clerk/clerk-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 
 const mockEnquiries = [];
 
 const MerchantEnquiries = () => {
-  const { getRequirementsAsEnquiries, updateRequirementStatus, requirements } = useRequirements();
+  const { getRequirementsAsEnquiries, updateRequirementStatus, requirements, fetchAllRequirements } = useRequirements();
   const { addResponse, getResponsesByRequirementId, updateResponseStatus } = useResponses();
   const { user } = useUser();
   const { profile } = useProfile();
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+
+  // Load enquiries from API on first render
+  useEffect(() => {
+    (async () => {
+      try {
+        await fetchAllRequirements();
+      } catch (e) {
+        console.error('Failed to load enquiries from API:', e);
+        toast({
+          title: 'Failed to load enquiries',
+          description: 'Could not fetch requirements. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    })();
+  }, []);
 
   // Refresh enquiries when requirements change
   useEffect(() => {
@@ -94,6 +111,56 @@ const MerchantEnquiries = () => {
     const expiryDate = new Date(enquiry.deliveryDeadline);
     const threeDaysFromNow = new Date(today.getTime() + (3 * 24 * 60 * 60 * 1000));
     return expiryDate <= threeDaysFromNow && expiryDate >= today;
+  };
+
+  // Map raw API requirement to the enquiry shape expected by the modal/table
+  const mapApiRequirementToEnquiry = (item: any) => {
+    const id = Number(item.id ?? item._id ?? 0);
+    const createdAt = item.createdAt || item.created_at || new Date().toISOString();
+    const updatedAt = item.updatedAt || item.updated_at || createdAt;
+
+    const grade = item.grade || item.productGrade || item.product?.grade || 'W320';
+    const quantity = String(item.requiredqty ?? item.qty ?? item.totalQuantity ?? '0');
+    const origin = (item.origin || item.preferredOrigin || item.source || 'any').toString().toLowerCase();
+    const expectedPrice = Number(item.expectedprice ?? item.price ?? item.expected_price ?? 0);
+    const deliveryLocation = item.deliveryLocation || item.location || '';
+    const city = item.city || '';
+    const state = item.state || '';
+    const country = item.country || '';
+    const deliveryDeadline = item.deliverydate || item.requirementExpiry || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const status = (item.status || 'active');
+    const specifications = item.specifications || item.specs || '';
+    const allowLowerBid = Boolean(item.allowLowerBid ?? item.allow_lower_bid ?? false);
+    const minSupplyQuantity = String(item.minimumqty ?? item.min_qty ?? '0');
+    const customerName = item.customerName || item.buyerName || 'Anonymous Buyer';
+    const productName = item.productName || `${grade} Cashews`;
+    const fixedPrice = Number(item.fixedPrice ?? 0);
+
+    return {
+      apiId: String(item.id ?? item._id ?? ''),
+      id: isNaN(id) ? 0 : id,
+      customerName,
+      productName,
+      grade,
+      quantity,
+      origin,
+      expectedPrice,
+      minSupplyQuantity,
+      deliveryLocation,
+      city,
+      state,
+      country,
+      deliveryDeadline,
+      specifications,
+      allowLowerBid,
+      message: item.message || '',
+      date: (createdAt || '').split('T')[0],
+      status,
+      fixedPrice,
+      isDraft: Boolean(item.isDraft ?? status === 'draft'),
+      createdAt,
+      lastModified: updatedAt,
+    } as any;
   };
 
   // Sort enquiries
@@ -356,69 +423,33 @@ const sortEnquiries = (enqs: any[]) => {
 
   const handleViewClick = async (enquiry: any) => {
     console.group('=== handleViewClick ===');
-    console.log('Initial enquiry:', {
-      id: enquiry.id,
-      currentStatus: enquiry.status,
-      hasResponses: getResponsesByRequirementId(enquiry.id).length > 0
-    });
+    console.log('Initial enquiry (from row):', { id: enquiry.id, status: enquiry.status });
+    try {
+      const idParam = enquiry.apiId ?? enquiry.id;
+      // Fetch fresh requirement details from API (do not use local storage/store for the detail view)
+      const data = await apiFetch(`/api/requirement/get-requirement/${idParam}`);
+      // Support possible API envelopes {data: {...}} or raw object
+      const raw = (data && typeof data === 'object' && 'data' in data) ? (data as any).data : data;
+      const mapped = mapApiRequirementToEnquiry(raw);
 
-    // If status is 'active', update it to 'responded' in the backend
-    if (enquiry.status === 'active') {
-      try {
-        console.log('1. Starting status update from active to responded');
-
-        // First, update in the backend
-        console.log('2. Calling updateRequirementStatus with:', {
-          id: enquiry.id,
-          status: 'viewed'
-        });
-
-        await updateRequirementStatus(enquiry.id.toString(), 'viewed');
-        console.log('3. Backend update completed');
-
-        // Get the latest data from the store
-        const allRequirements = getRequirementsAsEnquiries();
-        console.log('4. Latest requirements from store:', allRequirements);
-
-        // Find the updated requirement
-        const updatedRequirement = allRequirements.find(req => req.id === enquiry.id);
-        console.log('5. Updated requirement from store:', updatedRequirement);
-
-        if (updatedRequirement) {
-          // Create the updated enquiry with the latest data
-          const updatedEnquiry = {
-            ...enquiry,
-            status: 'viewed',
-            lastModified: new Date().toISOString()
-          };
-
-          console.log('6. Updating local state with:', updatedEnquiry);
-
-          // Update the local state with the latest data
-          setEnquiries(prevEnquiries =>
-            prevEnquiries.map(e =>
-              e.id === enquiry.id ? updatedEnquiry : e
-            )
-          );
-
-          setSelectedEnquiry(updatedEnquiry);
-
-          // Also update the requirement in the store to ensure consistency
-          const updatedRequirements = allRequirements.map(req =>
-            req.id === enquiry.id ? { ...req, status: 'viewed' } : req
-          );
-
-          console.log('7. Updated all requirements:', updatedRequirements);
-        }
-      } catch (error) {
-        console.error('Error updating enquiry status:', error);
-        // If update fails, revert the local state
-        setSelectedEnquiry({ ...enquiry, status: 'active' });
+      // Optionally mark as viewed in the local store for status display
+      if (enquiry.status === 'active') {
+        try { await updateRequirementStatus(String(idParam), 'viewed'); } catch (_) {}
       }
-    } else {
-      setSelectedEnquiry(enquiry);
+
+      // Patch into modal state
+      setSelectedEnquiry(mapped);
+      setResponseModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching requirement detail:', error);
+      toast({
+        title: 'Unable to load details',
+        description: 'Failed to fetch requirement details. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      console.groupEnd();
     }
-    setResponseModalOpen(true);
   };
 
   const handleResponsesClick = (enquiry: any) => {
@@ -590,37 +621,58 @@ const sortEnquiries = (enqs: any[]) => {
     }
 
     try {
-      // Prepare response data
+      // Prepare and send to backend when action is 'quotes'
       if (actionType === 'quotes') {
-        // Get merchant details from profile or user
-        const merchantName = profile?.name || user?.fullName || 'Merchant';
-        const merchantLocation = profile?.city || 'Location not specified';
+        const requirementParam = String(selectedEnquiry.apiId ?? selectedEnquiry.id);
 
-        const responseData = {
-          requirementId: selectedEnquiry.id.toString(),
-          merchantId: user?.id || 'unknown',
-          merchantName: merchantName,
-          merchantLocation: merchantLocation,
-          price: merchantPrice,
-          responseDate: new Date().toISOString(),
-          status: 'new' as const,
-          grade: selectedEnquiry.grade || '',
-          quantity: availableQuantity,
-          origin: selectedEnquiry.origin || '',
-          certifications: [],
-          deliveryTime: 'TBD',
-          contact: '',
-          message: remarks,
-          remarks: remarks,
-          productName: selectedEnquiry.productName || '', // <-- Added this line
-          requirementTitle: selectedEnquiry.productName,
-          requirementQuantity: selectedEnquiry.quantity,
-          requirementGrade: selectedEnquiry.grade,
-          requirementOrigin: selectedEnquiry.origin,
-        };
+        // Clean numeric inputs
+        const qty = Number(String(availableQuantity).replace(/[^0-9.]/g, ''));
+        const price = Number(String(merchantPrice).replace(/[^0-9.]/g, ''));
 
-        // Add response to the system
-        addResponse(responseData);
+        try {
+          await apiFetch(`/api/quotes/send/${requirementParam}`, {
+            method: 'POST',
+            body: JSON.stringify({
+              supplyQtyKg: Math.round(qty),
+              priceINR: price,
+              remarks: remarks || '',
+            }) as any,
+          });
+
+          toast({
+            title: 'Quote sent',
+            description: 'Your quote has been submitted successfully.',
+          });
+        } catch (apiErr) {
+          console.error('Send Quote API failed, falling back to local store:', apiErr);
+
+          // Fallback to local store to preserve UX even if API is down
+          const merchantName = profile?.name || user?.fullName || 'Merchant';
+          const merchantLocation = profile?.city || 'Location not specified';
+          addResponse({
+            requirementId: selectedEnquiry.id.toString(),
+            merchantId: user?.id || 'unknown',
+            merchantName,
+            merchantLocation,
+            price: merchantPrice,
+            responseDate: new Date().toISOString(),
+            status: 'new',
+            grade: selectedEnquiry.grade || '',
+            quantity: availableQuantity,
+            origin: selectedEnquiry.origin || '',
+            certifications: [],
+            deliveryTime: 'TBD',
+            contact: '',
+            message: remarks,
+            remarks: remarks,
+            productName: selectedEnquiry.productName || '',
+          } as any);
+
+          toast({
+            title: 'Saved locally',
+            description: 'Quote saved locally due to network/server issue.',
+          });
+        }
       }
       // Determine the new status based on action
       const newStatus = actionType === 'selected' ? 'selected' :

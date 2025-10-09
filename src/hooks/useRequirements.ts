@@ -415,11 +415,12 @@ export const useRequirements = create<RequirementsState>()(
             }
           }
           
-          // Ensure ID is a number for compatibility
+          // Ensure ID is a number for compatibility (UI), but also preserve backend ID for API calls
           const enquiryId = typeof req.id === 'string' ? parseInt(req.id, 10) : req.id;
-          
+
           return {
-            id: isNaN(enquiryId) ? 0 : enquiryId,
+            apiId: req.id,
+            id: isNaN(enquiryId as any) ? req.id : enquiryId,
             customerName: req.customerName || 'Anonymous Buyer',
             productName: req.productName || `${req.grade || 'Cashew'} Product`,
             quantity: req.quantity || '0',

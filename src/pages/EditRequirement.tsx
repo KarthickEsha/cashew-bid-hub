@@ -46,6 +46,18 @@ const origins = [
   { id: "any", name: "Any Origin" }
 ];
 
+// Countries list (add more as needed)
+const countries = [
+  { id: "india", name: "India" },
+  { id: "united-states", name: "United States" },
+  { id: "vietnam", name: "Vietnam" },
+  { id: "ghana", name: "Ghana" },
+  { id: "tanzania", name: "Tanzania" },
+  { id: "united-arab-emirates", name: "United Arab Emirates" },
+  { id: "singapore", name: "Singapore" },
+  { id: "united-kingdom", name: "United Kingdom" },
+];
+
 // Product-based fixed prices by origin (₹ per kg)
 const productPrices = {
   W180: {
@@ -212,38 +224,49 @@ const EditRequirement = () => {
       }
     }
 
-    // Get customer name from profile or user data
-    const customerName = profile?.name || user?.fullName || 'Anonymous Buyer';
-
-    // Prepare requirement data
-    const requirementData = {
+    // Backend payload
+    const payload = {
       grade: formData.grade,
-      quantity: quantity,
       origin: formData.origin,
-      expectedPrice: parseFloat(expectedPrice) || 0,
-      minSupplyQuantity: minSupplyQuantity,
-      deliveryLocation: formData.deliveryLocation,
-      city: formData.city,
+      requiredqty: parseFloat(quantity) || 0,
+      minimumqty: parseFloat(minSupplyQuantity) || 0,
+      expectedprice: parseFloat(expectedPrice) || 0,
+      deliverydate: formData.deliveryDeadline ? formData.deliveryDeadline.toISOString() : null,
+      location: formData.deliveryLocation,
       country: formData.country,
-      deliveryDeadline: formData.deliveryDeadline ? format(formData.deliveryDeadline, 'yyyy-MM-dd') : '',
-      specifications: formData.description,
-      allowLowerBid: formData.allowLowerBid,
-      date: format(new Date(), 'yyyy-MM-dd'),
-      status: 'active' as const,
-      isDraft,
-      customerName
+      city: formData.city,
+      description: formData.description,
+      lowerbit: formData.allowLowerBid,
     };
 
     try {
-      // Call backend update API
+      // Call backend update API with correct payload
       await apiFetch(`/api/requirement/update-requirement/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(requirementData),
+        body: JSON.stringify(payload),
       });
 
       // Optionally sync local store if needed elsewhere
       try {
-        updateRequirement(id, requirementData as any);
+        const requirementForStore = {
+          grade: formData.grade,
+          origin: formData.origin,
+          quantity: String(payload.requiredqty || ''),
+          minSupplyQuantity: String(payload.minimumqty || ''),
+          expectedPrice: payload.expectedprice || 0,
+          deliveryDeadline: formData.deliveryDeadline
+            ? formData.deliveryDeadline.toISOString()
+            : '',
+          deliveryLocation: formData.deliveryLocation,
+          country: formData.country,
+          city: formData.city,
+          specifications: formData.description,
+          allowLowerBid: formData.allowLowerBid,
+          isDraft,
+          status: isDraft ? 'draft' : undefined,
+        } as any;
+
+        updateRequirement(id, requirementForStore);
       } catch (_) { /* ignore */ }
 
       // Show success message and redirect
@@ -481,20 +504,27 @@ const EditRequirement = () => {
 
                 <div>
                   <Label htmlFor="country">Country *</Label>
-                  <Input
-                    id="country"
-                    placeholder="e.g., USA"
+                  <Select
                     value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    className="mt-1"
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, country: value })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((c) => (
+                        <SelectItem key={c.id} value={c.name}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
                   <Label htmlFor="city">City *</Label>
                   <Input
                     id="city"
-                    placeholder="e.g., Los Angeles"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     className="mt-1"
