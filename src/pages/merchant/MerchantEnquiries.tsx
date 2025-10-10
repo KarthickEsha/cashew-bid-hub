@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -8,21 +9,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Eye, MessageSquare, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, Package } from "lucide-react";
 import ChatModal from "@/components/ChatModal";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
 import { useUser } from "@clerk/clerk-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const mockEnquiries = [];
 
@@ -66,9 +66,7 @@ const MerchantEnquiries = () => {
   const [tempStatusFilter, setTempStatusFilter] = useState(''); // keep '' so placeholder shows
 
   const [chatModalOpen, setChatModalOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [responseModalOpen, setResponseModalOpen] = useState(false);
-  const [responseListModalOpen, setResponseListModalOpen] = useState(false);
+  const navigate = useNavigate();
   const [selectedEnquiry, setSelectedEnquiry] = useState<any>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortField, setSortField] = useState<string>('');
@@ -81,6 +79,8 @@ const MerchantEnquiries = () => {
   const [actionType, setActionType] = useState<'skip' | 'selected' | 'quotes'>('quotes');
   const [quantityError, setQuantityError] = useState('');
   const [error, setError] = useState("");
+  const [responseModalOpen, setResponseModalOpen] = useState(false);
+  const [responseListModalOpen, setResponseListModalOpen] = useState(false);
 
   // Map UI status values to the underlying enquiry statuses in your data
   const statusMap: Record<string, string[]> = {
@@ -422,40 +422,16 @@ const sortEnquiries = (enqs: any[]) => {
   const paginatedEnquiries = sortedEnquiries.slice(startIndex, endIndex);
 
   const handleViewClick = async (enquiry: any) => {
-    console.group('=== handleViewClick ===');
-    console.log('Initial enquiry (from row):', { id: enquiry.id, status: enquiry.status });
-    try {
-      const idParam = enquiry.apiId ?? enquiry.id;
-      // Fetch fresh requirement details from API (do not use local storage/store for the detail view)
-      const data = await apiFetch(`/api/requirement/get-requirement/${idParam}`);
-      // Support possible API envelopes {data: {...}} or raw object
-      const raw = (data && typeof data === 'object' && 'data' in data) ? (data as any).data : data;
-      const mapped = mapApiRequirementToEnquiry(raw);
-
-      // Optionally mark as viewed in the local store for status display
-      if (enquiry.status === 'active') {
-        try { await updateRequirementStatus(String(idParam), 'viewed'); } catch (_) {}
-      }
-
-      // Patch into modal state
-      setSelectedEnquiry(mapped);
-      setResponseModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching requirement detail:', error);
-      toast({
-        title: 'Unable to load details',
-        description: 'Failed to fetch requirement details. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      console.groupEnd();
+    const idParam = enquiry.apiId ?? enquiry.id;
+    // Mark as viewed in background (non-blocking)
+    if (enquiry.status === 'active') {
+      try { await updateRequirementStatus(String(idParam), 'viewed'); } catch (_) {}
     }
+    // Navigate to enquiry details page
+    navigate(`/merchant/enquiries/${idParam}`);
   };
 
-  const handleResponsesClick = (enquiry: any) => {
-    setSelectedEnquiry(enquiry);
-    setResponseListModalOpen(true);
-  };
+  // Removed: responses modal. Both actions navigate to details page now.
 
   const handleChatClick = (enquiry: any) => {
     setSelectedEnquiry(enquiry);
@@ -817,7 +793,7 @@ const sortEnquiries = (enqs: any[]) => {
           });
 
           // Close any open modals
-          setViewModalOpen(false);
+          setResponseListModalOpen(false);
           setResponseModalOpen(false);
           return; // Exit early since we've handled the skip
         }
@@ -1036,7 +1012,7 @@ const sortEnquiries = (enqs: any[]) => {
                       <Button variant="ghost" size="sm" onClick={() => handleViewClick(enquiry)} title="View Details">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleChatClick(enquiry)} title="View Responses">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(enquiry)} title="View Responses">
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     </div>

@@ -22,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import MerchantProducts from "./pages/merchant/MerchantProducts";
 import MerchantAddProduct from "./pages/merchant/MerchantAddProduct";
 import MerchantEnquiries from "./pages/merchant/MerchantEnquiries";
+import EnquiryDetails from "./pages/merchant/EnquiryDetails";
 import MerchantOrders from "./pages/merchant/MerchantOrders";
 import MerchantRequirements from "./pages/merchant/MerchantRequirements";
 import MerchantConfirmedOrders from "./pages/merchant/MerchantConfirmedOrders";
@@ -117,6 +118,7 @@ const AppContent = () => {
         <Route path="/merchant/products" element={<MerchantProducts />} />
         <Route path="/merchant/add-product" element={<MerchantAddProduct />} />
         <Route path="/merchant/enquiries" element={<MerchantEnquiries />} />
+        <Route path="/merchant/enquiries/:id" element={<EnquiryDetails />} />
         <Route path="/merchant/confirmed-orders" element={<MerchantConfirmedOrders />} />
         <Route path="/merchant/rejected-orders" element={<MerchantRejectedOrders />} />
         <Route path="/merchant/buyer-response" element={<MerchantOrders />} />

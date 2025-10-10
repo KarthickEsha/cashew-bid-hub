@@ -40,8 +40,8 @@ const RequirementDetails = () => {
         deleteResponse
     } = useResponses();
 
-    // State for managing responses
-    const [responses, setResponses] = useState(getResponsesByRequirementId(id || ''));
+    // State for managing responses (fetched from backend quotes endpoint)
+    const [responses, setResponses] = useState<any[]>([]);
 
     // Requirement state fetched from API
     const [requirement, setRequirement] = useState<any | null>(null);
@@ -55,24 +55,28 @@ const RequirementDetails = () => {
             setLoading(true);
             setError(null);
             try {
-                const data: any = await apiFetch(`/api/requirement/get-requirement/${id}`);
-                // Normalize payload shape
-                const item = Array.isArray(data) ? data[0] : (data?.data ?? data);
-                if (!item) throw new Error('Requirement not found');
+                // Fetch combined requirement + quotes
+                const data: any = await apiFetch(`/api/quotes/with-requirement/${id}`);
+                const root = data?.data ?? data;
+                if (!root) throw new Error('Requirement not found');
 
-                const nid = String(item.id ?? item._id ?? id);
-                const grade = item.grade || item.productGrade || item.product?.grade || 'W320';
-                const quantity = String(item.requiredqty ?? item.qty ?? item.totalQuantity ?? item.quantity ?? '0');
-                const origin = (item.origin || item.preferredOrigin || item.source || 'any').toString();
-                const expectedPrice = Number(item.expectedprice ?? item.price ?? item.expected_price ?? item.expectedPrice ?? 0);
-                const deliveryLocation = item.deliveryLocation || item.location || '';
-                const deliveryDeadline = item.deliveryDeadline || item.deliverydate || item.requirementExpiry || '';
-                const status = (item.status || 'active').toString();
-                const createdAt = item.createdAt || item.created_at || new Date().toISOString();
+                const item = root.requirement ?? root.Requirement ?? root.req ?? root.Req ?? root;
+                const quotes = (root.quotes ?? root.Quotes ?? []) as any[];
+
+                // Normalize requirement shape
+                const nid = String(item?.id ?? item?._id ?? item?.ID ?? id);
+                const grade = item?.grade || item?.productGrade || item?.product?.grade || 'W320';
+                const quantity = String(item?.requiredqty ?? item?.qty ?? item?.totalQuantity ?? item?.quantity ?? '0');
+                const origin = (item?.origin || item?.preferredOrigin || item?.source || 'any')?.toString?.() ?? 'any';
+                const expectedPrice = Number(item?.expectedprice ?? item?.price ?? item?.expected_price ?? item?.expectedPrice ?? 0);
+                const deliveryLocation = item?.deliveryLocation || item?.location || '';
+                const deliveryDeadline = item?.deliveryDeadline || item?.deliverydate || item?.requirementExpiry || '';
+                const status = (item?.status || 'active').toString();
+                const createdAt = item?.createdAt || item?.created_at || new Date().toISOString();
 
                 const normalized = {
                     id: nid,
-                    title: item.title || `${quantity} of ${grade} Cashews`,
+                    title: item?.title || `${quantity} of ${grade} Cashews`,
                     grade,
                     quantity,
                     preferredOrigin: origin,
@@ -82,10 +86,39 @@ const RequirementDetails = () => {
                     deliveryDeadline,
                     status,
                     createdDate: createdAt,
-                    lastModified: item.updatedAt || item.updated_at || createdAt,
+                    lastModified: item?.updatedAt || item?.updated_at || createdAt,
                 };
 
-                if (mounted) setRequirement(normalized);
+                // Map quotes to UI responses structure
+                const mappedResponses = (quotes || []).map((q: any) => {
+                    const rid = String(q?.id ?? q?._id ?? q?.ID ?? q?.quoteId ?? '');
+                    const supplyQty = q?.supplyQtyKg ?? q?.SupplyQtyKg ?? q?.supply_qty ?? q?.quantity ?? '';
+                    const priceINR = q?.priceINR ?? q?.PriceINR ?? q?.price ?? '';
+                    const remarks = q?.remarks ?? q?.Remarks ?? '';
+                    const created = q?.createdAt ?? q?.CreatedAt ?? new Date().toISOString();
+                    const merchantId = q?.merchantId ?? q?.MerchantID ?? q?.merchantID ?? '';
+                    return {
+                        id: rid,
+                        merchantId,
+                        merchantName: q?.merchantName || merchantId || 'Merchant',
+                        merchantLocation: q?.merchantLocation || '-',
+                        price: priceINR ? `₹${Number(priceINR).toLocaleString()}/kg` : '',
+                        quantity: supplyQty ? `${supplyQty} kg` : '',
+                        origin: q?.origin || '',
+                        grade: q?.grade || '',
+                        deliveryTime: q?.deliveryTime || '',
+                        contact: q?.contact || '',
+                        message: remarks,
+                        certifications: q?.certifications || [],
+                        responseDate: created,
+                        status: (q?.status || 'new').toString(),
+                    };
+                });
+
+                if (mounted) {
+                    setRequirement(normalized);
+                    setResponses(mappedResponses);
+                }
             } catch (e: any) {
                 console.error('Failed to fetch requirement:', e);
                 if (mounted) setError(e?.message || 'Failed to load requirement');
@@ -226,6 +259,13 @@ const RequirementDetails = () => {
         }
     };
 
+    // Badge colors for quote/response statuses
+    const getQuoteBadgeClasses = (status: string) => {
+        if (status === 'Confirmed') return 'bg-green-100 text-green-800';
+        if (status === 'Rejected') return 'bg-red-100 text-red-800';
+        return 'bg-gray-100 text-gray-800';
+    };
+
     // Place Order functionality
     const handlePlaceOrder = (response: any) => {
         const order = {
@@ -259,23 +299,70 @@ const RequirementDetails = () => {
     const handleResponseClick = (response: any) => {
         setSelectedResponse({
             ...response,
-            status: response.status || 'new',
+            status: '',
             remarks: response.remarks || ''
         });
         setShowResponseDetail(true);
     };
 
     // Handle status update for response
-    const handleStatusUpdate = (
+    const handleStatusUpdate = async (
         responseId: string,
-        status: 'new' | 'viewed' | 'accepted' | 'rejected',
+        status: string,
         remarks: string = ''
     ) => {
-        // 1) Update response status in your store/backend
-        updateResponseStatus(responseId, status, remarks);
+        // Normalize to backend allowed values: "Confirmed" | "Rejected"
+        const backendStatus = status === 'accepted' ? 'Confirmed' : status === 'rejected' ? 'Rejected' : status;
 
-        // 2) If accepted, reduce requirement quantity and close when zero
-        if (requirement && status === 'accepted') {
+        try {
+            // Call backend to persist status
+            const res: any = await apiFetch(`/api/quotes/${responseId}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: backendStatus })
+            });
+
+            const updated = res?.data ?? res;
+
+            // Update local responses UI list with returned status
+            const returnedStatus: string = String(updated?.status ?? backendStatus);
+            setResponses(prev =>
+                prev.map(r =>
+                    r.id === responseId
+                        ? { ...r, status: returnedStatus, ...(remarks ? { remarks } : {}) }
+                        : r
+                )
+            );
+
+            // Update selected response UI if open
+            if (selectedResponse?.id === responseId) {
+                setSelectedResponse(prev => ({
+                    ...prev!,
+                    status: returnedStatus,
+                    ...(remarks ? { remarks } : {}),
+                }));
+            }
+
+            // Also update local store for any dependent flows (orders etc.)
+            // Map back to local store's accepted/rejected if needed
+            const localStatus = returnedStatus === 'Confirmed' ? 'accepted' : returnedStatus === 'Rejected' ? 'rejected' : 'viewed';
+            updateResponseStatus(responseId, localStatus as any, remarks);
+
+            toast({
+                title: 'Status Updated',
+                description: `Response status changed to ${returnedStatus}`,
+            });
+        } catch (e: any) {
+            console.error('Failed to update quote status', e);
+            toast({
+                title: 'Error',
+                description: e?.message || 'Failed to update response status',
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        // If confirmed, optionally update requirement quantity and status
+        if (requirement && (status === 'accepted' || backendStatus === 'Confirmed')) {
             const resp = responses.find(r => r.id === responseId);
             const currentQty = Number(String(requirement.quantity).toString().replace(/[^0-9.]/g, '')) || 0;
             const acceptedQty = Number(String(resp?.quantity ?? '0').toString().replace(/[^0-9.]/g, '')) || 0;
@@ -300,32 +387,6 @@ const RequirementDetails = () => {
                 }
             }
         }
-
-        // 3) Normalize type
-        const normalizedStatus = status as 'new' | 'viewed' | 'accepted' | 'rejected';
-
-        // 4) Update local responses UI list
-        setResponses(prev =>
-            prev.map(r =>
-                r.id === responseId
-                    ? { ...r, status: normalizedStatus, ...(remarks ? { remarks } : {}) }
-                    : r
-            )
-        );
-
-        // 5) Update selected response UI if open
-        if (selectedResponse?.id === responseId) {
-            setSelectedResponse(prev => ({
-                ...prev!,
-                status,
-                ...(remarks ? { remarks } : {}),
-            }));
-        }
-
-        toast({
-            title: 'Status Updated',
-            description: `Response status changed to ${status}`,
-        });
         setShowResponseDetail(false);
     };
 
@@ -466,21 +527,18 @@ const RequirementDetails = () => {
                 {/* Sidebar - Responses */}
                 <div className="space-y-6">
                     {/* All Responses */}
-                    <Card className="h-full flex flex-col">
+                    <Card className="h-[486px] flex flex-col">
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center">
                                 <MessageSquare size={18} className="mr-2" />
                                 All Responses ({responses.length})
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3 max-h-[45rem] overflow-y-auto pr-2">
-                                {responses.length === 0 ? (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        No responses yet. Merchants will see your requirement and can respond with their offers.
-                                    </div>
-                                ) : (
-                                    responses.map((response) => (
+                        <CardContent className="flex-1 overflow-y-auto pr-2">
+                            <div className="space-y-3">
+                                {responses.length === 0
+                                    ? null
+                                    : responses.map((response) => (
                                         <Card
                                             key={response.id}
                                             className="p-3 border cursor-pointer hover:bg-accent/50 transition-colors relative"
@@ -518,10 +576,9 @@ const RequirementDetails = () => {
                                                 </div>
                                                 <div className="text-right">
                                                     <Badge
-                                                        variant={response.status === "new" ? "default" : "secondary"}
-                                                        className="text-xs capitalize"
+                                                        className={`text-xs capitalize ${getQuoteBadgeClasses(response.status)}`}
                                                     >
-                                                        {response.status == "accepted" ? "Confirmed" : response.status.charAt(0).toUpperCase() + response.status.slice(1)}
+                                                        {response.status}
                                                     </Badge>
                                                     <div className="text-xs text-muted-foreground mt-1">
                                                         {new Date(response.responseDate).toLocaleDateString()}
@@ -529,8 +586,7 @@ const RequirementDetails = () => {
                                                 </div>
                                             </div>
                                         </Card>
-                                    ))
-                                )}
+                                    ))}
                             </div>
                         </CardContent>
                     </Card>
@@ -697,7 +753,7 @@ const RequirementDetails = () => {
                             <div>
                                 <Label htmlFor="status">Status</Label>
                                 <Select
-                                    value={selectedResponse.status}
+                                    value={selectedResponse.status || undefined}
                                     onValueChange={(value) => {
                                         setSelectedResponse({ ...selectedResponse, status: value });
                                     }}
@@ -706,9 +762,8 @@ const RequirementDetails = () => {
                                         <SelectValue placeholder="Select status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="new">Selected</SelectItem>
-                                        <SelectItem value="accepted">Confirmation</SelectItem>
-                                        <SelectItem value="rejected">Rejected</SelectItem>
+                                        <SelectItem value="Confirmed">Confirmed</SelectItem>
+                                        <SelectItem value="Rejected">Rejected</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -762,7 +817,7 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
     response: any;
     onStatusUpdate: (responseId: string, status: string, remarks?: string) => void;
 }) => {
-    const [selectedStatus, setSelectedStatus] = useState(response?.status || 'new');
+    const [selectedStatus, setSelectedStatus] = useState(response?.status || '');
     const [remarks, setRemarks] = useState(response?.remarks || '');
 
     const handleSubmit = () => {
@@ -800,14 +855,13 @@ const ResponseDetailModal = ({ isOpen, onClose, response, onStatusUpdate }: {
 
                         <div>
                             <Label htmlFor="status">Status</Label>
-                            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                            <Select value={selectedStatus || undefined} onValueChange={setSelectedStatus}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="new">Selected</SelectItem>
-                                    <SelectItem value="accepted">Confirmation</SelectItem>
-                                    <SelectItem value="rejected">Rejected</SelectItem>
+                                    <SelectItem value="Confirmed">Confirmed</SelectItem>
+                                    <SelectItem value="Rejected">Rejected</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
