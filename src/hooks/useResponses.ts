@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useOrders } from './useOrders';
+import { apiFetch } from '@/lib/api';
 
 export interface MerchantResponse {
   productName: string;
@@ -25,6 +26,8 @@ export interface MerchantResponse {
 
 interface ResponsesState {
   responses: MerchantResponse[];
+  loaded: boolean;
+  lastFetched?: string;
   addResponse: (response: Omit<MerchantResponse, 'id' | 'createdAt'>) => void;
   getResponsesByRequirementId: (requirementId: string) => MerchantResponse[];
   getResponsesByProductId: (productId: string) => MerchantResponse[];
@@ -32,6 +35,9 @@ interface ResponsesState {
   getResponseCount: (requirementId: string) => number;
   getSubmittedQuotesCount: (merchantId: string) => number;
   getStockEnquiriesCount: () => number;
+  getSellerResponseCount: () => number;
+  setResponses: (responses: MerchantResponse[]) => void;
+  ensureLoaded: (force?: boolean) => Promise<void>;
   deleteResponse: (responseId: string) => void;
 }
 
@@ -39,6 +45,7 @@ export const useResponses = create<ResponsesState>()(
   persist(
     (set, get) => ({
       responses: [],
+      loaded: false,
 
       addResponse: (response) => {
         const now = new Date().toISOString();
@@ -51,6 +58,10 @@ export const useResponses = create<ResponsesState>()(
         set((state) => ({
           responses: [...state.responses, newResponse]
         }));
+      },
+
+      setResponses: (responses) => {
+        set({ responses });
       },
 
       getResponsesByRequirementId: (requirementId) => {
@@ -174,6 +185,54 @@ export const useResponses = create<ResponsesState>()(
         // Count responses that are not skipped
         return get().responses.filter(r => r.status !== 'skipped').length;
       },
+      getSellerResponseCount: () => {
+        // Define "seller response count" as total responses; adjust if needed
+        return get().responses.length;
+      },
+
+      ensureLoaded: async (force = false) => {
+        const { loaded, responses } = get();
+        if (loaded && !force) return;
+        if (responses && responses.length > 0 && !force) {
+          set({ loaded: true, lastFetched: new Date().toISOString() });
+          return;
+        }
+
+        try {
+          const data: any = await apiFetch('/api/quotes/get-all-quotes');
+          const arr = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+          const mapped: MerchantResponse[] = arr.map((q: any) => {
+            const createdAt = q?.createdAt || new Date().toISOString();
+            const status = String(q?.status ?? 'new').toLowerCase() as MerchantResponse['status'];
+            return {
+              id: q?.id || String(Date.now()),
+              requirementId: q?.requirementId || '',
+              merchantId: q?.merchantId || '',
+              merchantName: q?.merchantCompanyName || 'Unknown',
+              merchantLocation: q?.merchantAddress || '',
+              price: String(q?.priceINR ?? ''),
+              responseDate: createdAt,
+              status,
+              grade: String(q?.grade ?? 'N/A'),
+              quantity: String(q?.supplyQtyKg ?? ''),
+              origin: '',
+              certifications: [],
+              deliveryTime: '',
+              productName: '',
+              contact: '',
+              message: q?.remarks || '',
+              remarks: q?.remarks,
+              createdAt,
+            } as MerchantResponse;
+          });
+          set({ responses: mapped, loaded: true, lastFetched: new Date().toISOString() });
+        } catch (e) {
+          // Keep store as-is on failure; mark loaded to avoid loops, or leave as not loaded
+          console.error('ensureLoaded() failed to fetch quotes', e);
+          set({ loaded: true, lastFetched: new Date().toISOString() });
+        }
+      },
+
       deleteResponse: (responseId) => {
         set((state) => ({
           responses: state.responses.filter(response => response.id !== responseId)

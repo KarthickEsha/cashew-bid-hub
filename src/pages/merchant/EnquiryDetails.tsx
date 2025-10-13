@@ -66,6 +66,18 @@ const EnquiryDetails = () => {
     }
   };
 
+  // Derived form validity for enabling the Send Quote button
+  const canSend = (() => {
+    if (!requirement) return false;
+    const qtyNum = Number(String(availableQuantity).replace(/[^0-9.]/g, ''));
+    const reqQty = Number(String(requirement.quantity).replace(/[^0-9.]/g, '')) || 0;
+    const priceNum = Number(String(merchantPrice).replace(/[^0-9.]/g, ''));
+
+    const qtyValid = !!availableQuantity && !isNaN(qtyNum) && qtyNum > 0 && qtyNum <= reqQty && !quantityError;
+    const priceValid = !!merchantPrice && !isNaN(priceNum) && priceNum > 0 && !priceError;
+    return qtyValid && priceValid;
+  })();
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active':
@@ -387,7 +399,7 @@ const EnquiryDetails = () => {
                   <Package size={16} className="text-muted-foreground" />
                   <div>
                     <div className="text-sm text-muted-foreground">Required Quantity</div>
-                    <div className="font-medium">{requirement.quantity}</div>
+                    <div className="font-medium">{Number(requirement.quantity).toLocaleString()}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -472,7 +484,7 @@ const EnquiryDetails = () => {
                 <Textarea id="remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={3} />
               </div>
               <div className="flex gap-2">
-                <Button className="flex-1" onClick={handleSubmitQuote}>Send Quote</Button>
+                <Button className="flex-1" onClick={handleSubmitQuote} disabled={!canSend}>Send Quote</Button>
                 <Button variant="ghost" onClick={() => { setAvailableQuantity(''); setMerchantPrice(''); setRemarks(''); }}>Cancel</Button>
               </div>
             </CardContent>

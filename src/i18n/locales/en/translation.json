@@ -130,7 +130,7 @@
     "dialogs": {
       "delete": {
         "title": "Confirm Deletion",
-        "description": "Are you sure you want to delete <1>{{name}}</1>? This action cannot be undone."
+        "description": "Are you sure you want to delete"
       },
       "details": {
         "title": "Response Details",
@@ -139,7 +139,7 @@
     },
     "details": {
       "requirement": "Requirement",
-      "merchant": "Merchant",
+      "merchant": "Merchant CompanyName",
       "price": "Price",
       "quantity": "Quantity",
       "grade": "Grade",

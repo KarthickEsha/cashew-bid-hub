@@ -68,10 +68,11 @@ const RequirementDetails = () => {
                 const grade = item?.grade || item?.productGrade || item?.product?.grade || 'W320';
                 const quantity = String(item?.requiredqty ?? item?.qty ?? item?.totalQuantity ?? item?.quantity ?? '0');
                 const origin = (item?.origin || item?.preferredOrigin || item?.source || 'any')?.toString?.() ?? 'any';
-                const expectedPrice = Number(item?.expectedprice ?? item?.price ?? item?.expected_price ?? item?.expectedPrice ?? 0);
+                const expectedPrice = Number(item?.minimumqty ?? item?.price ?? item?.expected_price ?? item?.expectedPrice ?? 0);
                 const deliveryLocation = item?.deliveryLocation || item?.location || '';
                 const deliveryDeadline = item?.deliveryDeadline || item?.deliverydate || item?.requirementExpiry || '';
                 const status = (item?.status || 'active').toString();
+                const description = item.description || '';
                 const createdAt = item?.createdAt || item?.created_at || new Date().toISOString();
 
                 const normalized = {
@@ -85,6 +86,7 @@ const RequirementDetails = () => {
                     deliveryLocation,
                     deliveryDeadline,
                     status,
+                    description,
                     createdDate: createdAt,
                     lastModified: item?.updatedAt || item?.updated_at || createdAt,
                 };
@@ -429,7 +431,7 @@ const RequirementDetails = () => {
                                     <Package size={16} className="text-muted-foreground" />
                                     <div>
                                         <div className="text-sm text-muted-foreground">Quantity</div>
-                                        <div className="font-medium">{requirement.quantity}</div>
+                                        <div className="font-medium">{Number(requirement.quantity).toLocaleString()}</div>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -478,8 +480,7 @@ const RequirementDetails = () => {
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm leading-relaxed">
-                                Looking for premium quality {requirement.grade} cashews from {requirement.preferredOrigin}.
-                                Required quantity: {requirement.quantity}. Delivery to {requirement.deliveryLocation} by {formatDateExact(requirement.deliveryDeadline)}.
+                              {requirement.description}
                             </p>
                         </CardContent>
                     </Card>

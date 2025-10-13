@@ -66,8 +66,9 @@ import {
 } from "@/components/ui/dialog";
 import { profile } from "console";
 import { useProfile } from "@/hooks/useProfile";
+import { apiFetch } from "@/lib/api";
 
-type ResponseStatus = 'new' | 'viewed' | 'accepted' | 'rejected' | 'skipped';
+type ResponseStatus = 'new' | 'viewed' | 'confirmed' | 'rejected' | 'skipped' | 'accepted';
 
 interface Requirement {
   id: string;
@@ -112,12 +113,13 @@ const Responses = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedResponse, setSelectedResponse] = useState<ResponseWithDetails | null>(null);
-  const [responseToDelete, setResponseToDelete] = useState<{id: string, name: string} | null>(null);
-  const { responses, updateResponseStatus, deleteResponse } = useResponses();
-  const { requirements ,updateRequirement,updateRequirementStatus } = useRequirements();
+  const [responseToDelete, setResponseToDelete] = useState<{ id: string, name: string } | null>(null);
+  const { responses } = useResponses();
+  const { requirements, updateRequirement, updateRequirementStatus } = useRequirements();
   const [isLoading, setIsLoading] = useState(false);
   const [sortField, setSortField] = useState<string>('responseDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [apiResponses, setApiResponses] = useState<any[]>([]);
 
   // Filter states
   const [searchText, setSearchText] = useState("");
@@ -127,6 +129,20 @@ const Responses = () => {
     status: "all" as ResponseStatus | 'all'
   });
 
+  // Load quotes from backend
+  useEffect(() => {
+    setIsLoading(true);
+    apiFetch("/api/quotes/get-all-quotes")
+      .then((data) => {
+        const arr = (data as any)?.data;
+        setApiResponses(Array.isArray(arr) ? arr : []);
+      })
+      .catch((err) => {
+        console.error("Failed to load quotes:", err);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
   // Get requirement title by ID
   const getRequirementTitle = (requirementId: string) => {
     const requirement = requirements.find(req => req.id === requirementId);
@@ -135,17 +151,39 @@ const Responses = () => {
 
   // Get all merchant responses with details
   const getMerchantResponses = (): ResponseWithDetails[] => {
-    return responses.map(response => {
-      const requirement = requirements.find(req => req.id === response.requirementId);
+    return apiResponses.map((q: any) => {
+      // Normalize backend status to our UI enum (lowercase). Backend may return
+      // "Confirmed" | "Rejected" | "new" | ...
+      const rawStatus = String(q?.status ?? 'new');
+      const lowered = rawStatus.toLowerCase();
+      const status = (lowered === 'confirmed' ? 'confirmed' : lowered) as ResponseStatus;
+      const createdAt = q?.createdAt || new Date().toISOString();
+      const req = requirements.find(r => r.id === q?.requirementId);
+      const requirementTitle = 'Unknown Requirement';
+      const grade = (q?.grade ?? req?.grade ?? 'N/A') as string;
       return {
-        ...response,
-        status: response.status.toLowerCase() as ResponseStatus,
-        requirementTitle: requirement?.productName || response.productName || 'Unknown Requirement',
-        merchantRating: 4.5, // This would come from merchant data in a real app
-        isStarred: false, // Default value, can be managed in state if needed
-        grade: response.grade || requirement?.grade || 'N/A',
-        quantity: response.quantity || (requirement?.quantity ? `${requirement.quantity} MT` : 'N/A')
-      };
+        id: q?.id || String(Date.now()),
+        requirementId: q?.requirementId || '',
+        merchantId: q?.merchantId || '',
+        merchantName: q?.merchantCompanyName || 'Unknown',
+        merchantLocation: q?.merchantAddress || '',
+        price: String(q?.priceINR ?? ''),
+        responseDate: createdAt,
+        status,
+        grade,
+        quantity: String(q?.supplyQtyKg ?? ''),
+        origin: '',
+        certifications: [],
+        deliveryTime: '',
+        productName: requirementTitle,
+        contact: '',
+        message: q?.remarks || '',
+        remarks: q?.remarks,
+        createdAt,
+        requirementTitle,
+        merchantRating: 4.5,
+        isStarred: false,
+      } as ResponseWithDetails;
     });
   };
 
@@ -240,50 +278,59 @@ const Responses = () => {
   const currentResponses = filteredResponses.slice(startIndex, startIndex + itemsPerPage);
 
   // Handle status update
-  // Handle status update
-const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'rejected') => {
-  try {
-    // When accepting, reduce requirement quantity and close if zero
-    if (status === 'accepted') {
-      const resp = responses.find(r => r.id === responseId);
-      if (resp) {
-        const req = requirements.find(r => r.id === resp.requirementId);
-        if (req) {
-          // Coerce both quantities to numbers safely (supporting strings like "1,000" or "1000kg")
-          const reqQty = parseFloat(String((req as any).quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
-          const respQty = parseFloat(String(resp.quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
-          const newQty = Math.max(0, reqQty - respQty);
+  // Calls backend and updates local UI state
+  const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rejected') => {
+    try {
+      // Persist to backend
+      const backendStatus = status === 'confirmed' ? 'Confirmed' : 'Rejected';
+      await apiFetch(`/api/quotes/${responseId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: backendStatus }),
+      });
 
-          // Update requirement quantity (store expects string quantity)
-          updateRequirement(req.id, { quantity: String(newQty) } as any);
+      // Update local table data immediately
+      setApiResponses(prev => prev.map(q => (q?.id === responseId ? { ...q, status: backendStatus } : q)));
 
-          // If quantity exhausted, close the requirement
-          if (newQty === 0) {
-            updateRequirementStatus(req.id, 'closed');
+      // After confirming, optionally reduce requirement quantity and close if zero
+      if (status === 'confirmed') {
+        const resp = responses.find(r => r.id === responseId);
+        if (resp) {
+          const req = requirements.find(r => r.id === resp.requirementId);
+          if (req) {
+            const reqQty = parseFloat(String((req as any).quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
+            const respQty = parseFloat(String(resp.quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
+            const newQty = Math.max(0, reqQty - respQty);
+            updateRequirement(req.id, { quantity: String(newQty) } as any);
+            if (newQty === 0) updateRequirementStatus(req.id, 'closed');
           }
         }
       }
+
+      toast({
+        title: 'Success',
+        description: `Response ${backendStatus} successfully`,
+      });
+    } catch (error) {
+      console.error('Error updating response status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update response status',
+        variant: 'destructive',
+      });
     }
+  };
 
-    await updateResponseStatus(responseId, status);
-    toast({
-      title: 'Success',
-      description: `Response ${status} successfully`,
-    });
-  } catch (error) {
-    console.error('Error updating response status:', error);
-    toast({
-      title: 'Error',
-      description: 'Failed to update response status',
-      variant: 'destructive',
-    });
-  }
-};;
-
-  // Handle delete response
+  // Handle delete response (calls backend and updates local UI)
   const handleDeleteResponse = async (responseId: string) => {
     try {
-      await deleteResponse(responseId);
+      // Call backend DELETE /api/quotes/:quoteID
+      await apiFetch(`/api/quotes/${responseId}`, {
+        method: 'DELETE',
+      });
+
+      // Remove from local table data
+      setApiResponses((prev) => prev.filter((q: any) => q?.id !== responseId));
+
       setResponseToDelete(null);
       toast({
         title: 'Success',
@@ -309,6 +356,7 @@ const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'reje
       status: 'all'
     });
   };
+  
 
   // Handle Apply Filters
   const handleApplyFilters = () => {
@@ -334,7 +382,7 @@ const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'reje
   }
 
   // No responses state
-  if (responses.length === 0) {
+  if (responsesWithDetails.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <Inbox className="h-12 w-12 text-gray-400 mb-4" />
@@ -432,12 +480,6 @@ const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'reje
                     {getSortIcon('merchantName')}
                   </div>
                 </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('requirementTitle')}>
-                  <div className="flex items-center">
-                    {t('responses.table.requirement')}
-                    {getSortIcon('requirementTitle')}
-                  </div>
-                </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('price')}>
                   <div className="flex items-center">
                     {t('responses.table.price')}
@@ -480,13 +522,12 @@ const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'reje
                       {response.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
                     </div>
                   </TableCell>
-                  <TableCell>{response.requirementTitle}</TableCell>
                   <TableCell>₹{response.price} / kg</TableCell>
                   <TableCell>{response.quantity} kg</TableCell>
                   <TableCell>{response.grade || 'N/A'}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={response.status === 'accepted' ? 'default' :
+                      variant={response.status === 'confirmed' ? 'default' :
                         response.status === 'rejected' ? 'destructive' : 'outline'}
                       className="capitalize"
                     >
@@ -543,7 +584,7 @@ const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'reje
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleStatusUpdate(response.id, 'accepted');
+                              handleStatusUpdate(response.id, 'confirmed');
                             }}
                             className="h-8 w-8 p-0"
                             title="Accept"
@@ -632,14 +673,14 @@ const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'reje
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setResponseToDelete(null)}
             >
               {t('common.actions.cancel')}
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={() => responseToDelete && handleDeleteResponse(responseToDelete.id)}
             >
               {t('common.actions.delete')}
@@ -664,12 +705,6 @@ const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'reje
               </DialogHeader>
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">{t('responses.details.requirement')}</h4>
-                    <p className="text-muted-foreground">
-                      {selectedResponse.requirementTitle}
-                    </p>
-                  </div>
                   <div className="space-y-2">
                     <h4 className="font-medium">{t('responses.details.merchant')}</h4>
                     <p className="text-muted-foreground">
@@ -748,13 +783,13 @@ const handleStatusUpdate = async (responseId: string, status: 'accepted' | 'reje
                         handleStatusUpdate(selectedResponse.id, 'rejected');
                         setSelectedResponse(null);
                       }}
-                      className="text-destructive hover:text-destructive"
                     >
                       <X className="h-4 w-4 mr-1" /> Reject
                     </Button>
+
                     <Button
                       onClick={() => {
-                        handleStatusUpdate(selectedResponse.id, 'accepted');
+                        handleStatusUpdate(selectedResponse.id, 'confirmed');
                         setSelectedResponse(null);
                       }}
                     >

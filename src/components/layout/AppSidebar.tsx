@@ -48,7 +48,7 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const { signOut } = useClerk();
-  const { responses } = useResponses();
+  const { responses, ensureLoaded } = useResponses() as any;
   const { orders } = useOrders();
   const { getMyRequirements, fetchAllRequirements } = useRequirements();
   const requirements = getMyRequirements();
@@ -68,6 +68,13 @@ export function AppSidebar() {
       setCurrentProductType("RCN")
     }
   }, [responses, profile?.productType]);
+
+  // Ensure seller responses are loaded once from API and persisted
+  useEffect(() => {
+    // Load only once on mount
+    ensureLoaded?.().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Ensure requirements are fetched so badge shows by default
   useEffect(() => {
