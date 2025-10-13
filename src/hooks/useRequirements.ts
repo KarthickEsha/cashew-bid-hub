@@ -143,7 +143,7 @@ export const useRequirements = create<RequirementsState>()(
             const specifications = item.specifications || item.specs || '';
             const allowLowerBid = Boolean(item.allowLowerBid ?? item.allow_lower_bid ?? false);
             const minSupplyQuantity = String(item.minSupplyQuantity ?? item.min_qty ?? '0');
-            const customerName = item.customerName || item.buyerName || 'Anonymous Buyer';
+            const customerName = item.user_name || item.buyerName || 'Anonymous Buyer';
             const productName = item.productName || `${grade} Cashews`;
             const fixedPrice = Number(item.fixedPrice ?? 0);
             const isDraft = Boolean(item.isDraft ?? (status === 'draft'));

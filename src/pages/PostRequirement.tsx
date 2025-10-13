@@ -17,6 +17,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
+import { extractBackendUserId } from "@/lib/profile";
 
 // Origin countries
 const origins = [
@@ -297,8 +298,19 @@ const PostRequirement = () => {
         lowerbit: formData.allowLowerBid,
       };
 
-      // Call backend API (note: routes are grouped under /api)
-      const resp = await apiFetch(`/api/requirement/post-requirement`, {
+      // Resolve backend user id for association
+      const backendUserId =
+        extractBackendUserId() ||
+        (profile as any)?.id ||
+        (user as any)?.id ||
+        "";
+
+      // Call backend API with userId as query param (note: routes are grouped under /api)
+      const url = backendUserId
+        ? `/api/requirement/post-requirement?userId=${encodeURIComponent(backendUserId)}`
+        : `/api/requirement/post-requirement`;
+
+      const resp = await apiFetch(url, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

@@ -21,6 +21,7 @@ import {
   CheckCircle,
   AlertTriangle,
   MessageSquare,
+  ShoppingCart,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
@@ -37,6 +38,7 @@ const EnquiryDetails = () => {
   const [responses, setResponses] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
 
   // Quote form state
   const [availableQuantity, setAvailableQuantity] = useState('');
@@ -111,6 +113,7 @@ const EnquiryDetails = () => {
         const nid = String(item?.id ?? item?._id ?? item?.ID ?? id);
         const grade = item?.grade || item?.productGrade || item?.product?.grade || 'W320';
         const quantity = String(item?.requiredqty ?? item?.qty ?? item?.totalQuantity ?? item?.quantity ?? '0');
+        const minQty = Number(item?.minimumqty ?? item?.minQty ?? 0);
         const origin = (item?.origin || item?.preferredOrigin || item?.source || 'any')?.toString?.() ?? 'any';
         const expectedPrice = Number(item?.expectedprice ?? item?.price ?? item?.expected_price ?? item?.expectedPrice ?? 0);
         const deliveryLocation = item?.deliveryLocation || item?.location || '';
@@ -123,6 +126,7 @@ const EnquiryDetails = () => {
           title: item?.title || `${quantity} of ${grade} Cashews`,
           grade,
           quantity,
+          minQty,
           preferredOrigin: origin,
           budgetRange: `₹${(expectedPrice as number)?.toLocaleString?.() || expectedPrice}/kg`,
           requirementExpiry: deliveryDeadline,
@@ -143,10 +147,11 @@ const EnquiryDetails = () => {
           return {
             id: rid,
             merchantId,
-            merchantName: q?.merchantName || merchantId || 'Merchant',
-            merchantLocation: q?.merchantLocation || '-',
+            merchantName: q?.merchantCompanyName || merchantId || 'Merchant',
+            merchantLocation: q?.merchantAddress || '-',
             price: priceINR ? `₹${Number(priceINR).toLocaleString()}/kg` : '',
             quantity: supplyQty ? `${supplyQty} kg` : '',
+            minQty: q?.minimumqty ? `${q?.minimumqty} kg` : '',
             origin: q?.origin || '',
             grade: q?.grade || '',
             deliveryTime: q?.deliveryTime || '',
@@ -386,6 +391,13 @@ const EnquiryDetails = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <ShoppingCart size={16} className="text-muted-foreground" />
+                  <div>
+                    <div className="text-sm text-muted-foreground">Minimum Quantity</div>
+                    <div className="font-medium">{requirement.minQty}</div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
                   <DollarSign size={16} className="text-muted-foreground" />
                   <div>
                     <div className="text-sm text-muted-foreground">Expected Price</div>
@@ -501,7 +513,7 @@ const EnquiryDetails = () => {
                           )}
                         </div>
                         <div className="text-right">
-                          <Badge  className="text-xs capitalize">
+                          <Badge className="text-xs capitalize">
                             {response.status}
                           </Badge>
                           <div className="text-xs text-muted-foreground mt-1">

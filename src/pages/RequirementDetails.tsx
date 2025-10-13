@@ -100,8 +100,8 @@ const RequirementDetails = () => {
                     return {
                         id: rid,
                         merchantId,
-                        merchantName: q?.merchantName || merchantId || 'Merchant',
-                        merchantLocation: q?.merchantLocation || '-',
+                        merchantName: q?.merchantCompanyName || merchantId || 'Merchant',
+                        merchantLocation: q?.merchantAddress || '-',
                         price: priceINR ? `₹${Number(priceINR).toLocaleString()}/kg` : '',
                         quantity: supplyQty ? `${supplyQty} kg` : '',
                         origin: q?.origin || '',

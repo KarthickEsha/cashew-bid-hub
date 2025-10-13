@@ -3,29 +3,41 @@ import { apiFetch } from "@/lib/api";
 // Exchange Clerk session token for backend JWT and store it
 export async function exchangeClerkToBackend(
   getClerkToken: () => Promise<string | null>,
-  email?: string,
-  password?: string,
+  options?: {
+    flow?: "google_signup" | "email_sso";
+    email?: string;
+    password?: string;
+    displayName?: string;
+  }
 ) {
   const clerkToken = await getClerkToken();
   if (!clerkToken) throw new Error("Missing Clerk session token");
 
-  // Call backend SSO endpoint which will upsert by email and return backend JWT
-  const res = await fetch("http://127.0.0.1:8081/api/auth/sso", {
+  const flow = options?.flow ?? "email_sso";
+
+  // Choose endpoint and payload based on the auth flow
+  const { email, password, displayName } = options || {};
+
+  let path = "/api/auth/sso";
+  let payload: any = { provider: "clerk", email, password };
+
+  // For Google social signup, call register to upsert user and issue JWT
+  if (flow === "google_signup") {
+    path = "/api/auth/sso";
+    payload = { provider: "google", email, password };
+  }
+
+  const data = await apiFetch(path, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${clerkToken}`,
     },
-    body: JSON.stringify({ provider: "clerk", email, password }),
+    body: JSON.stringify(payload),
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || `SSO exchange failed (${res.status})`);
-  }
-  const data = await res.json();
-  if (!data?.token) throw new Error("SSO exchange returned no token");
+  const token = (data as any)?.token;
+  if (!token) throw new Error("Auth exchange returned no token");
 
-  localStorage.setItem("auth_token", data.token);
-  return data.token as string;
+  localStorage.setItem("auth_token", token);
+  return token as string;
 }

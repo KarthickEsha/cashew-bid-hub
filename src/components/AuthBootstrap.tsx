@@ -12,9 +12,21 @@ export default function AuthBootstrap() {
     const existing = localStorage.getItem("auth_token");
     if (existing) return;
 
-    const email = user?.primaryEmailAddress?.emailAddress;
-    // Call SSO exchange with email so backend can upsert by email
-    exchangeClerkToBackend(() => getToken(), email).catch((e) => {
+    const email = user?.primaryEmailAddress?.emailAddress || undefined;
+    const displayName = user?.fullName || user?.username || undefined;
+
+    // Detect if user has a Google external account; Clerk providers often expose id like "oauth_google"
+    const hasGoogle = (user as any)?.externalAccounts?.some?.(
+      (ea: any) => (ea?.provider || ea?.id)?.toString()?.toLowerCase()?.includes("google")
+    );
+
+    const flow = hasGoogle ? "google_signup" : "email_sso";
+
+    exchangeClerkToBackend(() => getToken(), {
+      flow,
+      email,
+      displayName,
+    }).catch((e) => {
       // Optional: log or surface a toast here
       console.error("Failed to exchange Clerk token:", e);
     });

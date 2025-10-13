@@ -50,7 +50,7 @@ export function AppSidebar() {
   const { signOut } = useClerk();
   const { responses } = useResponses();
   const { orders } = useOrders();
-  const { getMyRequirements } = useRequirements();
+  const { getMyRequirements, fetchAllRequirements } = useRequirements();
   const requirements = getMyRequirements();
   const [newResponseCount, setNewResponseCount] = useState(0);
   const navigate = useNavigate();
@@ -68,6 +68,12 @@ export function AppSidebar() {
       setCurrentProductType("RCN")
     }
   }, [responses, profile?.productType]);
+
+  // Ensure requirements are fetched so badge shows by default
+  useEffect(() => {
+    fetchAllRequirements?.().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load marketplace stocks from localStorage (per type), then refresh from API with type
   useEffect(() => {

@@ -19,28 +19,6 @@ const Login = () => {
 
         {/* SignIn Component */}
         <SignIn
-          // appearance={{
-          //   elements: {
-          //     rootBox: "w-full",
-          //     card: "shadow-none border-0 p-0 bg-transparent",
-          //     headerTitle: "hidden",
-          //     headerSubtitle: "hidden",
-
-          //     // Buttons
-          //     socialButtonsBlockButton:
-          //       "bg-primary hover:bg-primary/90 text-white py-3 px-6 rounded-lg w-full",
-          //     formButtonPrimary:
-          //       "bg-primary hover:bg-primary/90 w-full py-3 rounded-lg",
-
-          //     // Links
-          //     footerActionLink: "text-primary hover:text-primary/80",
-
-          //     // Inputs
-          //     form: "space-y-4 w-full",
-          //     formField: "mb-4",
-          //     formFieldInput: "p-3 rounded-lg border w-full",
-          //   },
-          // }}
           fallbackRedirectUrl="/"
           forceRedirectUrl="/"
         />
