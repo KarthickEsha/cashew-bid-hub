@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useOrders } from './useOrders';
 import { apiFetch } from '@/lib/api';
+import { useProfile } from './useProfile';
 
 export interface MerchantResponse {
   productName: string;
@@ -42,6 +43,7 @@ interface ResponsesState {
 }
 
 export const useResponses = create<ResponsesState>()(
+ 
   persist(
     (set, get) => ({
       responses: [],
@@ -199,7 +201,9 @@ export const useResponses = create<ResponsesState>()(
         }
 
         try {
-          const data: any = await apiFetch('/api/quotes/get-all-quotes');
+          const { profile, setProfile } = useProfile();
+          const viewer = profile?.role === 'processor' ? 'merchant' : 'buyer';
+          const data: any = await apiFetch(`/api/quotes/get-all-quotes?viewer=${viewer}`);
           const arr = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
           const mapped: MerchantResponse[] = arr.map((q: any) => {
             const createdAt = q?.createdAt || new Date().toISOString();

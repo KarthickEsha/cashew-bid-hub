@@ -64,7 +64,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { profile } from "console";
 import { useProfile } from "@/hooks/useProfile";
 import { apiFetch } from "@/lib/api";
 
@@ -114,7 +113,7 @@ const Responses = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedResponse, setSelectedResponse] = useState<ResponseWithDetails | null>(null);
   const [responseToDelete, setResponseToDelete] = useState<{ id: string, name: string } | null>(null);
-  const { responses } = useResponses();
+  const { responses, setResponses, deleteResponse: deleteFromStore } = useResponses();
   const { requirements, updateRequirement, updateRequirementStatus } = useRequirements();
   const [isLoading, setIsLoading] = useState(false);
   const [sortField, setSortField] = useState<string>('responseDate');
@@ -132,16 +131,49 @@ const Responses = () => {
   // Load quotes from backend
   useEffect(() => {
     setIsLoading(true);
-    apiFetch("/api/quotes/get-all-quotes")
+    const viewer = profile?.role === 'processor' ? 'merchant' : 'buyer';
+    apiFetch(`/api/quotes/get-all-quotes?viewer=${viewer}`)
       .then((data) => {
         const arr = (data as any)?.data;
-        setApiResponses(Array.isArray(arr) ? arr : []);
+        const list = Array.isArray(arr) ? arr : [];
+        setApiResponses(list);
+
+        // Also sync with global store so sidebar badge reflects the same source
+        const mapped = list.map((q: any) => {
+          const createdAt = q?.createdAt || new Date().toISOString();
+          const rawStatus = String(q?.status ?? 'new');
+          const lowered = rawStatus.toLowerCase();
+          const status = (lowered === 'confirmed' ? 'confirmed' : lowered);
+          const req = requirements.find(r => r.id === q?.requirementId);
+          const grade = (q?.grade ?? req?.grade ?? 'N/A') as string;
+          return {
+            id: q?.id || String(Date.now()),
+            requirementId: q?.requirementId || '',
+            merchantId: q?.merchantId || '',
+            merchantName: q?.merchantCompanyName || 'Unknown',
+            merchantLocation: q?.merchantAddress || '',
+            price: String(q?.priceINR ?? ''),
+            responseDate: createdAt,
+            status: status as any,
+            grade,
+            quantity: String(q?.supplyQtyKg ?? ''),
+            origin: '',
+            certifications: [],
+            deliveryTime: '',
+            productName: '',
+            contact: '',
+            message: q?.remarks || '',
+            remarks: q?.remarks,
+            createdAt,
+          };
+        });
+        setResponses(mapped as any);
       })
       .catch((err) => {
         console.error("Failed to load quotes:", err);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [profile?.role]);
 
   // Get requirement title by ID
   const getRequirementTitle = (requirementId: string) => {
@@ -330,6 +362,9 @@ const Responses = () => {
 
       // Remove from local table data
       setApiResponses((prev) => prev.filter((q: any) => q?.id !== responseId));
+
+      // Also update global store so sidebar badge decrements automatically
+      deleteFromStore(responseId);
 
       setResponseToDelete(null);
       toast({

@@ -6,15 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Eye, MessageSquare, Search, Filter, Package, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useRequirements } from "@/hooks/useRequirements";
-import { useResponses } from "@/hooks/useResponses";
-import { useProfile } from "@/hooks/useProfile";
+import { useEffect } from "react";
+import { apiFetch } from "@/lib/api";
 
 const MerchantConfirmedOrders = () => {
-  const { getRequirementsAsEnquiries } = useRequirements();
-  const { responses } = useResponses();
+  const [apiOrders, setApiOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const { profile, setProfile } = useProfile();
   const [pageSize, setPageSize] = useState(5);
   const [searchFilter, setSearchFilter] = useState('');
   const [tempSearchFilter, setTempSearchFilter] = useState('');
@@ -22,26 +21,39 @@ const MerchantConfirmedOrders = () => {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // Get confirmed orders (responses with accepted status)
-  const confirmedOrders = useMemo(() => {
-    const enquiries = getRequirementsAsEnquiries();
-    return responses
-      .filter(response => response.status === 'accepted')
-      .map(response => {
-        const enquiry = enquiries.find(e => e.id.toString() === response.requirementId);
-        return {
-          ...response,
-          enquiry,
-          customerName: enquiry?.customerName || profile.name || 'Unknown',
-          productName: enquiry?.productName || response.productName || 'Unknown Product',
-          expectedPrice: enquiry?.expectedPrice || response.price || 0,
-          deliveryDeadline: enquiry?.deliveryDeadline || '',
-        };
-      });
-  }, [responses, getRequirementsAsEnquiries]);
+  // Load confirmed quotes from backend (no requirementId in params)
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const data: any = await apiFetch(`/api/quotes/confirmed`);
+        const arr: any[] = (data?.data ?? data) as any[];
+        // Normalize fields for UI
+        const mapped = (arr || []).map((item) => ({
+          id: `${item.buyerName}-${item.product}-${item.merchantPrice}-${item.merchantAvailableQuantity}-${Math.random()}`,
+          customerName: item.buyerName ?? 'Unknown',
+          productName: item.product ?? 'Product',
+          quantity: item.buyerRequiredQuantity ?? 0,
+          expectedPrice: item.buyerExpectedPrice ?? 0,
+          price: item.merchantPrice ?? 0,
+          availableQty: item.merchantAvailableQuantity ?? 0,
+          status: item.status ?? 'Confirmed',
+        }));
+        if (mounted) setApiOrders(mapped);
+      } catch (e: any) {
+        if (mounted) setLoadError(e?.message || 'Failed to load confirmed quotes');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false }; 
+  }, []);
 
   // Sort confirmed orders
-  const sortOrders = (orders: typeof confirmedOrders) => {
+  const sortOrders = (orders: typeof apiOrders) => {
     if (!sortField) return orders;
 
     return [...orders].sort((a, b) => {
@@ -69,14 +81,14 @@ const MerchantConfirmedOrders = () => {
 
   // Filter confirmed orders
   const filteredOrders = useMemo(() => {
-    const filtered = confirmedOrders.filter(order => 
+    const filtered = apiOrders.filter(order => 
       searchFilter === '' ||
       order.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
       order.productName.toLowerCase().includes(searchFilter.toLowerCase())
     );
     
     return sortOrders(filtered);
-  }, [confirmedOrders, searchFilter, sortField, sortDirection]);
+  }, [apiOrders, searchFilter, sortField, sortDirection]);
 
   const totalPages = Math.ceil(filteredOrders.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -204,10 +216,10 @@ const MerchantConfirmedOrders = () => {
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.customerName}</TableCell>
                   <TableCell>{order.productName}</TableCell>
-                  <TableCell>{order.enquiry?.quantity || order.quantity || 'N/A'}</TableCell>
+                  <TableCell>{order.quantity || 'N/A'}</TableCell>
                   <TableCell>₹{order.expectedPrice}/kg</TableCell>
                   <TableCell className="font-semibold text-primary">₹ {order.price}</TableCell>
-                  <TableCell>{order.quantity}</TableCell>
+                  <TableCell>{order.availableQty}</TableCell>
                   <TableCell>
                     <Badge className="bg-green-100 text-green-800">
                       Confirmed

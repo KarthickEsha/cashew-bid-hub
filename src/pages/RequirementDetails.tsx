@@ -56,7 +56,8 @@ const RequirementDetails = () => {
             setError(null);
             try {
                 // Fetch combined requirement + quotes
-                const data: any = await apiFetch(`/api/quotes/with-requirement/${id}`);
+                const view = profile?.role === 'processor' ? 'merchant' : 'buyer';
+                const data: any = await apiFetch(`/api/quotes/with-requirement/${id}?view=${view}`);
                 const root = data?.data ?? data;
                 if (!root) throw new Error('Requirement not found');
 
@@ -130,13 +131,14 @@ const RequirementDetails = () => {
         };
         load();
         return () => { mounted = false; };
-    }, [id]);
+    }, [id, profile?.role]);
 
     // State for managing responses popup
     const [showAllResponses, setShowAllResponses] = useState(false);
     const [showResponseDetail, setShowResponseDetail] = useState(false);
     const [selectedResponse, setSelectedResponse] = useState<any>(null);
     const [orders, setOrders] = useState<any[]>([]);
+    const isSelectedResponseFinal = ['Confirmed', 'Rejected'].includes(selectedResponse?.status);
 
     // Format date exactly as provided by backend (avoid timezone shifts)
     const formatDateExact = (input: any) => {
@@ -301,8 +303,10 @@ const RequirementDetails = () => {
     const handleResponseClick = (response: any) => {
         setSelectedResponse({
             ...response,
-            status: '',
-            remarks: response.remarks || ''
+            // Preserve existing status if already set (e.g., Confirmed/Rejected)
+            status: response.status || '',
+            // Prefer existing remarks, fallback to message if present
+            remarks: response.remarks || response.message || ''
         });
         setShowResponseDetail(true);
     };
@@ -550,7 +554,7 @@ const RequirementDetails = () => {
                                                 onClick={(e) => handleDeleteResponse(response.id, e)}
                                                 aria-label="Delete response"
                                             >
-                                                <X className="h-4 w-4 text-muted-foreground" />
+                                                {/* <X className="h-4 w-4 text-muted-foreground" /> */}
                                             </button>
                                             <div className="flex items-center justify-between">
                                                 <div>
@@ -753,55 +757,65 @@ const RequirementDetails = () => {
 
                             <div>
                                 <Label htmlFor="status">Status</Label>
-                                <Select
-                                    value={selectedResponse.status || undefined}
-                                    onValueChange={(value) => {
-                                        setSelectedResponse({ ...selectedResponse, status: value });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Confirmed">Confirmed</SelectItem>
-                                        <SelectItem value="Rejected">Rejected</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <Label htmlFor="remarks">Remarks</Label>
-                                    <textarea
-                                        id="remarks"
-                                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                        value={selectedResponse.remarks || ""}
-                                        onChange={(e) =>
-                                            setSelectedResponse({ ...selectedResponse, remarks: e.target.value })
-                                        }
-                                        placeholder="Enter any remarks or notes..."
-                                    />
-                                </div>
-                                <div className="flex gap-2 justify-end">
-                                    <Button variant="outline" onClick={() => setShowResponseDetail(false)}>
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        onClick={() => {
-                                            const remarksInput = document.getElementById(
-                                                "remarks"
-                                            ) as HTMLTextAreaElement; // ✅ cast to textarea
-                                            handleStatusUpdate(
-                                                selectedResponse.id,
-                                                selectedResponse.status,
-                                                remarksInput.value // ✅ now TypeScript knows `.value`
-                                            );
+                                {isSelectedResponseFinal ? (
+                                    <div className="mt-2">
+                                        <Badge className={`text-xs capitalize ${getQuoteBadgeClasses(selectedResponse.status)}`}>
+                                            {selectedResponse.status}
+                                        </Badge>
+                                    </div>
+                                ) : (
+                                    <Select
+                                        value={selectedResponse.status || undefined}
+                                        onValueChange={(value) => {
+                                            setSelectedResponse({ ...selectedResponse, status: value });
                                         }}
                                     >
-                                        Submit
-                                    </Button>
-                                </div>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Confirmed">Confirmed</SelectItem>
+                                            <SelectItem value="Rejected">Rejected</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
+
+                                    <div className="space-y-4">
+                                            <div>
+                                                <Label htmlFor="remarks">Remarks</Label>
+                                                <textarea
+                                                    id="remarks"
+                                                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    value={selectedResponse.remarks || ""}
+                                                    onChange={(e) =>
+                                                        setSelectedResponse({ ...selectedResponse, remarks: e.target.value })
+                                                    }
+                                                    placeholder="Enter any remarks or notes..."
+                                                    disabled={isSelectedResponseFinal}
+                                                />
+                                            </div>
+                                        <div className="flex gap-2 justify-end">
+                                            <Button variant="outline" onClick={() => setShowResponseDetail(false)}>
+                                        Cancel
+                                            </Button>
+                                                <Button
+                                                    disabled={isSelectedResponseFinal || !selectedResponse.status}
+                                                    onClick={() => {
+                                                        const remarksInput = document.getElementById(
+                                                "remarks"
+                                            ) as HTMLTextAreaElement; // ✅ cast to textarea
+                                                        handleStatusUpdate(
+                                                            selectedResponse.id,
+                                                            selectedResponse.status,
+                                                remarksInput.value // ✅ now TypeScript knows `.value`
+                                                        );
+                                                    }}
+                                                >
+                                                    Submit
+                                                </Button>
+                                        </div>
+                                    </div>
 
                         </div>
                     )}

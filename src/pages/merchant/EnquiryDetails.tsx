@@ -71,9 +71,10 @@ const EnquiryDetails = () => {
     if (!requirement) return false;
     const qtyNum = Number(String(availableQuantity).replace(/[^0-9.]/g, ''));
     const reqQty = Number(String(requirement.quantity).replace(/[^0-9.]/g, '')) || 0;
+    const minQty = Number(String(requirement.minQty).replace(/[^0-9.]/g, '')) || 0;
     const priceNum = Number(String(merchantPrice).replace(/[^0-9.]/g, ''));
 
-    const qtyValid = !!availableQuantity && !isNaN(qtyNum) && qtyNum > 0 && qtyNum <= reqQty && !quantityError;
+    const qtyValid = !!availableQuantity && !isNaN(qtyNum) && qtyNum >= minQty && qtyNum <= reqQty && !quantityError;
     const priceValid = !!merchantPrice && !isNaN(priceNum) && priceNum > 0 && !priceError;
     return qtyValid && priceValid;
   })();
@@ -211,6 +212,7 @@ const EnquiryDetails = () => {
   const validateQuantity = (val: string) => {
     if (!requirement) return false;
     const requiredQty = Number(String(requirement.quantity).replace(/[^0-9.]/g, '')) || 0;
+    const minQty = Number(String(requirement.minQty).replace(/[^0-9.]/g, '')) || 0;
     const availableQty = Number(String(val).replace(/,/g, ''));
     if (!val) {
       setQuantityError('Quantity is required');
@@ -218,6 +220,10 @@ const EnquiryDetails = () => {
     }
     if (isNaN(availableQty)) {
       setQuantityError('Please enter a valid quantity');
+      return false;
+    }
+    if (availableQty < minQty) {
+      setQuantityError(`Available quantity cannot be less than minimum quantity (${minQty}kg)`);
       return false;
     }
     if (availableQty > requiredQty) {
@@ -261,8 +267,8 @@ const EnquiryDetails = () => {
         const mapped = (quotes || []).map((q: any) => ({
           id: String(q?.id ?? q?._id ?? q?.ID ?? q?.quoteId ?? ''),
           merchantId: q?.merchantId ?? q?.MerchantID ?? q?.merchantID ?? '',
-          merchantName: q?.merchantName || 'Merchant',
-          merchantLocation: q?.merchantLocation || '-',
+          merchantName: q?.merchantCompanyName || 'Merchant',
+          merchantLocation: q?.merchantAddress || '-',
           price: q?.priceINR ? `₹${Number(q?.priceINR).toLocaleString()}/kg` : '',
           quantity: q?.supplyQtyKg ? `${q?.supplyQtyKg} kg` : '',
           origin: q?.origin || '',
@@ -463,7 +469,7 @@ const EnquiryDetails = () => {
                       setAvailableQuantity(formatted);
                       validateQuantity(normalized);
                     }}
-                    placeholder={`Max: ${requirement.quantity}`}
+                    placeholder={`Min: ${requirement.minQty}, Max: ${requirement.quantity}`}
                     className={quantityError ? 'border-red-500' : ''}
                   />
                   {quantityError && <p className="text-sm text-red-500 mt-1">{quantityError}</p>}
@@ -493,7 +499,7 @@ const EnquiryDetails = () => {
 
         {/* Sidebar - All Responses */}
         <div className="space-y-6">
-          <Card className="h-full flex flex-col">
+          <Card className="h-[743px] flex flex-col">
             <CardHeader>
               <CardTitle className="text-lg flex items-center">
                 <MessageSquare size={18} className="mr-2" />
@@ -501,7 +507,7 @@ const EnquiryDetails = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-[45rem] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[40rem] overflow-y-auto pr-2">
                 {responses.length === 0 ? (
                   <div className="text-sm text-muted-foreground">No responses yet.</div>
                 ) : (
