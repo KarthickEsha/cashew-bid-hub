@@ -40,7 +40,7 @@ interface RequirementsState {
   requirements: Requirement[];
   addRequirement: (requirement: Omit<Requirement, 'id' | 'createdAt' | 'productName' | 'message' | 'fixedPrice'>) => void;
   updateRequirement: (id: string, requirement: Omit<Requirement, 'id' | 'createdAt' | 'customerName' | 'productName' | 'message' | 'fixedPrice'>) => void;
-  updateRequirementStatus: (id: string, status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed' | 'selected' | 'viewed') => void;
+  updateRequirementStatus: (id: string, status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed' | 'selected' | 'viewed') => Promise<void>;
   getRequirementById: (id: string) => Requirement | undefined;
   getRequirementsAsEnquiries: () => any[];
   getMyRequirements: () => any[];
@@ -140,9 +140,9 @@ export const useRequirements = create<RequirementsState>()(
             const country = item.country || '';
             const deliveryDeadline = item.deliverydate;
             const status = (item.status || 'active') as Requirement['status'];
-            const specifications = item.specifications || item.specs || '';
-            const allowLowerBid = Boolean(item.allowLowerBid ?? item.allow_lower_bid ?? false);
-            const minSupplyQuantity = String(item.minSupplyQuantity ?? item.min_qty ?? '0');
+            const specifications = item.description || item.specs || '';
+            const allowLowerBid = Boolean(item.lowerbit ?? item.allow_lower_bid ?? false);
+            const minSupplyQuantity = String(item.minimumqty ?? item.minSupplyQuantity ?? item.min_qty ?? '0');
             const customerName = item.user_name || item.buyerName || 'Anonymous Buyer';
             const productName = item.productName || `${grade} Cashews`;
             const fixedPrice = Number(item.fixedPrice ?? 0);
@@ -292,51 +292,74 @@ export const useRequirements = create<RequirementsState>()(
         }));
       },
 
-      updateRequirementStatus: (id, status) => {
+      updateRequirementStatus: async (id, status) => {
         console.group('=== updateRequirementStatus ===');
         console.log('1. Starting update for requirement:', { id, newStatus: status });
-        
-        // First get current state
-        const currentState = get();
-        const requirement = currentState.requirements.find(req => req.id === id);
-        
-        if (!requirement) {
+
+        // Snapshot previous state for potential rollback
+        const previous = get().requirements;
+
+        // Validate target requirement exists
+        const existing = previous.find(req => req.id === id);
+        if (!existing) {
           console.error('Requirement not found:', id);
           console.groupEnd();
           return;
         }
-        
+
         console.log('2. Current requirement data:', {
           id,
-          oldStatus: requirement.status,
-          currentData: requirement
+          oldStatus: existing.status,
+          currentData: existing,
         });
-        
-        // Update the state
-        set((state) => {
-          const updatedRequirements = state.requirements.map(req => {
-            if (req.id === id) {
-              const updated = { 
-                ...req, 
-                status,
-                lastModified: new Date().toISOString()
-              };
-              
-              console.log('3. Updated requirement data:', updated);
-              return updated;
-            }
-            return req;
+
+        // Optimistic update in store
+        set(state => ({
+          requirements: state.requirements.map(req =>
+            req.id === id
+              ? { ...req, status, lastModified: new Date().toISOString() }
+              : req
+          ),
+        }));
+
+        try {
+          // Persist status to backend. Some backends replace the whole document on PUT,
+          // so send a full payload derived from existing requirement to avoid wiping fields.
+          const current = get().requirements.find(r => r.id === id)!;
+          const toNumber = (val: any) => {
+            const cleaned = String(val ?? '')
+              .replace(/,/g, '')
+              .replace(/[^0-9.]/g, '');
+            const num = Number(cleaned);
+            return isNaN(num) ? 0 : num;
+          };
+          const fullPayload = {
+            grade: current.grade,
+            origin: current.origin,
+            requiredqty: toNumber(current.quantity),
+            minimumqty: toNumber(current.minSupplyQuantity),
+            expectedprice: toNumber(current.expectedPrice),
+            deliverydate: current.deliveryDeadline || null,
+            location: current.deliveryLocation,
+            country: current.country,
+            city: current.city,
+            description: current.specifications,
+            lowerbit: current.allowLowerBid,
+            status,
+          } as any;
+
+          await apiFetch(`/api/requirement/update-requirement/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(fullPayload),
           });
-          
-          console.log('4. All requirements after update:', updatedRequirements);
-          
-          // Also update localStorage directly to ensure persistence
+
+          // Sync localStorage after successful API update
           try {
             const storageKey = 'requirements-storage';
             const storedData = localStorage.getItem(storageKey);
             if (storedData) {
               const parsedData = JSON.parse(storedData);
-              const updatedStoredRequirements = parsedData.state.requirements.map((req: any) => 
+              const updatedStoredRequirements = parsedData.state.requirements.map((req: any) =>
                 req.id === id ? { ...req, status, lastModified: new Date().toISOString() } : req
               );
               localStorage.setItem(
@@ -345,19 +368,23 @@ export const useRequirements = create<RequirementsState>()(
                   ...parsedData,
                   state: {
                     ...parsedData.state,
-                    requirements: updatedStoredRequirements
-                  }
+                    requirements: updatedStoredRequirements,
+                  },
                 })
               );
               console.log('5. Successfully updated localStorage');
             }
-          } catch (error) {
-            console.error('Error updating localStorage:', error);
+          } catch (storageErr) {
+            console.error('Error updating localStorage:', storageErr);
           }
-          
+        } catch (apiErr) {
+          console.error('API status update failed. Rolling back state.', apiErr);
+          // Rollback on failure
+          set({ requirements: previous });
+          throw apiErr;
+        } finally {
           console.groupEnd();
-          return { requirements: updatedRequirements };
-        });
+        }
       },
 
       getRequirementById: (id) => {

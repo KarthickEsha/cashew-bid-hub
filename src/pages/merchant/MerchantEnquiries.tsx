@@ -660,18 +660,18 @@ const sortEnquiries = (enqs: any[]) => {
       console.log('Enquiry ID:', selectedEnquiry.id);
 
       try {
-        console.log('Calling updateRequirementStatus with:', {
-          id: selectedEnquiry.id,
-          status: newStatus
-        });
 
-        // Update the status in the store
-        await updateRequirementStatus(selectedEnquiry.id.toString(), newStatus);
+// Update the status in the store (prefer backend apiId if available)
+await updateRequirementStatus(String(selectedEnquiry.apiId ?? selectedEnquiry.id), newStatus);
 
-        // Force a refresh of the enquiries list to ensure UI is up to date
-        console.log('Refreshing enquiries after status update...');
-        refreshEnquiries();
+// Force a refresh of the enquiries list to ensure UI is up to date
+console.log('Refreshing enquiries after status update...');
+refreshEnquiries();
 
+// Also update the selected enquiry in the modal if it's open
+if (selectedEnquiry) {
+console.log('Selected enquiry ID:', selectedEnquiry.id);
+console.log('Current enquiry status:', selectedEnquiry.status);
         // Also update the selected enquiry in the modal if it's open
         if (selectedEnquiry) {
           console.log('Updating selected enquiry in modal...');
@@ -680,6 +680,7 @@ const sortEnquiries = (enqs: any[]) => {
             status: newStatus === 'selected' ? 'selected' : prev?.status
           }));
         }
+      } // Close outer if (selectedEnquiry)
         console.log('updateRequirementStatus completed');
 
         // Refresh the enquiries to get the latest data

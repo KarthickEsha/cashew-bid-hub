@@ -33,6 +33,7 @@ import { useInventory } from "@/hooks/useInventory"; // Add this line to import 
 import { ProductType } from "@/types/user";
 import { useEffect, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
+import { apiFetch } from "@/lib/api";
 
 const navItems = [
   {
@@ -95,7 +96,8 @@ export function MerchantSidebar() {
 
   // Get dynamic counts
   const { getRequirementsAsEnquiries } = useRequirements();
-  const { responses, getStockEnquiriesCount } = useResponses();
+  const { responses, getStockEnquiriesCount, getSellerResponseCount, ensureLoaded } = useResponses();
+
   const { orders } = useOrders();
   const { products } = useInventory(); // local store fallback
 
@@ -112,17 +114,46 @@ export function MerchantSidebar() {
     );
   });
 
-  // Only show selected (accepted) responses
-  const selectedResponses = activeResponses.filter(r => r.status === 'accepted');
+  // Only show selected (confirmed/accepted) responses
+  const selectedResponses = activeResponses.filter(r => {
+    const s = String(r.status).toLowerCase();
+    return s === 'confirmed' || s === 'accepted';
+  });
   const selectedRejectedResponses = activeResponses.filter(r => r.status === 'rejected');
+
+  // Fallback count fetched from backend explicitly (some APIs may not include rejected in the main list)
+  const [rejectedApiCount, setRejectedApiCount] = useState(0);
+  const [confirmedApiCount, setConfirmedApiCount] = useState(0);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data: any = await apiFetch('/api/quotes/rejected');
+        const arr = (data?.data ?? data) as any[];
+        if (mounted) setRejectedApiCount(Array.isArray(arr) ? arr.length : 0);
+      } catch {
+        if (mounted) setRejectedApiCount(0);
+      }
+      try {
+        const data: any = await apiFetch('/api/quotes/confirmed');
+        const arr = (data?.data ?? data) as any[];
+        if (mounted) setConfirmedApiCount(Array.isArray(arr) ? arr.length : 0);
+      } catch {
+        if (mounted) setConfirmedApiCount(0);
+      }
+    })();
+    return () => { mounted = false };
+  }, []);
 
   // Count calculations
   const enquiriesCount = activeEnquiries.length;
-  const confirmedCount = selectedResponses.length;
-  const rejectedCount = selectedRejectedResponses.length; // Don't show rejected count in sidebar
+  const confirmedCount = Math.max(selectedResponses.length, confirmedApiCount);
+  const rejectedCount = Math.max(selectedRejectedResponses.length, rejectedApiCount);
   const ordersCount = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length;
   const stockEnquiriesCount = getStockEnquiriesCount();
+  const sellerResponseCount = getSellerResponseCount();
   const [currentProductType, setCurrentProductType] = useState<ProductType>();
+
   // Counts persisted by MerchantProducts
   const [stockCounts, setStockCounts] = useState<Record<string, { active: number; out_of_stock: number }>>({});
   const { profile } = useProfile();
@@ -134,6 +165,11 @@ export function MerchantSidebar() {
       setCurrentProductType("RCN")
     }
   }, [profile?.productType]);
+
+  // Ensure responses are loaded so counts can be shown by default and after role resolves
+  useEffect(() => {
+    ensureLoaded(true).catch(() => {});
+  }, [profile?.role]);
 
   // Read counts from localStorage and keep in sync (no API re-fetch here)
   useEffect(() => {
@@ -230,10 +266,10 @@ export function MerchantSidebar() {
                         </div>
                       )}
 
-                      {/* Buyer Response counts */}
-                      {item.url === "/merchant/buyer-response" && !collapsed && ordersCount > 0 && (
+                      {/* Buyer/Seller Response counts */}
+                      {item.url === "/merchant/buyer-response" && !collapsed && (
                         <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
-                          {ordersCount}
+                          {sellerResponseCount}
                         </Badge>
                       )}
 
@@ -281,7 +317,7 @@ export function MerchantSidebar() {
 
                       {/* Rejected Orders count */}
                       {item.url === "/merchant/rejected-orders" && !collapsed && rejectedCount > 0 && (
-                        <Badge variant={rejectedCount > 0 ? "destructive" : "outline"}
+                        <Badge variant={rejectedCount > 0 ? "secondary" : "outline"}
                           className="ml-auto px-1.5 h-5 text-xs font-normal">
                           {rejectedCount}
                         </Badge>

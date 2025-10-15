@@ -326,7 +326,17 @@ const ProductDetail = () => {
       return;
     }
 
-    if ((!bidQuantity || !bidPrice) && product?.pricingType === 'bidding') {
+    // Require quantity for sending enquiry
+    if (!bidQuantity || parseFloat(bidQuantity) <= 0) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a valid quantity.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if ((!bidPrice) && product?.pricingType === 'bidding' && product?.allowBuyerOffers) {
       toast({
         title: "Missing Information",
         description: "Please fill in quantity and expected price.",
@@ -339,6 +349,31 @@ const ProductDetail = () => {
       const now = new Date().toISOString();
       const deliveryDate = new Date();
       deliveryDate.setDate(deliveryDate.getDate() + 7); // 7 days from now
+      // Prepare enquiry payload for backend
+      const quantityNum = parseFloat(bidQuantity || '0');
+      const expectedPriceNum = product.allowBuyerOffers
+        ? (bidPrice ? parseFloat(bidPrice) : 0)
+        : Number(product.price || 0);
+
+      // Call backend API to send enquiry
+      try {
+        await apiFetch(`/api/stocks/send-enquiry/${encodeURIComponent(product.id)}`, {
+          method: "POST",
+          body: JSON.stringify({
+            quantity: quantityNum,
+            expectedPrice: expectedPriceNum,
+            remark: bidMessage || '',
+          }),
+        });
+      } catch (err) {
+        console.error('Backend enquiry failed:', err);
+        toast({
+          title: "Failed to submit enquiry",
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: "destructive",
+        });
+        return; // Stop local updates if backend failed
+      }
       // Create order data
       const orderData = {
         id: `ORD-${Date.now()}`,
@@ -574,6 +609,19 @@ const ProductDetail = () => {
     return parts[0] + (parts.length > 1 ? '.' + parts.slice(1).join('') : '');
   };
 
+  // Form validation state for enabling/disabling submit
+  const quantityNum = bidQuantity ? parseFloat(bidQuantity) : NaN;
+  const priceNum = bidPrice ? parseFloat(bidPrice) : NaN;
+  const isQuantityFilled = bidQuantity.trim() !== '' && !isNaN(quantityNum);
+  const isQuantityWithinBounds =
+    isQuantityFilled &&
+    (quantityNum > 0) &&
+    (quantityNum <= (product?.availableQty ?? Infinity)) &&
+    (!product?.minOrderQty || quantityNum >= product.minOrderQty);
+  const needsPrice = !!product?.allowBuyerOffers; // price field is shown only when buyer offers are allowed
+  const isPriceFilled = !needsPrice || (bidPrice.trim() !== '' && !isNaN(priceNum));
+  const isSubmitDisabled = !(isQuantityWithinBounds && isPriceFilled);
+
   return (
     <div className={`${role === 'processor' ? 'w-full' : 'max-w-7xl'} mx-auto px-4 py-6`}>
       {/* Back Button */}
@@ -743,7 +791,8 @@ const ProductDetail = () => {
                           ? 'border-red-500'
                           : ''
                           }`}
-                      />
+                      required
+                    />
 
                       {/* Validation message */}
                       {bidQuantity &&
@@ -777,6 +826,7 @@ const ProductDetail = () => {
                         }}
                         placeholder="Enter your expected price"
                         className="border-primary/20 focus:border-primary"
+                        required
                       />
                     </div>
                   ) : (
@@ -808,6 +858,7 @@ const ProductDetail = () => {
                   onClick={handlePlaceBid}
                   className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white font-semibold py-3 text-lg shadow-warm"
                   size="lg"
+                  disabled={isSubmitDisabled}
                 >
                   <Send className="mr-2" size={18} />
                   {product.pricingType === "bidding" ? "Place Bid Now" : "Submit"}

@@ -104,7 +104,7 @@ const RequirementDetails = () => {
                         id: rid,
                         merchantId,
                         merchantName: q?.merchantCompanyName || merchantId || 'Merchant',
-                        merchantLocation: q?.merchantAddress || '-',
+                        merchantLocation: q?.merchantCountry || '-',
                         price: priceINR ? `₹${Number(priceINR).toLocaleString()}/kg` : '',
                         quantity: supplyQty ? `${supplyQty} kg` : '',
                         origin: q?.origin || '',
@@ -117,6 +117,16 @@ const RequirementDetails = () => {
                         status: (q?.status || 'new').toString(),
                     };
                 });
+
+                // If there are quotes and requirement isn't already final, mark as responded
+                try {
+                    const finalStatuses = ['responded', 'selected', 'closed', 'draft', 'expired', 'viewed'];
+                    if ((quotes?.length ?? 0) > 0 && !finalStatuses.includes(String(status))) {
+                        await updateRequirementStatus(String(nid), 'responded');
+                    }
+                } catch (err) {
+                    console.error('Failed to update requirement status to responded:', err);
+                }
 
                 if (mounted) {
                     setRequirement(normalized);
@@ -138,7 +148,11 @@ const RequirementDetails = () => {
     const [showResponseDetail, setShowResponseDetail] = useState(false);
     const [selectedResponse, setSelectedResponse] = useState<any>(null);
     const [orders, setOrders] = useState<any[]>([]);
-    const isSelectedResponseFinal = ['Confirmed', 'Rejected'].includes(selectedResponse?.status);
+    const [pendingStatus, setPendingStatus] = useState<string>('');
+    const currentSelectedStatus = selectedResponse
+        ? (responses.find(r => r.id === selectedResponse.id)?.status || selectedResponse.status)
+        : '';
+    const isSelectedResponseFinal = ['Confirmed', 'Rejected'].includes(currentSelectedStatus);
 
     // Format date exactly as provided by backend (avoid timezone shifts)
     const formatDateExact = (input: any) => {
@@ -165,7 +179,6 @@ const RequirementDetails = () => {
             return String(input);
         }
     };
-
 
     // Loading and error states
     if (loading) {
@@ -308,6 +321,7 @@ const RequirementDetails = () => {
             // Prefer existing remarks, fallback to message if present
             remarks: response.remarks || response.message || ''
         });
+        setPendingStatus('');
         setShowResponseDetail(true);
     };
 
@@ -484,7 +498,7 @@ const RequirementDetails = () => {
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm leading-relaxed">
-                              {requirement.description}
+                                {requirement.description}
                             </p>
                         </CardContent>
                     </Card>
@@ -738,12 +752,11 @@ const RequirementDetails = () => {
                             <div>
                                 <div className="text-sm text-muted-foreground">Origin</div>
                                 <div className="font-medium">
-                                    {selectedResponse.origin
-                                        ? selectedResponse.origin.charAt(0).toUpperCase() + selectedResponse.origin.slice(1)
+                                    {selectedResponse.merchantLocation
+                                        ? selectedResponse.merchantLocation.charAt(0).toUpperCase() + selectedResponse.merchantLocation.slice(1)
                                         : ""}
                                 </div>
                             </div>
-
 
                             <div>
                                 <div className="text-sm text-muted-foreground">Merchant Price</div>
@@ -759,15 +772,15 @@ const RequirementDetails = () => {
                                 <Label htmlFor="status">Status</Label>
                                 {isSelectedResponseFinal ? (
                                     <div className="mt-2">
-                                        <Badge className={`text-xs capitalize ${getQuoteBadgeClasses(selectedResponse.status)}`}>
-                                            {selectedResponse.status}
+                                        <Badge className={`text-xs capitalize ${getQuoteBadgeClasses(currentSelectedStatus)}`}>
+                                            {currentSelectedStatus}
                                         </Badge>
                                     </div>
                                 ) : (
                                     <Select
-                                        value={selectedResponse.status || undefined}
+                                        value={pendingStatus || undefined}
                                         onValueChange={(value) => {
-                                            setSelectedResponse({ ...selectedResponse, status: value });
+                                            setPendingStatus(value);
                                         }}
                                     >
                                         <SelectTrigger>
@@ -781,41 +794,41 @@ const RequirementDetails = () => {
                                 )}
                             </div>
 
-                                    <div className="space-y-4">
-                                            <div>
-                                                <Label htmlFor="remarks">Remarks</Label>
-                                                <textarea
-                                                    id="remarks"
-                                                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                    value={selectedResponse.remarks || ""}
-                                                    onChange={(e) =>
-                                                        setSelectedResponse({ ...selectedResponse, remarks: e.target.value })
-                                                    }
-                                                    placeholder="Enter any remarks or notes..."
-                                                    disabled={isSelectedResponseFinal}
-                                                />
-                                            </div>
-                                        <div className="flex gap-2 justify-end">
-                                            <Button variant="outline" onClick={() => setShowResponseDetail(false)}>
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="remarks">Remarks</Label>
+                                    <textarea
+                                        id="remarks"
+                                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={selectedResponse.remarks || ""}
+                                        onChange={(e) =>
+                                            setSelectedResponse({ ...selectedResponse, remarks: e.target.value })
+                                        }
+                                        placeholder="Enter any remarks or notes..."
+                                        disabled={isSelectedResponseFinal}
+                                    />
+                                </div>
+                                <div className="flex gap-2 justify-end">
+                                    <Button variant="outline" onClick={() => setShowResponseDetail(false)}>
                                         Cancel
-                                            </Button>
-                                                <Button
-                                                    disabled={isSelectedResponseFinal || !selectedResponse.status}
-                                                    onClick={() => {
-                                                        const remarksInput = document.getElementById(
+                                    </Button>
+                                    <Button
+                                        disabled={isSelectedResponseFinal || !pendingStatus}
+                                        onClick={() => {
+                                            const remarksInput = document.getElementById(
                                                 "remarks"
                                             ) as HTMLTextAreaElement; // ✅ cast to textarea
-                                                        handleStatusUpdate(
-                                                            selectedResponse.id,
-                                                            selectedResponse.status,
+                                            handleStatusUpdate(
+                                                selectedResponse.id,
+                                                pendingStatus,
                                                 remarksInput.value // ✅ now TypeScript knows `.value`
-                                                        );
-                                                    }}
-                                                >
-                                                    Submit
-                                                </Button>
-                                        </div>
-                                    </div>
+                                            );
+                                        }}
+                                    >
+                                        Submit
+                                    </Button>
+                                </div>
+                            </div>
 
                         </div>
                     )}

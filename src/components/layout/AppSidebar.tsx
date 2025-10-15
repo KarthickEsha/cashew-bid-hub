@@ -48,7 +48,7 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const { signOut } = useClerk();
-  const { responses, ensureLoaded } = useResponses() as any;
+  const { responses, ensureLoaded, getSellerResponseCount } = useResponses() as any;
   const { orders } = useOrders();
   const { getMyRequirements, fetchAllRequirements } = useRequirements();
   const requirements = getMyRequirements();
@@ -59,15 +59,15 @@ export function AppSidebar() {
   const { profile } = useProfile();
 
   useEffect(() => {
-    // Count new/unread responses
-    const count = responses.length;
-    setNewResponseCount(count);
+    // Count seller responses from store helper (fallbacks handled inside hook)
+    const count = getSellerResponseCount?.() ?? responses.length ?? 0;
+    setNewResponseCount(Number(count) || 0);
     if (profile?.productType && profile.productType !== "Both") {
       setCurrentProductType(profile.productType);
     } else {
       setCurrentProductType("RCN")
     }
-  }, [responses, profile?.productType]);
+  }, [responses, getSellerResponseCount, profile?.productType]);
 
   // Ensure seller responses are loaded once from API and persisted
   useEffect(() => {

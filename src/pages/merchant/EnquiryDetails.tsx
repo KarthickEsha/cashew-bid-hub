@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useResponses } from '@/hooks/useResponses';
 import { useProfile } from '@/hooks/useProfile';
 import { useUser } from '@clerk/clerk-react';
+import { useRequirements } from '@/hooks/useRequirements';
 import {
   ArrowLeft,
   Calendar,
@@ -32,13 +33,13 @@ const EnquiryDetails = () => {
   const { addResponse } = useResponses();
   const { profile } = useProfile();
   const { user } = useUser();
+  const { updateRequirementStatus } = useRequirements();
 
   // Requirement and responses state
   const [requirement, setRequirement] = useState<any | null>(null);
   const [responses, setResponses] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
 
   // Quote form state
   const [availableQuantity, setAvailableQuantity] = useState('');
@@ -236,6 +237,7 @@ const EnquiryDetails = () => {
 
   const handleSubmitQuote = async () => {
     if (!requirement) return;
+
     if (!merchantPrice || !availableQuantity) {
       toast({ title: 'Error', description: 'Please fill in all required fields', variant: 'destructive' });
       return;
@@ -259,6 +261,11 @@ const EnquiryDetails = () => {
         }
       );
       toast({ title: 'Quote sent', description: 'Your quote has been submitted successfully.' });
+      // Mark requirement as responded
+      try {
+        await updateRequirementStatus(String(requirement.id), 'responded');
+        setRequirement(prev => prev ? { ...prev, status: 'responded' } : prev);
+      } catch (_) { /* ignore status update error */ }
       // Refresh list
       try {
         const data: any = await apiFetch(`/api/quotes/with-requirement/${requirement.id}`);
@@ -267,7 +274,7 @@ const EnquiryDetails = () => {
         const mapped = (quotes || []).map((q: any) => ({
           id: String(q?.id ?? q?._id ?? q?.ID ?? q?.quoteId ?? ''),
           merchantId: q?.merchantId ?? q?.MerchantID ?? q?.merchantID ?? '',
-          merchantName: q?.merchantCompanyName || 'Merchant',
+          merchantName: q?.merchantCompanyName || q?.merchantId || 'Merchant',
           merchantLocation: q?.merchantAddress || '-',
           price: q?.priceINR ? `₹${Number(q?.priceINR).toLocaleString()}/kg` : '',
           quantity: q?.supplyQtyKg ? `${q?.supplyQtyKg} kg` : '',
@@ -275,7 +282,7 @@ const EnquiryDetails = () => {
           grade: q?.grade || '',
           deliveryTime: q?.deliveryTime || '',
           contact: q?.contact || '',
-          message: q?.remarks ?? '',
+          message: q?.remarks ?? q?.Remarks ?? '',
           certifications: q?.certifications || [],
           responseDate: q?.createdAt ?? new Date().toISOString(),
           status: (q?.status || 'new').toString(),
@@ -329,6 +336,9 @@ const EnquiryDetails = () => {
         }
       ]);
       toast({ title: 'Saved locally', description: 'Quote saved locally due to network/server issue.' });
+      // Also update requirement status locally and attempt to mark as responded in store
+      setRequirement(prev => prev ? { ...prev, status: 'responded' } : prev);
+      try { await updateRequirementStatus(String(requirement.id), 'responded'); } catch (_) { /* ignore */ }
     }
   };
 

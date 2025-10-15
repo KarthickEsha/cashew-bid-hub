@@ -202,8 +202,10 @@ export const useResponses = create<ResponsesState>()(
 
         try {
           const { profile, setProfile } = useProfile();
-          const viewer = profile?.role === 'processor' ? 'merchant' : 'buyer';
+          const role = (profile as any)?.role?.toString?.().toLowerCase?.() || '';
+          const viewer = role === 'merchant' || role === 'processor' ? 'merchant' : 'buyer';
           const data: any = await apiFetch(`/api/quotes/get-all-quotes?viewer=${viewer}`);
+
           const arr = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
           const mapped: MerchantResponse[] = arr.map((q: any) => {
             const createdAt = q?.createdAt || new Date().toISOString();
