@@ -47,7 +47,7 @@
     "viewAllActivity": "View All Activity",
     "browseProducts": "Browse Products",
     "postRequirement": "Post Requirement",
-    "viewMyOrders": "View My Orders",
+    "viewMyOrders": "View My Responses",
     "manageRequirements": "Manage Requirements",
     "requirementsStats": "{{active}} active, {{draft}} draft",
     "fromRequirements": "From {{count}} requirements",

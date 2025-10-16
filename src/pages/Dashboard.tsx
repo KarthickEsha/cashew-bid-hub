@@ -19,6 +19,7 @@ import path from "path";
 import { useResponses } from "@/hooks/useResponses";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { apiFetch } from "@/lib/api";
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -29,6 +30,34 @@ const Dashboard = () => {
   const [newResponseCount, setNewResponseCount] = useState(0);
   const { responses } = useResponses();
   const [showAllActivity, setShowAllActivity] = useState(false);
+  const [dashCards, setDashCards] = useState<any | null>(null);
+  const [dashLists, setDashLists] = useState<any | null>(null);
+  const [loadingDash, setLoadingDash] = useState(false);
+  const [errorDash, setErrorDash] = useState<string | null>(null);
+
+  // Fetch protected buyer dashboard
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoadingDash(true);
+        setErrorDash(null);
+        const data = await apiFetch("/api/users/buyer-dashboard");
+        // expected shape: { status: 'success', data: { cards }, lists? }
+        if (!mounted) return;
+        setDashCards((data as any)?.data?.cards ?? null);
+        setDashLists((data as any)?.lists ?? null);
+      } catch (e: any) {
+        if (!mounted) return;
+        setErrorDash(e?.message || "Failed to load dashboard");
+      } finally {
+        if (mounted) setLoadingDash(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Get dynamic data from requirements
   const requirements = getMyRequirements();
@@ -53,21 +82,26 @@ const Dashboard = () => {
     return acc + (priceNum * quantityNum / 1000); // Convert to tons for calculation
   }, 0);
 
+  // Prefer backend-provided cards when available
+  const myReqCard = dashCards?.myRequirements;
+  const sellerRespCard = dashCards?.sellerResponses;
+  const myRespCard = dashCards?.myResponses;
+
   const stats = [
     {
       title: t('dashboard.myRequirements'),
-      value: requirements.length.toString(),
+      value: (myReqCard?.count ?? requirements.length).toString(),
       icon: FileText,
       color: "text-blue-500",
-      trend: t('dashboard.requirementsStats', { active: activeRequirements, draft: draftRequirements }),
+      trend: t('dashboard.requirementsStats', { active: myReqCard?.active ?? activeRequirements, draft: myReqCard?.draft ?? draftRequirements }),
       path: "/my-requirements"
     },
     {
       title: t('dashboard.sellerResponses'),
-      value: totalResponses.toString(),
+      value: (sellerRespCard?.count ?? totalResponses).toString(),
       icon: MessageSquare,
       color: "text-green-500",
-      trend: t('dashboard.fromRequirements', { count: requirements.length }),
+      trend: t('dashboard.fromRequirements', { count: sellerRespCard?.fromRequirements ?? requirements.length }),
       path: "/responses"
     },
     {
@@ -105,7 +139,48 @@ const Dashboard = () => {
     }
   };
 
-  // Build recent activity from live data
+  // Build recent activity from backend lists when available
+  const backendActivity = (() => {
+    if (!dashLists) return [] as Array<any>;
+    const items: Array<any> = [];
+    const add = (arr: any[], makeMsg: (it: any) => { message: string; status?: string; createdAt?: string }) => {
+      for (const it of arr) {
+        const info = makeMsg(it);
+        const createdAt = it.createdAt || info.createdAt || new Date().toISOString();
+        items.push({
+          type: 'backend',
+          message: info.message,
+          time: relativeTime(createdAt),
+          status: (it.status || info.status || '').toString().toLowerCase(),
+          createdAt,
+        });
+      }
+    };
+    if (Array.isArray(dashLists.myRequirements)) {
+      add(dashLists.myRequirements, (it) => ({
+        message: t('dashboard.activity.requirementPosted', { grade: it.grade, quantity: it.quantity }),
+        status: it.status,
+        createdAt: it.createdAt,
+      }));
+    }
+    if (Array.isArray(dashLists.sellerResponses)) {
+      add(dashLists.sellerResponses, (it) => ({
+        message: t('dashboard.activity.supplierResponded'),
+        status: it.status,
+        createdAt: it.createdAt,
+      }));
+    }
+    if (Array.isArray(dashLists.myResponses)) {
+      add(dashLists.myResponses, (it) => ({
+        message: t('dashboard.activity.orderPlaced', { type: it.productId || 'Cashews', quantity: it.quantity }),
+        status: it.status,
+        createdAt: it.createdAt,
+      }));
+    }
+    return items.sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
+  })();
+
+  // Fallback: Build recent activity from local state
   const recentOrders = [...orders]
     .filter(o => (o.productId ?? '').trim() !== '')
     .sort((a, b) => new Date(b.createdAt || b.orderDate).getTime() - new Date(a.createdAt || a.orderDate).getTime())
@@ -137,8 +212,8 @@ const Dashboard = () => {
     };
     });
 
-  // Generate recent activity
-  const recentActivity = [
+  // Generate recent activity (prefer backend)
+  const fallbackActivity = [
     ...requirements.map(req => {
       const createdAt = req.createdAt || req.createdDate || new Date().toISOString();
       return {
@@ -152,6 +227,8 @@ const Dashboard = () => {
     ...recentOrders,
     ...recentResponses,
   ].sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
+
+  const recentActivity = backendActivity.length ? backendActivity : fallbackActivity;
 
   // Limit activity items unless toggled to show all
   const displayedActivity = showAllActivity ? recentActivity : recentActivity.slice(0, 5);
