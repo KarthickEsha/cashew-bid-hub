@@ -57,6 +57,8 @@ export function AppSidebar() {
   const [stocks, setStocks] = useState<any[]>([]);
   const [currentProductType, setCurrentProductType] = useState<ProductType>();
   const { profile } = useProfile();
+  // My Enquiries (orders) count from backend
+  const [myEnquiriesCount, setMyEnquiriesCount] = useState<number | null>(null);
 
   useEffect(() => {
     // Count seller responses from store helper (fallbacks handled inside hook)
@@ -98,6 +100,32 @@ export function AppSidebar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch My Enquiries count from /api/stocks/enquiries; fallback to local orders count on error
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data: unknown = await apiFetch('/api/stocks/enquiries');
+        const payload: unknown = (data as any)?.data ?? data;
+        let count = 0;
+        if (Array.isArray(payload)) {
+          count = payload.length;
+        } else if (
+          payload &&
+          typeof payload === 'object' &&
+          'count' in payload &&
+          typeof (payload as { count: unknown }).count === 'number'
+        ) {
+          count = (payload as { count: number }).count;
+        }
+        if (mounted) setMyEnquiriesCount(count);
+      } catch {
+        if (mounted) setMyEnquiriesCount(null);
+      }
+    })();
+    return () => { mounted = false };
+  }, []);
+
   // Load marketplace stocks from localStorage (per type), then refresh from API with type
   useEffect(() => {
     if (!currentProductType) return;
@@ -133,11 +161,12 @@ export function AppSidebar() {
     s => (s.status === 'active' || (s.availableqty ?? 0) > 0) && s.type === currentProductType
   ).length;
   const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
+  const myEnquiriesBadge = (myEnquiriesCount ?? ordersCount);
 
   const mainNavItems: NavItem[] = [
     { path: "/", label: t('sidebar.mainNav.dashboard'), icon: Home },
     { path: "/marketplace", label: t('sidebar.mainNav.marketplace'), icon: Store, badge: activeProductsCount },
-    { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail, badge: ordersCount }
+    { path: "/my-orders", label: t('sidebar.myActivity.myEnquiries'), icon: Mail, badge: myEnquiriesBadge }
 
   ];
 

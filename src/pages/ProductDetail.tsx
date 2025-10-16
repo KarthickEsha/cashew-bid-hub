@@ -147,7 +147,6 @@ const ProductDetail = () => {
                 description: 'Merchant information not available'
               };
               setMerchant(merchantData);
-              debugger
               // Map backend enquiries (if present) to UI shape and set state
               const apiEnquiries = (resp as any)?.data?.enquiries;
               if (Array.isArray(apiEnquiries)) {
@@ -925,12 +924,11 @@ const ProductDetail = () => {
                 </div>
 
                 <div className="pt-4 space-y-3">
-                  <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white shadow-warm">
+                  {/* <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white shadow-warm">
                     Contact Merchant
-                  </Button>
+                  </Button> */}
                   <Button
-                    variant="outline"
-                    className="w-full border-primary/20 hover:bg-primary/5"
+                    className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white shadow-warm"
                     onClick={handleViewAllProducts}
                   >
                     View All Products

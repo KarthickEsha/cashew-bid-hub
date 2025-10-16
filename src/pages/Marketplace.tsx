@@ -87,7 +87,7 @@ const Marketplace = () => {
                     const normalizedType = rawType.toLowerCase().startsWith('kern') ? 'Kernel' : 'RCN';
                     return {
                         id: String(s?.id || s?._id || Math.random().toString(36).slice(2)),
-                        merchantName: s?.merchantName || profile?.companyName || "Your Company Name",
+                        merchantName: s?.merchantCompanyName || profile?.companyName || "Your Company Name",
                         location: typeof location === 'string' ? location : String(location ?? ''),
                         origin: s?.origin || 'Not specified',
                         grade: s?.grade || 'RAW Cashews',
@@ -563,7 +563,7 @@ const Marketplace = () => {
                                         <div className="flex items-start justify-between">
                                             <div>
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <CardTitle className="text-lg">{profile?.companyName || 'Your Company'}</CardTitle>
+                                                    <CardTitle className="text-lg">{product.merchantName || 'Your Company'}</CardTitle>
                                                     {product.verified && (
                                                         <Badge variant="default" className="text-xs ml-2">
                                                             Verified
