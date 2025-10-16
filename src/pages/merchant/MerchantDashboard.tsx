@@ -22,6 +22,12 @@ const MerchantDashboard = () => {
   const stats = getProductStats();
   const navigate = useNavigate();
 
+  // Backend dashboard state
+  const [dashCards, setDashCards] = useState<any | null>(null);
+  const [dashLists, setDashLists] = useState<any | null>(null);
+  const [loadingDash, setLoadingDash] = useState(false);
+  const [errorDash, setErrorDash] = useState<string | null>(null);
+
   // Persisted stock counts (shared with MerchantSidebar and written by MerchantProducts)
   type StatusCounts = { active: number; out_of_stock: number };
   const STOCK_COUNTS_KEY = "stocks_counts_v1";
@@ -73,6 +79,27 @@ const MerchantDashboard = () => {
       window.removeEventListener('stocks:changed', onStocksChanged as EventListener);
       window.removeEventListener('storage', onStorage);
     };
+  }, []);
+
+  // Fetch protected merchant dashboard
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoadingDash(true);
+        setErrorDash(null);
+        const data = await apiFetch("/api/users/merchant-dashboard");
+        if (!mounted) return;
+        setDashCards((data as any)?.data?.cards ?? null);
+        setDashLists((data as any)?.lists ?? null);
+      } catch (e: any) {
+        if (!mounted) return;
+        setErrorDash(e?.message || "Failed to load dashboard");
+      } finally {
+        if (mounted) setLoadingDash(false);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
   // Ensure counts exist for the currently selected type; if missing, fetch and persist
@@ -153,6 +180,19 @@ const MerchantDashboard = () => {
     { id: 3, type: "product", message: "Low stock alert for W180 Cashews", time: "6 hours ago" },
     { id: 4, type: "order", message: "Order #ORD-123 marked as shipped", time: "1 day ago" },
   ];
+
+  // Build recent activity from backend myQuotes; fallback to mock
+  const recentActivity = Array.isArray(dashLists?.myQuotes)
+    ? [...dashLists.myQuotes]
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .map((q: any) => ({
+          id: q.id,
+          type: "quote",
+          message: `Quote submitted for Grade ${q.grade} • ${q.quantity} kg`,
+          time: new Date(q.createdAt).toLocaleString(),
+          status: q.status,
+        }))
+    : mockRecentActivity;
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -179,26 +219,34 @@ const MerchantDashboard = () => {
           className="cursor-pointer hover:shadow-md transition"
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Enquiries</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{newEnquiriesCount}</div>
+          <CardTitle className="text-sm font-medium">New Enquiries</CardTitle>
+          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{dashCards?.newEnquiries?.count ?? (getRequirementsAsEnquiries().filter(enquiry => {
+              const expiryDate = new Date(enquiry.deliveryDeadline || 0);
+              const now = new Date();
+              return expiryDate > now && enquiry.status === 'active' || enquiry.status === 'responded' || enquiry.status === 'selected' || enquiry.status === 'viewed';
+            }).length)}</div>
             <p className="text-xs text-muted-foreground">Requiring response</p>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
 
         {/* Card 2 - Quote Submitted */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Quote Submitted</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{submittedQuotesCount}</div>
+          <CardTitle className="text-sm font-medium">Quote Submitted</CardTitle>
+          <FileText className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{dashCards?.quoteSubmitted?.count ?? (getRequirementsAsEnquiries().filter(enquiry => {
+              const expiryDate = new Date(enquiry.deliveryDeadline || 0);
+              const now = new Date();
+              return expiryDate > now && enquiry.status === 'active' || enquiry.status === 'responded' || enquiry.status === 'selected' || enquiry.status === 'viewed';
+            }).length)}</div>
             <p className="text-xs text-muted-foreground">Awaiting response</p>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
 
         {/* Card 3 - My Product */}
         <Link to="/merchant/products">
@@ -211,9 +259,9 @@ const MerchantDashboard = () => {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{displayStats.products}</div>
+              <div className="text-2xl font-bold">{dashCards?.myStocks?.count ?? displayStats.products}</div>
               <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">{displayStats.products}</span> published stock
+                <span className="text-green-600">{dashCards?.myStocks?.count ?? displayStats.products}</span> published stock
               </p>
             </CardContent>
           </Card>
@@ -227,7 +275,7 @@ const MerchantDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.newCustomers}</div>
+            <div className="text-2xl font-bold">{dashCards?.confirmedEnquiries?.count ?? confirmedEnquiriesCount}</div>
             <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
@@ -243,7 +291,7 @@ const MerchantDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockRecentActivity.map((activity) => (
+            {recentActivity.map((activity: any) => (
               <div key={activity.id} className="flex items-start space-x-3">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
                 <div className="flex-1">
@@ -251,7 +299,7 @@ const MerchantDashboard = () => {
                   <p className="text-xs text-muted-foreground">{activity.time}</p>
                 </div>
                 <Badge variant="outline" className="text-xs capitalize">
-                   {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
+                   {(activity.status || activity.type).toString().charAt(0).toUpperCase() + (activity.status || activity.type).toString().slice(1)}
                 </Badge>
               </div>
             ))}

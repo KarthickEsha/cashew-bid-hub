@@ -69,6 +69,22 @@ export function AppSidebar() {
     }
   }, [responses, getSellerResponseCount, profile?.productType]);
 
+  // Fetch seller response count directly from API so badge reflects backend total
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const role = String(profile?.role || '').toLowerCase();
+        const viewer = role === 'merchant' || role === 'processor' ? 'merchant' : 'buyer';
+        const data: any = await apiFetch(`/api/quotes/get-all-quotes?viewer=${viewer}`, { method: 'GET' });
+        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        setNewResponseCount(Array.isArray(list) ? list.length : 0);
+      } catch (e) {
+        // Keep existing count on error
+      }
+    };
+    fetchCount();
+  }, [profile?.role]);
+
   // Ensure seller responses are loaded once from API and persisted
   useEffect(() => {
     // Load only once on mount

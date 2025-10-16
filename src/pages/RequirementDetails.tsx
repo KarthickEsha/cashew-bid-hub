@@ -381,6 +381,38 @@ const RequirementDetails = () => {
             return;
         }
 
+        // If confirmed, also send enquiry to stocks endpoint
+        if (requirement && (status === 'accepted' || backendStatus === 'Confirmed')) {
+            try {
+                const resp = responses.find(r => r.id === responseId);
+                if (resp) {
+                    const qty = parseFloat(String(resp.quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
+                    const price = parseFloat(String(resp.price ?? '0').replace(/[^\d.]/g, '')) || 0;
+                    const remark = remarks || resp.remarks || resp.message || 'Response confirmed';
+
+                    // productId might not be present in this view; include only if available
+                    const productId = (resp as any)?.productId ? String((resp as any).productId) : undefined;
+
+                    await apiFetch(`/api/stocks/send-enquiry`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            quantity: qty,
+                            expectedPrice: price,
+                            remark,
+                            source: 'Requirement',
+                            requirementId: String(requirement.id),
+                            status: 'confirmed',
+                            productId,
+                        }),
+                    });
+                } else {
+                    console.warn('Skipping send-enquiry: response not found for id', responseId);
+                }
+            } catch (sendErr) {
+                console.error('Failed to send enquiry after confirmation:', sendErr);
+            }
+        }
+
         // If confirmed, optionally update requirement quantity and status
         if (requirement && (status === 'accepted' || backendStatus === 'Confirmed')) {
             const resp = responses.find(r => r.id === responseId);

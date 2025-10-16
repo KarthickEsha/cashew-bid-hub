@@ -153,6 +153,8 @@ export function MerchantSidebar() {
   const stockEnquiriesCount = getStockEnquiriesCount();
   const sellerResponseCount = getSellerResponseCount();
   const [currentProductType, setCurrentProductType] = useState<ProductType>();
+  // Count from /api/stocks/enquiries
+  const [buyerResponseCount, setBuyerResponseCount] = useState<number | null>(null);
 
   // Counts persisted by MerchantProducts
   const [stockCounts, setStockCounts] = useState<Record<string, { active: number; out_of_stock: number }>>({});
@@ -170,6 +172,27 @@ export function MerchantSidebar() {
   useEffect(() => {
     ensureLoaded(true).catch(() => {});
   }, [profile?.role]);
+
+  // Fetch Buyer Response count from backend
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data: unknown = await apiFetch('/api/stocks/enquiries');
+        const payload: unknown = (data as any)?.data ?? data;
+        let count = 0;
+        if (Array.isArray(payload)) {
+          count = payload.length;
+        } else if (payload && typeof payload === 'object' && 'count' in payload && typeof (payload as { count: unknown }).count === 'number') {
+          count = (payload as { count: number }).count;
+        }
+        if (mounted) setBuyerResponseCount(count);
+      } catch {
+        if (mounted) setBuyerResponseCount(null);
+      }
+    })();
+    return () => { mounted = false };
+  }, []);
 
   // Read counts from localStorage and keep in sync (no API re-fetch here)
   useEffect(() => {
@@ -269,7 +292,7 @@ export function MerchantSidebar() {
                       {/* Buyer/Seller Response counts */}
                       {item.url === "/merchant/buyer-response" && !collapsed && (
                         <Badge variant="secondary" className="ml-auto px-1 min-w-[16px] h-4 text-xs">
-                          {sellerResponseCount}
+                          {buyerResponseCount ?? sellerResponseCount}
                         </Badge>
                       )}
 
