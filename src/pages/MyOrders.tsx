@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useProfile } from "@/hooks/useProfile";
+import { apiFetch } from "@/lib/api";
+
 import {
   Table,
   TableBody,
@@ -64,6 +67,7 @@ const MyOrders = () => {
 
   const { orders, updateOrderStatus, deleteOrder } = useOrders();
   const { profile } = useProfile();
+  const [buyerOrders, setBuyerOrders] = useState<any[]>([]);
 
   // filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,7 +81,34 @@ const MyOrders = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
-  const allOrders = orders.length > 0 ? orders : [];
+  // Drive this page from API enquiries instead of local store
+  const allOrders = buyerOrders;
+
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const res: any = await apiFetch('/api/stocks/enquiries', { method: 'GET' });
+        const arr = Array.isArray(res?.data) ? res.data : [];
+        const normalized = arr.map((it: any) => ({
+          id: it.id,
+          productName: it.productName || '',
+          merchantName: it.username || '',
+          quantity: `${it.quantity ?? 0}`,
+          totalAmount: `₹${it.expectedPrice ?? 0}`,
+          status: String(it.status || 'processing').toLowerCase(),
+          orderDate: it.createdAt || new Date().toISOString(),
+          location: it.usercountry || '',
+          productId: it.productId || '',
+          source: it.source || '',
+        }));
+        if (!ignore) setBuyerOrders(normalized);
+      } catch (e) {
+        console.error('Failed to load enquiries for MyOrders', e);
+      }
+    })();
+    return () => { ignore = true; };
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -146,13 +177,6 @@ const MyOrders = () => {
       const orderId = order.id || '';
       const orderStatus = order.status || '';
       const orderLocation = order.location || '';
-
-      const productId = order.productId || ''; // assuming order has productId
-
-      // ✅ skip if productId is empty
-      if (!productId.trim()) {
-        return false;
-      }
 
       const matchesSearch =
         productName.toLowerCase().includes(searchTermLower) ||
@@ -326,15 +350,13 @@ const MyOrders = () => {
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      <span>{order.grade != "N/A" ? order.grade : "Raw"} Cashews</span>
+                      <span>{order.productName || 'Cashews'}</span>
                       {/* <span className="text-xs text-muted-foreground">#{order.id}</span> */}
                     </div>
                   </TableCell>
-                  <TableCell>{order.merchantName}</TableCell>
+                  <TableCell>{order.merchantName || '-'}</TableCell>
                   <TableCell className="text-right">{formatWithCommas(order.quantity)} Kg</TableCell>
-                  <TableCell className="text-right font-medium">
-                    ₹{new Intl.NumberFormat('en-IN').format(Number(order.totalAmount))}
-                  </TableCell>
+                  <TableCell className="text-right font-medium">{order.totalAmount}</TableCell>
                   <TableCell>
                     {getStatusBadge(order.status)}
                   </TableCell>

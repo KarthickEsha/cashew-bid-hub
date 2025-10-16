@@ -23,6 +23,8 @@ export interface MerchantResponse {
   message: string;
   remarks?: string;
   createdAt: string;
+  productId?: string;
+  stockId?: string;
 }
 
 interface ResponsesState {
@@ -229,6 +231,8 @@ export const useResponses = create<ResponsesState>()(
               message: q?.remarks || '',
               remarks: q?.remarks,
               createdAt,
+              productId: q?.productId || q?.product_id || undefined,
+              stockId: q?.stockId || q?.stock_id || undefined,
             } as MerchantResponse;
           });
           set({ responses: mapped, loaded: true, lastFetched: new Date().toISOString() });

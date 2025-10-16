@@ -98,6 +98,8 @@ interface MerchantResponse {
   message: string;
   remarks?: string;
   createdAt: string;
+  productId?: string;
+  stockId?: string;
 }
 
 interface ResponseWithDetails extends MerchantResponse {
@@ -113,7 +115,9 @@ const Responses = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedResponse, setSelectedResponse] = useState<ResponseWithDetails | null>(null);
   const [responseToDelete, setResponseToDelete] = useState<{ id: string, name: string } | null>(null);
-  const { responses, setResponses, deleteResponse: deleteFromStore } = useResponses();
+  const responses = useResponses(s => s.responses);
+  const setResponses = useResponses(s => s.setResponses);
+  const deleteFromStore = useResponses(s => s.deleteResponse);
   const { requirements, updateRequirement, updateRequirementStatus } = useRequirements();
   const [isLoading, setIsLoading] = useState(false);
   const [sortField, setSortField] = useState<string>('responseDate');
@@ -165,6 +169,8 @@ const Responses = () => {
             message: q?.remarks || '',
             remarks: q?.remarks,
             createdAt,
+            productId: q?.productId || q?.product_id,
+            stockId: q?.stockId || q?.stock_id,
           };
         });
         setResponses(mapped as any);
@@ -309,48 +315,80 @@ const Responses = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentResponses = filteredResponses.slice(startIndex, startIndex + itemsPerPage);
 
-  // Handle status update
-  // Calls backend and updates local UI state
-  const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rejected') => {
-    try {
-      // Persist to backend
-      const backendStatus = status === 'confirmed' ? 'Confirmed' : 'Rejected';
-      await apiFetch(`/api/quotes/${responseId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: backendStatus }),
-      });
+// Handle status update
+// Calls backend and updates local UI state
+const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rejected') => {
+  try {
+    // Persist to backend
+    const backendStatus = status === 'confirmed' ? 'Confirmed' : 'Rejected';
+    await apiFetch(`/api/quotes/${responseId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: backendStatus }),
+    });
 
-      // Update local table data immediately
-      setApiResponses(prev => prev.map(q => (q?.id === responseId ? { ...q, status: backendStatus } : q)));
+    // Update local table data immediately
+    setApiResponses(prev => prev.map(q => (q?.id === responseId ? { ...q, status: backendStatus } : q)));
 
-      // After confirming, optionally reduce requirement quantity and close if zero
-      if (status === 'confirmed') {
-        const resp = responses.find(r => r.id === responseId);
+    // After confirming, optionally reduce requirement quantity and close if zero
+    if (status === 'confirmed') {
+      // Attempt to send an enquiry to the stock endpoint with confirmed values
+      try {
+        // Find the confirmed response from the in-memory responses list (store has richer fields)
+        const resp = responses.find(r => r.id === responseId) as any;
+        // Locate the raw quote from the API list as a fallback for identifiers
+        const rawQuote = (apiResponses as any[]).find((q) => q?.id === responseId) || {};
+        const productId = resp?.productId || rawQuote.productId || rawQuote.product_id;
+
         if (resp) {
-          const req = requirements.find(r => r.id === resp.requirementId);
-          if (req) {
-            const reqQty = parseFloat(String((req as any).quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
-            const respQty = parseFloat(String(resp.quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
-            const newQty = Math.max(0, reqQty - respQty);
-            updateRequirement(req.id, { quantity: String(newQty) } as any);
-            if (newQty === 0) updateRequirementStatus(req.id, 'closed');
-          }
+          const qty = parseFloat(String(resp.quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
+          const price = parseFloat(String(resp.price ?? '0').replace(/[^\d.]/g, '')) || 0;
+          const remark = resp.message || resp.remarks || 'Response confirmed';
+
+          await apiFetch(`/api/stocks/send-enquiry`, {
+            method: 'POST',
+            body: JSON.stringify({
+              quantity: qty,
+              expectedPrice: price,
+              remark,
+              source: 'Requirement',
+              requirementId: resp.requirementId,
+              status: 'confirmed',
+              productId: productId ? String(productId) : undefined,
+            }),
+          });
+        } else {
+          console.warn('Skipping send-enquiry: missing response or stockId for responseId', responseId, { hasResp: !!resp });
         }
+      } catch (sendErr) {
+        console.error('Failed to send enquiry after confirmation:', sendErr);
       }
 
-      toast({
-        title: 'Success',
-        description: `Response ${backendStatus} successfully`,
-      });
-    } catch (error) {
-      console.error('Error updating response status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update response status',
-        variant: 'destructive',
-      });
+      const resp = responses.find(r => r.id === responseId);
+      if (resp) {
+        const req = requirements.find(r => r.id === resp.requirementId);
+        if (req) {
+          const reqQty = parseFloat(String((req as any).quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
+          const respQty = parseFloat(String(resp.quantity ?? '0').replace(/[^\d.]/g, '')) || 0;
+          const newQty = Math.max(0, reqQty - respQty);
+          updateRequirement(req.id, { quantity: String(newQty) } as any);
+          if (newQty === 0) updateRequirementStatus(req.id, 'closed');
+        }
+      }
     }
-  };
+
+    toast({
+      title: 'Success',
+      description: `Response ${backendStatus} successfully`,
+    });
+  } catch (error) {
+    console.error('Error updating response status:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to update response status',
+      variant: 'destructive',
+    });
+  }
+};
 
   // Handle delete response (calls backend and updates local UI)
   const handleDeleteResponse = async (responseId: string) => {

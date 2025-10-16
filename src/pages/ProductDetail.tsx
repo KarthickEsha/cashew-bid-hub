@@ -102,7 +102,7 @@ const ProductDetail = () => {
         if (id) {
           try {
             const resp = await apiFetch(`/api/stocks/get-stock/${encodeURIComponent(id)}`, { method: "GET" });
-            const s = (resp as any)?.data;
+            const s = (resp as any)?.data.stock;
             if (s) {
               // Map backend stock to Product shape
               const mapped: Product = {
@@ -147,6 +147,36 @@ const ProductDetail = () => {
                 description: 'Merchant information not available'
               };
               setMerchant(merchantData);
+              debugger
+              // Map backend enquiries (if present) to UI shape and set state
+              const apiEnquiries = (resp as any)?.data?.enquiries;
+              if (Array.isArray(apiEnquiries)) {
+                const mappedEnquiries = apiEnquiries
+                  .filter((e: any) => !id || e.productId === id)
+                  .map((e: any) => ({
+                    id: e.id || e._id,
+                    type: 'enquiry',
+                    status: e.status || 'new',
+                    date: e.createdAt || e.updatedAt || new Date().toISOString(),
+                    customer: e.username || 'Buyer',
+                    quantity: e.quantity,
+                    price: e.expectedPrice,
+                    country: e.userlocation.country,
+                    message: e.remark || 'No message provided',
+                    details: e,
+                  }));
+                setEnquiries((prev) => {
+                  // Remove any previously composed enquiries of type 'enquiry' and merge fresh API ones
+                  const nonApi = prev.filter((p) => p.type !== 'enquiry');
+                  // De-duplicate by id
+                  const existingIds = new Set(mappedEnquiries.map((m: any) => String(m.id)));
+                  const merged = [
+                    ...mappedEnquiries,
+                    ...nonApi.filter((p) => !existingIds.has(String(p.id))),
+                  ];
+                  return merged;
+                });
+              }
               return; // Done via backend
             }
           } catch (e) {
@@ -184,43 +214,14 @@ const ProductDetail = () => {
   }, [id, inventoryProducts]);
 
   useEffect(() => {
-    if (id) {
-      // Get all orders for the current product - filter by productId
-      const productOrders = allOrders.filter(order => order.productId === id);
-
-      // Get all responses for the current product
-      const productResponses = getResponsesByProductId(id);
-      // Combine orders and responses into enquiries
-      const combinedEnquiries = [
-        ...productOrders.map(order => ({
-          id: order.id,
-          type: 'order',
-          status: order.status,
-          date: order.orderDate,
-          customer: order.customerName,
-          quantity: order.quantity,
-          price: order.unitPrice,
-          message: order.buyerRemarks || 'No message provided',
-          details: order
-        })),
-        ...productResponses.map(response => ({
-          id: response.id,
-          type: 'response',
-          status: response.status,
-          date: response.responseDate || response.createdAt,
-          customer: response.merchantName || 'Unknown',
-          quantity: response.quantity,
-          price: response.price,
-          message: response.message || 'No message provided',
-          details: response,
-          orderId: getOrderByResponseId(response.id)?.id
-        }))
-      ];
-      // Sort by date (newest first)
-      combinedEnquiries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setEnquiries(combinedEnquiries);
-    }
-  }, [id, allOrders, responses, getResponsesByProductId, getOrderByResponseId]);
+    if (!id) return;
+    // Only use enquiries coming from API; just filter for current product and sort
+    const filtered = enquiries.filter((e: any) => !e?.details?.productId || e?.details?.productId === id);
+    const sorted = [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const prevKeys = enquiries.map((e: any) => `${e.type}:${e.id}`).join('|');
+    const nextKeys = sorted.map((e: any) => `${e.type}:${e.id}`).join('|');
+    if (prevKeys !== nextKeys) setEnquiries(sorted);
+  }, [id, enquiries]);
 
   const getStatusBadge = (status: string) => {
     if (!status) return null;
@@ -231,7 +232,7 @@ const ProductDetail = () => {
       return (
         <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
           <CheckCircle className="mr-1 h-3 w-3" />
-          {status === 'Processing' ? 'New' : status}
+          {statusLower === 'processing' ? 'New' : status}
         </Badge>
       );
     }
@@ -357,12 +358,16 @@ const ProductDetail = () => {
 
       // Call backend API to send enquiry
       try {
-        await apiFetch(`/api/stocks/send-enquiry/${encodeURIComponent(product.id)}`, {
+        await apiFetch(`/api/stocks/send-enquiry`, {
           method: "POST",
           body: JSON.stringify({
             quantity: quantityNum,
             expectedPrice: expectedPriceNum,
             remark: bidMessage || '',
+            source: 'Market Place',
+            productId: product.id,
+            requirementId: "",
+            status: 'processing'
           }),
         });
       } catch (err) {
@@ -426,10 +431,6 @@ const ProductDetail = () => {
 
       // Save order
       addOrder(orderData);
-
-      // Save enquiry to local storage
-      const existingEnquiries = JSON.parse(localStorage.getItem('productEnquiries') || '[]');
-      localStorage.setItem('productEnquiries', JSON.stringify([...existingEnquiries, enquiry]));
 
       // Update product's enquiry and buyer response counts
       incrementEnquiryCount(product.id);
@@ -1040,7 +1041,7 @@ const ProductDetail = () => {
                           <div className="font-medium">{enquiry.customer}</div>
                           <div className="text-sm text-muted-foreground flex items-center">
                             <MapPin size={12} className="mr-1" />
-                            {enquiry.type === 'order' ? enquiry.details?.location : 'N/A'}
+                            {enquiry.country}
                           </div>
                           {enquiry.price && (
                             <div className="text-sm text-primary font-medium">

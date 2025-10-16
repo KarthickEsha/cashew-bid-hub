@@ -18,6 +18,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 import { useInventory } from "@/hooks/useInventory";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "@/lib/api";
 // Utility function to format currency in Indian Rupees
 const formatINR = (amount: number | string): string => {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -45,16 +46,17 @@ const MerchantOrders = () => {
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const navigate = useNavigate();
+  const [buyerResponses, setBuyerResponses] = useState<any[]>([]);
 
-  // Get orders for current merchant
-  const merchantOrders = allOrders;
+  // Use API-driven buyer responses for listing
+  const merchantOrders = buyerResponses;
 
   // Calculate displayed orders based on filters and sorting
   const displayedOrders = useMemo(() => {
     if (!merchantOrders) return [];
     let result = [...merchantOrders];
 
-    // ✅ Apply filters
+    // Apply filters
     if (filters.orderId || filters.customer || filters.product) {
       result = result.filter(order =>
         (filters.orderId ? order.id?.toLowerCase().includes(filters.orderId.toLowerCase()) : true) &&
@@ -63,17 +65,17 @@ const MerchantOrders = () => {
       );
     }
 
-    // ✅ Apply sorting
+    // Apply sorting
     if (sortField) {
       result = [...result].sort((a, b) => {
-        // 🔹 Step 1: Processing orders first
+        // Processing orders first
         const aIsProcessing = a.status?.toLowerCase() === 'processing';
         const bIsProcessing = b.status?.toLowerCase() === 'processing';
 
         if (aIsProcessing && !bIsProcessing) return -1; // a comes first
         if (!aIsProcessing && bIsProcessing) return 1;  // b comes first
 
-        // 🔹 Step 2: Normal sorting
+        // Normal sorting
         const aValue = a[sortField as keyof typeof a];
         const bValue = b[sortField as keyof typeof b];
 
@@ -114,7 +116,7 @@ const MerchantOrders = () => {
         return 0;
       });
     } else {
-      // ✅ If no sortField, still show Processing first
+      // If no sortField, still show Processing first
       result = result.sort((a, b) => {
         const aIsProcessing = a.status?.toLowerCase() === 'processing';
         const bIsProcessing = b.status?.toLowerCase() === 'processing';
@@ -125,6 +127,34 @@ const MerchantOrders = () => {
     return result;
   }, [merchantOrders, filters, sortField, sortDirection]);
 
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const res: any = await apiFetch('/api/stocks/enquiries', { method: "GET" });
+        const arr = Array.isArray(res?.data) ? res.data : [];
+        const normalized = arr.map((it: any) => ({
+          id: it.id,
+          customerName: it.username || '',
+          productName: it.productName || '',
+          source: it.source || 'Market Place',
+          quantity: `${it.quantity ?? 0} kg`,
+          totalAmount: `₹${it.expectedPrice ?? 0}`,
+          orderDate: it.createdAt || new Date().toISOString(),
+          status: String(it.status || 'processing').toLowerCase(),
+          productId: it.productId || '',
+          grade: it.productName || 'N/A',
+          // add any fields you need in handleViewDetails, etc.
+        }));
+        if (!ignore) {
+          setBuyerResponses(normalized);
+        }
+      } catch (e) {
+        console.error('Failed to load enquiries', e);
+      }
+    })();
+    return () => { ignore = true; };
+  }, []);
 
   // Reset to first page when filters/sorting changes
   useEffect(() => {
@@ -135,7 +165,7 @@ const MerchantOrders = () => {
   const totalPages = Math.ceil(displayedOrders.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedOrders = displayedOrders.slice(startIndex, startIndex + pageSize);
-  
+
   const formatWithCommas = (val: any) => {
     if (val === null || val === undefined) return "0";
     const num = typeof val === 'number' ? val : parseInt(String(val).replace(/,/g, ''), 10);
@@ -144,49 +174,50 @@ const MerchantOrders = () => {
   }
   const handleAcceptOrder = async (orderId: string) => {
     try {
-      // First get the order details
-      const order = getOrderById(orderId);
-      if (!order) {
-        throw new Error('Order not found');
-      }
+      await apiFetch(`/api/stocks/enquiries/${encodeURIComponent(orderId)}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'confirmed' }),
+      });
 
-      // Extract quantity from order (assuming format like '100kg' or '50 MT')
-      const quantityMatch = order.quantity.match(/\d+/);
-      if (!quantityMatch) {
-        throw new Error('Invalid quantity format');
-      }
-      const quantity = parseFloat(quantityMatch[0]);
-      // Get the product ID from the order
-      // Note: You'll need to ensure the productId is stored in the order when it's created
-      const productId = (order as any).productId; // Cast to any since productId might not be in the type yet
-
-      if (!productId) {
-        throw new Error('Product ID not found in order');
-      }
-
-      // First update the order status
-      await updateOrderStatus(orderId, "Confirmed");
-
-      // Then reduce the stock
-      reduceAvailableStock(productId, quantity);
+      setBuyerResponses(prev => prev.map(item => item.id === orderId ? { ...item, status: 'confirmed' } : item));
 
       toast({
-        title: "Response Submitted Successfully",
-        description: `Response has been confirmed and stock has been updated.`,
-        variant: "default",
+        title: 'Response Submitted Successfully',
+        description: 'Response has been confirmed.',
+        variant: 'default',
       });
     } catch (error) {
-      console.error('Error confirming order:', error);
+      console.error('Error confirming enquiry:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to confirm order',
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to confirm enquiry',
+        variant: 'destructive',
       });
     }
   };
 
   const handleRejectOrder = async (orderId: string) => {
-    await updateOrderStatus(orderId, "Cancelled");
+    try {
+      await apiFetch(`/api/stocks/enquiries/${encodeURIComponent(orderId)}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'Rejected' }),
+      });
+
+      setBuyerResponses(prev => prev.map(item => item.id === orderId ? { ...item, status: 'cancelled' } : item));
+
+      toast({
+        title: 'Enquiry Cancelled',
+        description: 'The enquiry has been cancelled.',
+        variant: 'default',
+      });
+    } catch (error) {
+      console.error('Error cancelling enquiry:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to cancel enquiry',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -276,7 +307,7 @@ const MerchantOrders = () => {
 
   const handleViewDetails = (order: any) => {
     const source = String(order?.source || '').toLowerCase();
-  
+
     // If order came from Market Place, go to product details page
     if (source.includes('market')) {
       const pid = (order as any).productId;
@@ -285,7 +316,7 @@ const MerchantOrders = () => {
         return;
       }
     }
-  
+
     // Otherwise, show the existing inline popup
     setSelectedOrder(order);
     setIsDialogOpen(true);
@@ -440,11 +471,11 @@ const MerchantOrders = () => {
                   </TableHead>
                   <TableHead
                     className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
-                    onClick={() => handleSort('date')}
+                    onClick={() => handleSort('orderDate')}
                   >
                     <div className="flex items-center justify-between">
                       Date
-                      {getSortIcon('date')}
+                      {getSortIcon('orderDate')}
                     </div>
                   </TableHead>
                   {/* <TableHead 
@@ -473,20 +504,16 @@ const MerchantOrders = () => {
                   paginatedOrders.map(order => (
                     <TableRow key={order.id}>
                       {/* <TableCell className="font-medium">{order.id}</TableCell> */}
-                      <TableCell>{profile.name}</TableCell>
-                      <TableCell>{order.grade != "N/A" ? order.grade : "Raw"} Cashews</TableCell>
+                      <TableCell>{order.customerName || profile.name}</TableCell>
+                      <TableCell>{order.productName || 'Cashews'}</TableCell>
                       <TableCell>{order.source || 'Market Place'}</TableCell>
-                      <TableCell>
-                        {order.quantity?.toString().toLowerCase().includes("kg")
-                          ? formatWithCommas(order.quantity) 
-                          : `${formatWithCommas(order.quantity)} kg`}
-                      </TableCell>
+                      <TableCell>{order.quantity}</TableCell>
                       <TableCell>{formatINR(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}</TableCell>
                       <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
                       {/* <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell> */}
                       <TableCell>
                         <Badge variant={getStatusColor(order.status)}>
-                          {order.status === "Processing" ? "New" : order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          {String(order.status).toLowerCase() === 'processing' ? 'New' : (order.status.charAt(0).toUpperCase() + order.status.slice(1))}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -508,7 +535,7 @@ const MerchantOrders = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                          {order.status === "Processing" && (
+                          {String(order.status).toLowerCase() === "processing" && (
                             <>
                               <Button
                                 variant="ghost"
@@ -610,7 +637,7 @@ const MerchantOrders = () => {
 
               <div className="flex justify-between">
                 <span className="font-medium text-muted-foreground">Customer Name</span>
-                <span className="font-semibold">{profile.name}</span>
+                <span className="font-semibold">{selectedOrder.customerName || profile.name}</span>
               </div>
 
               <div className="flex justify-between">
@@ -641,7 +668,7 @@ const MerchantOrders = () => {
               <div className="flex justify-between items-center">
                 <span className="font-medium text-muted-foreground">Status</span>
                 <Badge variant={getStatusColor(selectedOrder.status)}>
-                  {selectedOrder.status === "Processing" ? "New" : selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
+                  {String(selectedOrder.status).toLowerCase() === "processing" ? "New" : selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
                 </Badge>
               </div>
 
