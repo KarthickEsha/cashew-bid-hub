@@ -310,10 +310,11 @@ const MyOrders = () => {
                 onClick={() => handleSort('totalAmount')}
               >
                 <div className="flex items-center justify-end">
-                  Total Amount
+                  Amount/kg
                   {getSortIcon('totalAmount')}
                 </div>
               </TableHead>
+              <TableHead className="text-right">Total Amount</TableHead>
               <TableHead
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('status')}
@@ -338,7 +339,7 @@ const MyOrders = () => {
           <TableBody>
             {currentOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={8} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center py-6">
                     <Package className="h-10 w-10 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">No enquiries found</p>
@@ -357,6 +358,12 @@ const MyOrders = () => {
                   <TableCell>{order.merchantName || '-'}</TableCell>
                   <TableCell className="text-right">{formatWithCommas(order.quantity)} Kg</TableCell>
                   <TableCell className="text-right font-medium">{order.totalAmount}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatINR(
+                      (parseFloat(String(order.quantity).replace(/[^0-9.-]+/g, "")) || 0) *
+                      (parseFloat(String(order.totalAmount).replace(/[^0-9.-]+/g, "")) || 0)
+                    )}
+                  </TableCell>
                   <TableCell>
                     {getStatusBadge(order.status)}
                   </TableCell>

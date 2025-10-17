@@ -478,6 +478,11 @@ const MerchantOrders = () => {
                       {getSortIcon('totalAmount')}
                     </div>
                   </TableHead>
+                  <TableHead className="w-[12%] select-none">
+                    <div className="flex items-center justify-between">
+                      Total Amount
+                    </div>
+                  </TableHead>
                   <TableHead
                     className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('orderDate')}
@@ -518,6 +523,12 @@ const MerchantOrders = () => {
                       <TableCell>{order.source || 'Market Place'}</TableCell>
                       <TableCell>{order.quantity}</TableCell>
                       <TableCell>{formatINR(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}</TableCell>
+                      <TableCell>
+                        {formatINR(
+                          (parseFloat(String(order.quantity).replace(/[^0-9.-]+/g, '')) || 0) *
+                          (parseFloat(String(order.totalAmount).replace(/[^0-9.-]+/g, '')) || 0)
+                        )}
+                      </TableCell>
                       <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
                       {/* <TableCell>{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Not set'}</TableCell> */}
                       <TableCell>
@@ -572,7 +583,7 @@ const MerchantOrders = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-4 text-muted-foreground">
                       <Package className="mx-auto h-12 w-12 text-muted-foreground" />
                       {merchantOrders.length === 0 ? 'No buyer response found' : 'No orders match the current filters'}
                     </TableCell>
