@@ -39,7 +39,9 @@ const ProfileSetup = () => {
     businessType: profile?.businessType || '',
     dealingWith: profile?.dealingWith || 'RCN' as ProductType,
     description: profile?.description || '',
-    profilePicture: profile?.profilePicture || user?.imageUrl || ''
+    profilePicture: profile?.profilePicture || user?.imageUrl || '',
+    officeAddress: '',
+    officePhone: ''
   });
 
   const [selectedRole, setSelectedRole] = useState<UserRole>(role);
@@ -411,6 +413,29 @@ const ProfileSetup = () => {
                     required
                   />
                   {errors.pincode && <p className="text-sm text-destructive">{errors.pincode}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="officeAddress">Address</Label>
+                  <Textarea
+                    id="officeAddress"
+                    value={formData.officeAddress}
+                    onChange={(e) => handleInputChange('officeAddress', e.target.value)}
+                    placeholder="Enter business address"
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="officePhone">Phone Number</Label>
+                  <Input
+                    id="officePhone"
+                    value={formData.officePhone}
+                    onChange={(e) => handleInputChange('officePhone', e.target.value)}
+                    placeholder="Enter business phone number"
+                    maxLength={15}
+                  />
                 </div>
               </div>
 

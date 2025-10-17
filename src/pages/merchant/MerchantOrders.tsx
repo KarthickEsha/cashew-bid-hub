@@ -131,7 +131,7 @@ const MerchantOrders = () => {
     let ignore = false;
     (async () => {
       try {
-        const res: any = await apiFetch('/api/stocks/enquiries', { method: "GET" });
+        const res: any = await apiFetch('/api/stocks/enquiries?view=merchant', { method: "GET" });
         const arr = Array.isArray(res?.data) ? res.data : [];
         const normalized = arr.map((it: any) => ({
           id: it.id,
@@ -328,14 +328,23 @@ const MerchantOrders = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (orderToDelete) {
-      deleteOrder(orderToDelete);
+  const handleConfirmDelete = async () => {
+    if (!orderToDelete) return;
+    try {
+      await apiFetch(`/api/stocks/enquiries/${encodeURIComponent(orderToDelete)}?view=merchant`, { method: 'DELETE' });
+      setBuyerResponses(prev => prev.filter(item => item.id !== orderToDelete));
       toast({
-        title: "Buyer Response Deleted",
-        description: "The response has been successfully deleted.",
+        title: "Response Deleted",
+        description: "The response has been hidden from your view.",
         variant: "default",
       });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to delete response',
+        variant: "destructive",
+      });
+    } finally {
       setIsDeleteDialogOpen(false);
       setOrderToDelete(null);
     }
@@ -479,14 +488,14 @@ const MerchantOrders = () => {
                     </div>
                   </TableHead>
                   {/* <TableHead 
- className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
- onClick={() => handleSort('deliveryDate')}
- >
- <div className="flex items-center justify-between">
- Delivery Date
- {getSortIcon('deliveryDate')}
- </div>
- </TableHead> */}
+                    className="w-[10%] cursor-pointer hover:bg-muted/50 select-none"
+                    onClick={() => handleSort('deliveryDate')}
+                  >
+                    <div className="flex items-center justify-between">
+                      Delivery Date
+                      {getSortIcon('deliveryDate')}
+                    </div>
+                  </TableHead> */}
                   <TableHead
                     className="w-[7%] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('status')}
@@ -526,15 +535,17 @@ const MerchantOrders = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {/* <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={(e) => handleDeleteClick(order.id, e)}
-                            title="Delete Order"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button> */}
+                          {(String(order.status).toLowerCase() === 'confirmed' || String(order.status).toLowerCase() === 'rejected') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={(e) => handleDeleteClick(order.id, e)}
+                              title="Delete Response"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                           {String(order.status).toLowerCase() === "processing" && (
                             <>
                               <Button

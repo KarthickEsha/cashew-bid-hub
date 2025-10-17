@@ -101,7 +101,8 @@ const ProductDetail = () => {
         // 1) Try backend: get stock by product ID
         if (id) {
           try {
-            const resp = await apiFetch(`/api/stocks/get-stock/${encodeURIComponent(id)}`, { method: "GET" });
+            const view = role === 'processor' ? 'merchant' : 'buyer';
+            const resp = await apiFetch(`/api/stocks/get-stock/${encodeURIComponent(id)}?view=${view}` , { method: "GET" });
             const s = (resp as any)?.data.stock;
             if (s) {
               // Map backend stock to Product shape
@@ -133,19 +134,20 @@ const ProductDetail = () => {
               } as any;
 
               setProduct(mapped);
-              const merchantData = merchants.find((m) => m.id === mapped.merchantId) || {
-                id: user?.id || 'default-merchant',
-                name: profile?.companyName || 'Unknown Merchant',
+              const apiMerchant = (resp as any)?.data?.merchant || {};
+              const merchantData = {
+                id: apiMerchant.id ?? mapped.merchantId ?? user?.id ?? 'default-merchant',
+                name: apiMerchant.companyName ?? profile?.companyName ?? 'Unknown Merchant',
                 rating: 4.5,
                 totalOrders: 0,
-                location: profile?.city || 'Unknown',
+                location: apiMerchant.address ?? profile?.city ?? 'Unknown',
                 verified: false,
                 responseTime: 'Within 24 hours',
-                phone: profile?.phone || 'N/A',
-                email: profile?.email || 'N/A',
+                phone: apiMerchant.phone ?? profile?.phone ?? 'N/A',
+                email: apiMerchant.email ?? profile?.email ?? 'N/A',
                 website: 'www.kriyatec.in',
-                description: 'Merchant information not available'
-              };
+                description: apiMerchant.description ?? 'Merchant information not available'
+              } as const;
               setMerchant(merchantData);
               // Map backend enquiries (if present) to UI shape and set state
               const apiEnquiries = (resp as any)?.data?.enquiries;

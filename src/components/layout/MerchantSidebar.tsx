@@ -178,9 +178,10 @@ export function MerchantSidebar() {
     let mounted = true;
     (async () => {
       try {
-        const data: unknown = await apiFetch('/api/stocks/enquiries');
+        const data: unknown = await apiFetch('/api/stocks/enquiries?view=merchant');
         const payload: unknown = (data as any)?.data ?? data;
         let count = 0;
+
         if (Array.isArray(payload)) {
           count = payload.length;
         } else if (payload && typeof payload === 'object' && 'count' in payload && typeof (payload as { count: unknown }).count === 'number') {

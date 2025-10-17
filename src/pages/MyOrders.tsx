@@ -88,7 +88,7 @@ const MyOrders = () => {
     let ignore = false;
     (async () => {
       try {
-        const res: any = await apiFetch('/api/stocks/enquiries', { method: 'GET' });
+        const res: any = await apiFetch('/api/stocks/enquiries?view=buyer', { method: 'GET' });
         const arr = Array.isArray(res?.data) ? res.data : [];
         const normalized = arr.map((it: any) => ({
           id: it.id,
@@ -396,18 +396,20 @@ const MyOrders = () => {
                           <span className="sr-only">Track order</span>
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-700"
-                        onClick={() => {
-                          setOrderToDelete(order.id);
-                          setDeleteConfirmOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete enquiry</span>
-                      </Button>
+                      {(order.status === 'confirmed' || order.status === 'rejected') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-500 hover:text-red-700"
+                          onClick={() => {
+                            setOrderToDelete(order.id);
+                            setDeleteConfirmOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete enquiry</span>
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -602,11 +604,16 @@ const MyOrders = () => {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
+              onClick={async () => {
                 if (orderToDelete) {
-                  deleteOrder(orderToDelete);
-                  setDeleteConfirmOpen(false);
-                  setOrderToDelete(null);
+                  try {
+                    await apiFetch(`/api/stocks/enquiries/${encodeURIComponent(orderToDelete)}?view=buyer`, { method: 'DELETE' });
+                    setBuyerOrders(prev => prev.filter(o => o.id !== orderToDelete));
+                  } catch (e) {
+                  } finally {
+                    setDeleteConfirmOpen(false);
+                    setOrderToDelete(null);
+                  }
                 }
               }}
             >

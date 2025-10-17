@@ -57,6 +57,19 @@ export function AppSidebar() {
   const [stocks, setStocks] = useState<any[]>([]);
   const [currentProductType, setCurrentProductType] = useState<ProductType>();
   const { profile } = useProfile();
+   const [merchant, setMerchant] = useState<{
+      id: string;
+      name: string;
+      rating?: number;
+      totalOrders?: number;
+      location: string | Location;
+      verified?: boolean;
+      responseTime?: string;
+      phone?: string;
+      email?: string;
+      website?: string;
+      description?: string;
+    } | null>(null);
   // My Enquiries (orders) count from backend
   const [myEnquiriesCount, setMyEnquiriesCount] = useState<number | null>(null);
 
@@ -105,7 +118,7 @@ export function AppSidebar() {
     let mounted = true;
     (async () => {
       try {
-        const data: unknown = await apiFetch('/api/stocks/enquiries');
+        const data: unknown = await apiFetch('/api/stocks/enquiries?view=buyer');
         const payload: unknown = (data as any)?.data ?? data;
         let count = 0;
         if (Array.isArray(payload)) {
@@ -137,7 +150,10 @@ export function AppSidebar() {
 
     const fetchStocks = async () => {
       try {
-        const url = `/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}`;
+        const role = String(profile?.role || '').toLowerCase();
+                const view = role === 'processor' ? 'merchant' : 'buyer';
+                const baseUrl = `/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}&view=${view}`;
+                const url = role === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
         const resp: any = await apiFetch(url, { method: 'GET' });
         const list: any[] = Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
         // Normalize minimal fields we need for counting

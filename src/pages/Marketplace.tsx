@@ -76,7 +76,11 @@ const Marketplace = () => {
         if (!currentProductType) return;
         const loadStocks = async () => {
             try {
-                const resp: any = await apiFetch(`/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}`, { method: "GET" });
+                const role = String(profile?.role || '').toLowerCase();
+                const view = role === 'processor' ? 'merchant' : 'buyer';
+                const baseUrl = `/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}&view=${view}`;
+                const url = role === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
+                const resp: any = await apiFetch(url, { method: "GET" });
                 const list: any[] = Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
                 const mapped = list.map((s: any) => {
                     const price = Number(s?.sellingprice ?? 0);

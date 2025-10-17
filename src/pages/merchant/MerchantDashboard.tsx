@@ -16,6 +16,19 @@ const MerchantDashboard = () => {
   const { getProductStats } = useInventory();
   const { profile } = useProfile();
   const { user } = useUser();
+  const [merchant, setMerchant] = useState<{
+      id: string;
+      name: string;
+      rating?: number;
+      totalOrders?: number;
+      location: string | Location;
+      verified?: boolean;
+      responseTime?: string;
+      phone?: string;
+      email?: string;
+      website?: string;
+      description?: string;
+    } | null>(null);
   const { responses } = useResponses();
   const { getRequirementsAsEnquiries } = useRequirements();
   const { getResponsesByRequirementId, getSubmittedQuotesCount } = useResponses();
@@ -108,7 +121,11 @@ const MerchantDashboard = () => {
       const hasCounts = stockCounts[type]?.active !== undefined || stockCounts[type]?.out_of_stock !== undefined;
       if (hasCounts) return;
       try {
-        const resp = await apiFetch(`/api/stocks/get-all-stocks?type=${encodeURIComponent(type)}`, { method: 'GET' });
+        const role = String(profile?.role || '').toLowerCase();
+        const view = role === 'processor' ? 'merchant' : 'buyer';
+        const baseUrl = `/api/stocks/get-all-stocks?type=${encodeURIComponent(type)}&view=${view}`;
+        const url = role === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
+        const resp = await apiFetch(url, { method: 'GET' });
         const items = Array.isArray(resp?.data) ? resp.data : [];
         // Compute counts by status; "active" if availableqty > 0 else "out_of_stock"
         const mapped = items.map((s: any) => ({

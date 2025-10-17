@@ -38,6 +38,19 @@ const MerchantProducts = () => {
     const navigate = useNavigate();
     const { products, deleteProduct } = useInventory();
     const { profile } = useProfile();
+     const [merchant, setMerchant] = useState<{
+          id: string;
+          name: string;
+          rating?: number;
+          totalOrders?: number;
+          location: string | Location;
+          verified?: boolean;
+          responseTime?: string;
+          phone?: string;
+          email?: string;
+          website?: string;
+          description?: string;
+        } | null>(null);
     const { toast } = useToast();
 
     // Keep local state for products so we can update them
@@ -217,8 +230,12 @@ const MerchantProducts = () => {
         const loadStocks = async () => {
             try {
                 setIsLoading(true);
+                const role = String(profile?.role || '').toLowerCase();
+                const view = role === 'processor' ? 'merchant' : 'buyer';
                 // Prefer backend type filtering if supported
-                const resp = await apiFetch(`/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}`, { method: "GET" });
+                const baseUrl = `/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}&view=${view}`;
+                const url = role === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
+                const resp = await apiFetch(url, { method: "GET" });
                 const stocks = Array.isArray(resp?.data) ? resp.data : [];
 
                 // Map backend stock to Product

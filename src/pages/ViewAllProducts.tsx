@@ -1,20 +1,64 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Eye, MapPin, Star, TrendingUp } from "lucide-react";
-import { merchants, products } from "@/data/mockdata";
-import { useInventory } from "@/hooks/useInventory";
 import { useProfile } from "@/hooks/useProfile";
+import { apiFetch } from "@/lib/api";
 
 const ViewAllProducts = () => {
   const { merchantId } = useParams<{ merchantId: string }>();
   const navigate = useNavigate();
-  const { products: inventoryProducts } = useInventory();
-  const { profile, setProfile } = useProfile();
-  const merchant = profile;
-  const merchantProducts = inventoryProducts;
+  const { profile } = useProfile();
 
+  const [merchant, setMerchant] = useState<any | null>(null);
+  const [merchantProducts, setMerchantProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        if (!merchantId) return;
+        const resp = await apiFetch(`/api/stocks/merchant/${encodeURIComponent(merchantId)}`, { method: 'GET' });
+        const m = (resp as any)?.data?.merchant || null;
+        const items = (resp as any)?.data?.products || [];
+        setMerchant(m);
+        // map backend stock -> minimal fields used in this page
+        const mapped = Array.isArray(items) ? items.map((s: any) => ({
+          id: String(s.productId || s.id || s._id),
+          name: m.companyName || s.grade || 'Stock',
+          grade: s.grade,
+          availableQty: s.availableqty,
+          price: s.sellingprice,
+          expireDate: s.expiredate,
+          location: s.location,
+          description: s.description,
+          pricingType: s.pricingType,
+          verified: false,
+          rating: 4.5,
+        })) : [];
+        setMerchantProducts(mapped);
+      } catch (e) {
+        // fallback minimal info
+        setMerchant({
+          id: merchantId,
+          companyName: profile?.companyName || 'Unknown Merchant',
+          email: profile?.email,
+          phone: profile?.phone,
+          address: profile?.address,
+          location: { city: profile?.city, country: 'India' },
+          description: 'Merchant information not available'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    run();
+  }, [merchantId]);
+
+  if (loading) return <div className="p-6">Loading...</div>;
   if (!merchant) return <div className="p-6">Merchant not found</div>;
 
   return (
@@ -27,19 +71,18 @@ const ViewAllProducts = () => {
       {/* Company / Merchant Details */}
       <Card className="mb-6 shadow-md border rounded-xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">{merchant.companyName}</CardTitle>
+          <CardTitle className="text-2xl font-bold">{merchant.companyName || 'Merchant'}</CardTitle>
+
         </CardHeader>
         <CardContent>
-          <p>Cashew merchant specializing in high-quality products and reliable service.</p>
+          <p>{merchant.description || 'Cashew merchant specializing in high-quality products and reliable service.'}</p>
           <div className="flex flex-wrap gap-3">
-            <Badge variant="secondary">Location: {merchant.city}</Badge>
-            <Badge variant="secondary">Established: {profile.establishedYear}</Badge>
+            <Badge variant="secondary">Location: {merchant.address || merchant?.location?.city || 'N/A'}</Badge>
             <Badge variant="secondary">Rating: ⭐ 4.5</Badge>
             <Badge variant="secondary">Total Products: {merchantProducts.length}</Badge>
-            <Badge variant="secondary">Total Orders: 150</Badge>
           </div>
           <div className="mt-4 text-sm text-muted-foreground">
-            📞 {merchant.phone} | ✉️ {merchant.email} | 🌐{" "}
+            📞 {merchant.phone || 'N/A'} | ✉️ {merchant.email || 'N/A'} | 🌐{" "}
             <a
               href="https://www.kriyartec.com"
               target="_blank"
@@ -49,6 +92,7 @@ const ViewAllProducts = () => {
               www.kriyartec.com
             </a>
           </div>
+
         </CardContent>
       </Card>
 
@@ -80,7 +124,7 @@ const ViewAllProducts = () => {
                     </div>
                     <div className="flex items-center text-muted-foreground text-sm">
                       <MapPin size={14} className="mr-1" />
-                      {merchant.city}
+                      {merchant?.location?.city || 'N/A'}
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
