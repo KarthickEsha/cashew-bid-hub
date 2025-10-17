@@ -356,6 +356,8 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
               productId: productId ? String(productId) : undefined,
             }),
           });
+          // Notify listeners (e.g., sidebar) to refresh My Enquiries count immediately
+          try { window.dispatchEvent(new Event('enquiry:created')); } catch {}
         } else {
           console.warn('Skipping send-enquiry: missing response or stockId for responseId', responseId, { hasResp: !!resp });
         }

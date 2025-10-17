@@ -371,6 +371,8 @@ const ProductDetail = () => {
             status: 'processing'
           }),
         });
+        // Notify listeners (e.g., sidebar) to refresh My Enquiries count immediately
+        try { window.dispatchEvent(new Event('enquiry:created')); } catch {}
       } catch (err) {
         console.error('Backend enquiry failed:', err);
         toast({

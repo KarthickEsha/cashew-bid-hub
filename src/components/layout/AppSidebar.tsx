@@ -214,7 +214,7 @@ export function AppSidebar() {
     // { path: "/profile", label: t('sidebar.myActivity.profile'), icon: User },
     { path: "/post-requirement", label: t('sidebar.mainNav.postRequirement'), icon: Plus, },
     { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText, badge: requirements.length },
-    { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: newResponseCount }
+    { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: myEnquiriesBadge }
   ];
 
   const accountItems: NavItem[] = [

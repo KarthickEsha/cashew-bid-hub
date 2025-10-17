@@ -405,6 +405,8 @@ const RequirementDetails = () => {
                             productId,
                         }),
                     });
+                    // Notify listeners (e.g., sidebar) to refresh My Enquiries count immediately
+                    try { window.dispatchEvent(new Event('enquiry:created')); } catch {}
                 } else {
                     console.warn('Skipping send-enquiry: response not found for id', responseId);
                 }
