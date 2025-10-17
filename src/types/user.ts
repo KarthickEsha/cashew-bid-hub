@@ -17,6 +17,8 @@ export interface UserProfile {
   companyName?: string;
   registrationType?: RegistrationType;
   officeEmail?: string;
+  officeAddress?: string;
+  officePhone?: string;
   isGstRegistered?: boolean;
   productType?: ProductType;
   establishedYear?: string;

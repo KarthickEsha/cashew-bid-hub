@@ -40,8 +40,8 @@ const ProfileSetup = () => {
     dealingWith: profile?.dealingWith || 'RCN' as ProductType,
     description: profile?.description || '',
     profilePicture: profile?.profilePicture || user?.imageUrl || '',
-    officeAddress: '',
-    officePhone: ''
+    officeAddress: profile?.officeAddress || '',
+    officePhone: profile?.officePhone || ''
   });
 
   const [selectedRole, setSelectedRole] = useState<UserRole>(role);
@@ -100,7 +100,7 @@ const ProfileSetup = () => {
 
   const handleInputChange = (field: string, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (['phone', 'pincode', 'officeEmail', 'establishedYear', 'address'].includes(field)) {
+    if (['phone', 'pincode', 'officeEmail', 'establishedYear', 'address',].includes(field)) {
       validateField(field, value);
     }
   };
@@ -137,6 +137,8 @@ const ProfileSetup = () => {
       businessType: formData.businessType,
       dealingWith: formData.dealingWith,
       description: formData.description,
+      officeAddress: formData.officeAddress,
+      officePhone: formData.officePhone,
       isProfileComplete: true,
       userId: user?.id,
       createdAt: new Date().toISOString(),

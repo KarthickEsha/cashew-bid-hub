@@ -36,6 +36,8 @@ function mapToBackendPayload(p: UserProfile): BackendUserProfileUpdate {
     state: p.state,
     country: p.country,
     postalCode: (p as any).pincode,
+    officeAddress: p.officeAddress,
+    officePhone: p.officePhone
   };
 }
 

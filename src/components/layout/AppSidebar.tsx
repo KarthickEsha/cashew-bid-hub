@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useClerk } from "@clerk/clerk-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useResponses } from "@/hooks/useResponses";
 import RoleSwitcher from "@/components/RoleSwitcher";
 import { useTranslation } from "react-i18next";
@@ -71,7 +71,7 @@ export function AppSidebar() {
       description?: string;
     } | null>(null);
   // My Enquiries (orders) count from backend
-  const [myEnquiriesCount, setMyEnquiriesCount] = useState<number | null>(null);
+  const [myEnquiriesCount, setMyEnquiriesCount] = useState<number>(0);
 
   useEffect(() => {
     // Count seller responses from store helper (fallbacks handled inside hook)
@@ -113,31 +113,52 @@ export function AppSidebar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch My Enquiries count from /api/stocks/enquiries; fallback to local orders count on error
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const data: unknown = await apiFetch('/api/stocks/enquiries?view=buyer');
-        const payload: unknown = (data as any)?.data ?? data;
-        let count = 0;
-        if (Array.isArray(payload)) {
-          count = payload.length;
-        } else if (
-          payload &&
-          typeof payload === 'object' &&
-          'count' in payload &&
-          typeof (payload as { count: unknown }).count === 'number'
-        ) {
-          count = (payload as { count: number }).count;
-        }
-        if (mounted) setMyEnquiriesCount(count);
-      } catch {
-        if (mounted) setMyEnquiriesCount(null);
+  // Stable fetcher for My Enquiries count (avoids races, supports refetch triggers)
+  const fetchMyEnquiriesCount = useCallback(async () => {
+    const ac = new AbortController();
+    try {
+      const data: unknown = await apiFetch('/api/stocks/enquiries?view=buyer', { signal: ac.signal });
+      const payload: unknown = (data as any)?.data ?? data;
+      let count = 0;
+      if (Array.isArray(payload)) {
+        count = payload.length;
+      } else if (
+        payload &&
+        typeof payload === 'object' &&
+        'count' in payload &&
+        typeof (payload as any).count === 'number'
+      ) {
+        count = (payload as any).count;
       }
-    })();
-    return () => { mounted = false };
+      setMyEnquiriesCount(count || 0);
+    } catch {
+      // keep last known count on error
+    }
+    return () => ac.abort();
   }, []);
+
+  // Refetch on mount, route change, focus/visibility change, and after new enquiry creation
+  useEffect(() => {
+    let cleanup: undefined | (() => void);
+    (async () => {
+      cleanup = (await fetchMyEnquiriesCount()) as any;
+    })();
+
+    const onFocus = () => { fetchMyEnquiriesCount(); };
+    const onVisibility = () => { if (!document.hidden) fetchMyEnquiriesCount(); };
+    const onEnquiryCreated = () => { fetchMyEnquiriesCount(); };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('enquiry:created', onEnquiryCreated);
+
+    return () => {
+      cleanup?.();
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('enquiry:created', onEnquiryCreated);
+    };
+  }, [currentPath, fetchMyEnquiriesCount]);
 
   // Load marketplace stocks from localStorage (per type), then refresh from API with type
   useEffect(() => {
@@ -177,7 +198,7 @@ export function AppSidebar() {
     s => (s.status === 'active' || (s.availableqty ?? 0) > 0) && s.type === currentProductType
   ).length;
   const ordersCount = orders.filter(order => order.productId && order.productId.trim() !== '').length;
-  const myEnquiriesBadge = (myEnquiriesCount ?? ordersCount);
+  const myEnquiriesBadge = myEnquiriesCount;
 
   const mainNavItems: NavItem[] = [
     { path: "/", label: t('sidebar.mainNav.dashboard'), icon: Home },

@@ -38,6 +38,8 @@ export interface BackendUserProfileUpdate {
   state?: string;
   country?: string;
   postalCode?: string;
+  officeAddress?: string;
+  officePhone?: string
 }
 
 export async function updateUserProfile(userId: string, data: BackendUserProfileUpdate) {
