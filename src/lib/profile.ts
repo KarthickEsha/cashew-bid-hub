@@ -54,6 +54,6 @@ export async function updateUserProfile(userId: string, data: BackendUserProfile
 export async function getUserProfile(userId: string) {
   if (!userId) throw new Error("Missing backend userId for profile fetch");
   // Adjust the endpoint if your backend differs
-  return apiFetch(`/api/users/get/${encodeURIComponent(userId)}`, { method: "GET" });
+  return apiFetch(`/api/users/${encodeURIComponent(userId)}`, { method: "GET" });
 }
 

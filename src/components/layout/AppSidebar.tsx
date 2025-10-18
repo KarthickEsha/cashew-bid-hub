@@ -107,13 +107,13 @@ export function AppSidebar() {
   // Ensure seller responses are loaded once from API and persisted
   useEffect(() => {
     // Load only once on mount
-    ensureLoaded?.().catch(() => {});
+    ensureLoaded?.().catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Ensure requirements are fetched so badge shows by default
   useEffect(() => {
-    fetchAllRequirements?.().catch(() => {});
+    fetchAllRequirements?.().catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -121,8 +121,12 @@ export function AppSidebar() {
   const fetchMyEnquiriesCount = useCallback(async () => {
     const ac = new AbortController();
     try {
-      const data: unknown = await apiFetch('/api/stocks/enquiries?view=buyer', { signal: ac.signal });
-      const payload: unknown = (data as any)?.data ?? data;
+      const view = 'buyer';
+      const userID = extractBackendUserId() || (profile as any)?.id || '';
+      const params = new URLSearchParams({ view });
+      if (userID) params.set('userID', userID);
+      const res: any = await apiFetch(`/api/stocks/enquiries?${params.toString()}`, { method: 'GET' });
+      const payload: unknown = (res as any)?.data ?? res;
       let count = 0;
       if (Array.isArray(payload)) {
         count = payload.length;
@@ -171,14 +175,14 @@ export function AppSidebar() {
     try {
       const cached = JSON.parse(localStorage.getItem(cacheKey) || '[]');
       if (Array.isArray(cached)) setStocks(cached);
-    } catch {}
+    } catch { }
 
     const fetchStocks = async () => {
       try {
         const role = String(profile?.role || '').toLowerCase();
-                const view = role === 'processor' ? 'merchant' : 'buyer';
-                const baseUrl = `/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}&view=${view}`;
-                const url = role === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
+        const view = role === 'processor' ? 'merchant' : 'buyer';
+        const baseUrl = `/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}&view=${view}`;
+        const url = role === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
         const resp: any = await apiFetch(url, { method: 'GET' });
         const list: any[] = Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
         // Normalize minimal fields we need for counting

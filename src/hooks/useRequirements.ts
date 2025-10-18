@@ -40,6 +40,8 @@ export interface Requirement {
 
 interface RequirementsState {
   requirements: Requirement[];
+  loading: boolean;
+  error: string | null;
   addRequirement: (requirement: Omit<Requirement, 'id' | 'createdAt' | 'productName' | 'message' | 'fixedPrice'>) => void;
   updateRequirement: (id: string, requirement: Omit<Requirement, 'id' | 'createdAt' | 'customerName' | 'productName' | 'message' | 'fixedPrice'>) => void;
   updateRequirementStatus: (id: string, status: 'pending' | 'responded' | 'active' | 'draft' | 'expired' | 'closed' | 'selected' | 'viewed') => Promise<void>;
@@ -105,10 +107,13 @@ export const useRequirements = create<RequirementsState>()(
   persist(
     (set, get) => ({
       requirements: [],
+      loading: false,
+      error: null,
       
       // Load requirements from API and persist to the store (and localStorage)
       fetchAllRequirements: async () => {
         try {
+          set({ loading: true, error: null });
           const profile = useProfile.getState().profile;
           const role = String(profile?.role || '').toLowerCase();
           const view = role === 'buyer' ? 'buyer' : 'merchant';
@@ -189,9 +194,10 @@ export const useRequirements = create<RequirementsState>()(
           };
 
           const normalized = list.map(toRequirement);
-          set({ requirements: normalized });
-        } catch (err) {
+          set({ requirements: normalized, loading: false, error: null });
+        } catch (err: any) {
           console.error('Failed to fetch requirements:', err);
+          set({ loading: false, error: err?.message || 'Failed to fetch requirements' });
           // Do not throw to avoid breaking UI
         }
       },
@@ -522,6 +528,7 @@ export const useRequirements = create<RequirementsState>()(
     }),
     {
       name: 'requirements-storage',
+      partialize: (state) => ({}) as any,
     }
   )
 );

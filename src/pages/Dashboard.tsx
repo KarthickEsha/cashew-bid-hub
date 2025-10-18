@@ -34,6 +34,7 @@ const Dashboard = () => {
   const [dashLists, setDashLists] = useState<any | null>(null);
   const [loadingDash, setLoadingDash] = useState(false);
   const [errorDash, setErrorDash] = useState<string | null>(null);
+  const [enquiriesCount, setEnquiriesCount] = useState<number>(0);
 
   // Fetch protected buyer dashboard
   useEffect(() => {
@@ -52,6 +53,30 @@ const Dashboard = () => {
         setErrorDash(e?.message || "Failed to load dashboard");
       } finally {
         if (mounted) setLoadingDash(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Fetch buyer enquiries to compute myResponses count from enquiries endpoint
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        // const res = await apiFetch("/api/stocks/enquiries?view=buyer");
+        // if (!mounted) return;
+        // // Try common response shapes: { data: [...] } | [...] | { records: [...] }
+        // const list = Array.isArray((res as any)?.data)
+        //   ? (res as any).data
+        //   : Array.isArray(res)
+        //   ? (res as any)
+        //   : ((res as any)?.records ?? []);
+        // setEnquiriesCount(Array.isArray(list) ? list.length : 0);
+      } catch {
+        if (!mounted) return;
+        setEnquiriesCount(0);
       }
     })();
     return () => {
@@ -106,7 +131,7 @@ const Dashboard = () => {
     },
     {
       title: t('dashboard.totalEnquiries'),
-      value: ordersCount.toString(),
+      value: (myRespCard?.count ?? enquiriesCount).toString(),
       icon: Clock,
       color: "text-orange-500",
       trend: t('dashboard.orderStats', { confirmed: confirmedOrders, pending: pendingOrders }),
