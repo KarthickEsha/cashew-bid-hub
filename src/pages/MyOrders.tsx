@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dialog";
 import { useProfile } from "@/hooks/useProfile";
 import { apiFetch } from "@/lib/api";
+import { extractBackendUserId } from "@/lib/profile";
 
 import {
   Table,
@@ -88,7 +89,11 @@ const MyOrders = () => {
     let ignore = false;
     (async () => {
       try {
-        const res: any = await apiFetch('/api/stocks/enquiries?view=buyer', { method: 'GET' });
+        const view = 'buyer';
+        const userID = extractBackendUserId() || (profile as any)?.id || '';
+        const params = new URLSearchParams({ view });
+        if (userID) params.set('userID', userID);
+        const res: any = await apiFetch(`/api/stocks/enquiries?${params.toString()}`, { method: 'GET' });
         const arr = Array.isArray(res?.data) ? res.data : [];
         const normalized = arr.map((it: any) => ({
           id: it.id,

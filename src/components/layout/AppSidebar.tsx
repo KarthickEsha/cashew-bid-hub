@@ -33,6 +33,7 @@ import { useRequirements } from "@/hooks/useRequirements";
 import { apiFetch } from "@/lib/api";
 import { ProductType } from "@/types/user";
 import { useProfile } from "@/hooks/useProfile";
+import { extractBackendUserId } from "@/lib/profile";
 
 interface NavItem {
   path: string;
@@ -57,19 +58,19 @@ export function AppSidebar() {
   const [stocks, setStocks] = useState<any[]>([]);
   const [currentProductType, setCurrentProductType] = useState<ProductType>();
   const { profile } = useProfile();
-   const [merchant, setMerchant] = useState<{
-      id: string;
-      name: string;
-      rating?: number;
-      totalOrders?: number;
-      location: string | Location;
-      verified?: boolean;
-      responseTime?: string;
-      phone?: string;
-      email?: string;
-      website?: string;
-      description?: string;
-    } | null>(null);
+  const [merchant, setMerchant] = useState<{
+    id: string;
+    name: string;
+    rating?: number;
+    totalOrders?: number;
+    location: string | Location;
+    verified?: boolean;
+    responseTime?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+    description?: string;
+  } | null>(null);
   // My Enquiries (orders) count from backend
   const [myEnquiriesCount, setMyEnquiriesCount] = useState<number>(0);
 
@@ -89,8 +90,11 @@ export function AppSidebar() {
     const fetchCount = async () => {
       try {
         const role = String(profile?.role || '').toLowerCase();
-        const viewer = role === 'merchant' || role === 'processor' ? 'merchant' : 'buyer';
-        const data: any = await apiFetch(`/api/quotes/get-all-quotes?viewer=${viewer}`, { method: 'GET' });
+        const view = role === 'buyer' ? 'buyer' : 'merchant';
+        const userID = extractBackendUserId() || (profile as any)?.id || '';
+        const params = new URLSearchParams({ view });
+        if (userID) params.set('userID', userID);
+        const data: any = await apiFetch(`/api/quotes/get-all-quotes?${params.toString()}`, { method: 'GET' });
         const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
         setNewResponseCount(Array.isArray(list) ? list.length : 0);
       } catch (e) {

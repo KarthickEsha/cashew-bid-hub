@@ -66,6 +66,7 @@ import {
 } from "@/components/ui/dialog";
 import { useProfile } from "@/hooks/useProfile";
 import { apiFetch } from "@/lib/api";
+import { extractBackendUserId } from "@/lib/profile";
 
 type ResponseStatus = 'new' | 'viewed' | 'confirmed' | 'rejected' | 'skipped' | 'accepted';
 
@@ -135,8 +136,12 @@ const Responses = () => {
   // Load quotes from backend
   useEffect(() => {
     setIsLoading(true);
-    const viewer = profile?.role === 'processor' ? 'merchant' : 'buyer';
-    apiFetch(`/api/quotes/get-all-quotes?viewer=${viewer}`)
+    const role = String(profile?.role || '').toLowerCase();
+    const view = role === 'buyer' ? 'buyer' : 'merchant';
+    const userID = extractBackendUserId() || (profile as any)?.id || '';
+    const params = new URLSearchParams({ view });
+    if (userID) params.set('userID', userID);
+    apiFetch(`/api/quotes/get-all-quotes?${params.toString()}`)
       .then((data) => {
         const arr = (data as any)?.data;
         const list = Array.isArray(arr) ? arr : [];

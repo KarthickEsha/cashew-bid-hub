@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRole } from "@/hooks/useRole";
 import { useProfile } from "@/hooks/useProfile";
 import { ProductType } from "@/types/user";
@@ -10,9 +10,24 @@ const RoleSwitcher = () => {
   const navigate = useNavigate();
 
   // Default to 'RCN' if dealingWith is 'Both' and no productType is set
+  const safeDefault: ProductType = 'RCN';
   const [selectedProductType, setSelectedProductType] = useState<ProductType>(
-    profile?.productType || (profile?.dealingWith === 'Both' ? 'RCN' : 'RCN')
+    (profile?.productType === 'RCN' || profile?.productType === 'Kernel')
+      ? (profile.productType as ProductType)
+      : safeDefault
   );
+
+  // Sync local selection when profile changes (e.g., after backend hydration)
+  useEffect(() => {
+    const pt = profile?.productType;
+    if (pt === 'RCN' || pt === 'Kernel') {
+      setSelectedProductType(pt);
+    } else if ((profile?.dealingWith || '').toLowerCase() === 'both') {
+      setSelectedProductType('RCN');
+    } else {
+      setSelectedProductType(safeDefault);
+    }
+  }, [profile?.productType, profile?.dealingWith]);
 
   // 🔑 Handle product type change
   const handleProductTypeChange = (newProductType: ProductType) => {
@@ -24,20 +39,20 @@ const RoleSwitcher = () => {
 
     navigate("/");
   };
-  const selectedProduct = profile?.dealingWith || "Both";
-  const selectedProducttype = profile?.productType || (profile?.dealingWith === 'Both' ? 'RCN' : 'RCN');
+  const selectedProduct = (profile?.dealingWith || "Both");
+  const isBoth = String(selectedProduct).toLowerCase() === 'both';
   // Determine which buttons to show
-  const buttonWidth = selectedProduct === "Both" ? "w-1/2" : "w-full";
+  const buttonWidth = isBoth ? "w-1/2" : "w-full";
 
   return (
     <div className="flex justify-center items-center">
       <div className="flex w-64 bg-gray-100 rounded-full shadow-md border border-gray-200 overflow-hidden">
         {/* RCN Button */}
-        {selectedProduct == "Both"&& (
+        {isBoth && (
           <button
             onClick={() => handleProductTypeChange("RCN")}
             className={`${buttonWidth} py-2 flex items-center justify-center gap-2 font-semibold transition-colors duration-300 ${
-              selectedProducttype === "RCN"
+              selectedProductType === "RCN"
                 ? "bg-amber-500 text-white"
                 : "bg-transparent text-gray-600 hover:bg-gray-200"
             }`}
@@ -55,11 +70,11 @@ const RoleSwitcher = () => {
         )}
 
         {/* Kernel Button */}
-        {selectedProduct == "Both" && (
+        {isBoth && (
           <button
             onClick={() => handleProductTypeChange("Kernel")}
             className={`${buttonWidth} py-2 flex items-center justify-center gap-2 font-semibold transition-colors duration-300 ${
-              selectedProducttype === "Kernel"
+              selectedProductType === "Kernel"
                 ? "bg-orange-500 text-white"
                 : "bg-transparent text-gray-600 hover:bg-gray-200"
             }`}

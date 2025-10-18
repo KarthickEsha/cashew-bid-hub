@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Camera, Upload } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { useProfile } from '@/hooks/useProfile';
+import { extractBackendUserId } from '@/lib/profile';
 import { useRole } from '@/hooks/useRole';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, UserRole, ProductType, RegistrationType } from '@/types/user';
@@ -18,7 +19,7 @@ import { UserProfile, UserRole, ProductType, RegistrationType } from '@/types/us
 
 const ProfileSetup = () => {
   const { user } = useUser();
-  const { profile, setProfile } = useProfile();
+  const { profile, setProfile, loadProfileFromBackend } = useProfile();
   const { role, setRole } = useRole();
   const navigate = useNavigate();
 
@@ -44,9 +45,17 @@ const ProfileSetup = () => {
     officePhone: profile?.officePhone || ''
   });
 
-  const [selectedRole, setSelectedRole] = useState<UserRole>(role);
+  const [selectedRole, setSelectedRole] = useState<UserRole>((profile?.role as UserRole) || role || ('buyer' as UserRole));
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Image crop functionality will be implemented when needed
+
+  // Hydrate from backend after SSO (or when token/user id appears)
+  useEffect(() => {
+    const id = extractBackendUserId() || profile?.id || user?.id || '';
+    if (id) {
+      loadProfileFromBackend(id).catch(() => {});
+    }
+  }, [user?.id]);
 
   const validateField = (field: string, value: string | boolean | number) => {
     const newErrors = { ...errors };
@@ -116,7 +125,7 @@ const ProfileSetup = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const profileData: UserProfile = {
       id: user?.id || crypto.randomUUID(),
       email: formData.email,
@@ -147,6 +156,12 @@ const ProfileSetup = () => {
 
     setProfile(profileData);
     setRole(selectedRole);
+    try {
+      const backendUserId = extractBackendUserId() || profileData.id;
+      if (backendUserId) {
+        await loadProfileFromBackend(backendUserId);
+      }
+    } catch { /* ignore */ }
     navigate('/');
   };
 
@@ -176,6 +191,8 @@ const ProfileSetup = () => {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* On mount, hydrate profile from backend if SSO provided an auth token */}
+            {(() => { /* IIFE pattern not rendered; effect hook below */ return null; })()}
             {/* Profile Picture */}
             <div className="flex flex-col items-center space-y-4">
               <div className="relative">
@@ -210,7 +227,10 @@ const ProfileSetup = () => {
               <ToggleGroup
                 type="single"
                 value={selectedRole}
-                onValueChange={(value: UserRole) => setSelectedRole(value)}
+                onValueChange={(value) => {
+                  if (!value) return; // ignore deselect to preserve current role
+                  setSelectedRole(value as UserRole);
+                }}
                 className="grid grid-cols-3 gap-2"
               >
                 <ToggleGroupItem value="buyer" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">

@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useInventory } from "@/hooks/useInventory";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "@/lib/api";
+import { extractBackendUserId } from "@/lib/profile";
+
 // Utility function to format currency in Indian Rupees
 const formatINR = (amount: number | string): string => {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -131,7 +133,11 @@ const MerchantOrders = () => {
     let ignore = false;
     (async () => {
       try {
-        const res: any = await apiFetch('/api/stocks/enquiries?view=merchant', { method: "GET" });
+        const view = 'merchant';
+        const userID = extractBackendUserId() || (profile as any)?.id || '';
+        const params = new URLSearchParams({ view });
+        if (userID) params.set('userID', userID);
+        const res: any = await apiFetch(`/api/stocks/enquiries?${params.toString()}`, { method: "GET" });
         const arr = Array.isArray(res?.data) ? res.data : [];
         const normalized = arr.map((it: any) => ({
           id: it.id,
@@ -331,8 +337,13 @@ const MerchantOrders = () => {
   const handleConfirmDelete = async () => {
     if (!orderToDelete) return;
     try {
-      await apiFetch(`/api/stocks/enquiries/${encodeURIComponent(orderToDelete)}?view=merchant`, { method: 'DELETE' });
+      const view = 'merchant';
+      const userID = extractBackendUserId() || (profile as any)?.id || '';
+      const params = new URLSearchParams({ view });
+      if (userID) params.set('userID', userID);
+      await apiFetch(`/api/stocks/enquiries/${encodeURIComponent(orderToDelete)}?${params.toString()}`, { method: 'DELETE' });
       setBuyerResponses(prev => prev.filter(item => item.id !== orderToDelete));
+
       toast({
         title: "Response Deleted",
         description: "The response has been hidden from your view.",

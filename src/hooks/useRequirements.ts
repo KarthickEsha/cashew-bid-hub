@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useResponses } from './useResponses';
 import { apiFetch } from '@/lib/api';
+import { useProfile } from '@/hooks/useProfile';
+import { extractBackendUserId } from '@/lib/profile';
 
 export interface Requirement {
   id: string;
@@ -107,7 +109,12 @@ export const useRequirements = create<RequirementsState>()(
       // Load requirements from API and persist to the store (and localStorage)
       fetchAllRequirements: async () => {
         try {
-          const data = await apiFetch('/api/requirement/get-all-requirements');
+          const profile = useProfile.getState().profile;
+          const role = String(profile?.role || '').toLowerCase();
+          const view = role === 'buyer' ? 'buyer' : 'merchant';
+          const backendUserId = extractBackendUserId() || (useProfile.getState().profile as any)?.id || '';
+          const params = new URLSearchParams({ view, userID: backendUserId });
+          const data = await apiFetch(`/api/requirement/get-all-requirements?${params.toString()}`);
 
           // Cache raw payload separately if needed elsewhere
           try {

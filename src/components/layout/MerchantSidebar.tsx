@@ -29,11 +29,12 @@ import RoleSwitcher from "@/components/RoleSwitcher";
 import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
 import { useOrders } from "@/hooks/useOrders";
-import { useInventory } from "@/hooks/useInventory"; // Add this line to import useInventory hook
+import { useInventory } from "@/hooks/useInventory"; 
 import { ProductType } from "@/types/user";
 import { useEffect, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { apiFetch } from "@/lib/api";
+import { extractBackendUserId } from "@/lib/profile";
 
 const navItems = [
   {
@@ -44,7 +45,7 @@ const navItems = [
   {
     title: "My Stocks",
     url: "/merchant/products",
-    icon: Package,   // 👈 changed from Package to Boxes
+    icon: Package,   
   },
   // {
   //   title: "Add Product",
@@ -99,7 +100,7 @@ export function MerchantSidebar() {
   const { responses, getStockEnquiriesCount, getSellerResponseCount, ensureLoaded } = useResponses();
 
   const { orders } = useOrders();
-  const { products } = useInventory(); // local store fallback
+  const { products } = useInventory(); 
 
   // Filter out skipped responses and get counts
   const activeResponses = responses.filter(r => r.status !== 'skipped');
@@ -178,7 +179,11 @@ export function MerchantSidebar() {
     let mounted = true;
     (async () => {
       try {
-        const data: unknown = await apiFetch('/api/stocks/enquiries?view=merchant');
+        const view = 'merchant';
+        const userID = extractBackendUserId() || (profile as any)?.id || '';
+        const params = new URLSearchParams({ view });
+        if (userID) params.set('userID', userID);
+        const data: unknown = await apiFetch(`/api/stocks/enquiries?${params.toString()}`);
         const payload: unknown = (data as any)?.data ?? data;
         let count = 0;
 
