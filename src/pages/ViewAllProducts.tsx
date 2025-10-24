@@ -29,7 +29,7 @@ const ViewAllProducts = () => {
         const mapped = Array.isArray(items) ? items.map((s: any) => ({
           id: String(s.productId || s.id || s._id),
           name: m.companyName || s.grade || 'Stock',
-          grade: s.grade,
+          grade: s.grade || 'RAW Cashews',
           availableQty: s.availableqty,
           price: s.sellingprice,
           expireDate: s.expiredate,

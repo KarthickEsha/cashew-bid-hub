@@ -47,6 +47,7 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminSubscribers from "./pages/admin/AdminSubscribers";
 import AdminBuyerDetails from "./pages/admin/AdminBuyerDetails";
 import AuthBootstrap from "./components/AuthBootstrap";
+import { useFCM } from "./hooks/useFCM";
 
 interface LayoutProps {
   children: ReactNode;
@@ -133,7 +134,9 @@ const AppContent = () => {
 };
 
 const App = () => {
-
+  // Initialize Firebase Cloud Messaging once app mounts
+  const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
+  useFCM(vapidKey as string);
   return (
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <QueryClientProvider client={queryClient}>

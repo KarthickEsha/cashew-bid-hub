@@ -3,49 +3,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Clock, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 interface NotificationPanelProps {
   children: React.ReactNode;
 }
 
-interface Notification {
-  id: number;
-  type: 'success' | 'info' | 'warning';
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-}
-
 const NotificationPanel = ({ children }: NotificationPanelProps) => {
   const [isOpen, setIsOpen] = useState(false);
-
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: 'success',
-      title: 'Order Confirmed',
-      message: 'Your order for W320 cashews has been confirmed',
-      time: '2 hours ago',
-      read: false,
-    },
-    {
-      id: 2,
-      type: 'info',
-      title: 'New Response',
-      message: 'You received a new response on your requirement',
-      time: '4 hours ago',
-      read: false,
-    },
-    {
-      id: 3,
-      type: 'warning',
-      title: 'Price Alert',
-      message: 'Cashew prices have increased by 5%',
-      time: '1 day ago',
-      read: true,
-    },
-  ]);
+  const { notifications, deleteNotification, markAllAsRead } = useNotifications();
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -58,17 +24,7 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
     }
   };
 
-  // Delete a single notification
-  const deleteNotification = (id: number) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
-
-  // Mark all as read
-  const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true }))
-    );
-  };
+  // deleteNotification and markAllAsRead come from context
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>

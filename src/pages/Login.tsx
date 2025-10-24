@@ -1,8 +1,11 @@
 import { SignIn } from "@clerk/clerk-react";
+import EnableNotifications from "@/components/EnableNotifications";
 
 const Login = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4 relative">
+      {/* Enable Notifications banner at the top (fixed, component handles positioning) */}
+      <EnableNotifications />
       <div className="w-full max-w-sm text-center">
         {/* Logo */}
         {/* <div className="flex justify-center mb-6">
