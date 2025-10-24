@@ -205,8 +205,10 @@ export const useResponses = create<ResponsesState>()(
 
         try {
           const profile = useProfile.getState().profile as any;
-          const role = String(profile?.role || '').toLowerCase();
-          const view = role === 'buyer' ? 'buyer' : 'merchant';
+          const uiRole = (require('@/hooks/useRole').useRole.getState().role || '').toLowerCase?.() || '';
+          const profileRole = String(profile?.role || '').toLowerCase();
+          const effectiveRole = uiRole || profileRole;
+          const view = effectiveRole === 'buyer' ? 'buyer' : 'merchant';
           const userID = extractBackendUserId() || (profile as any)?.id || '';
           const params = new URLSearchParams({ view });
           if (userID) params.set('userID', userID);

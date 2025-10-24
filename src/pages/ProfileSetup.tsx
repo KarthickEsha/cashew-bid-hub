@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Camera, Upload } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { useProfile } from '@/hooks/useProfile';
+import { updateUserProfile } from '@/lib/profile';
 import { extractBackendUserId } from '@/lib/profile';
 import { useRole } from '@/hooks/useRole';
 import { useNavigate } from 'react-router-dom';
@@ -159,6 +160,28 @@ const ProfileSetup = () => {
     try {
       const backendUserId = extractBackendUserId() || profileData.id;
       if (backendUserId) {
+        const toUpperSnake = (v?: string) => String(v || '').toUpperCase().replace(/[^A-Z]+/g, '_');
+        await updateUserProfile(backendUserId, {
+          name: profileData.name,
+          role: profileData.role,
+          mail: profileData.email,
+          phone: profileData.phone,
+          city: profileData.city,
+          address: profileData.address,
+          profilePicture: profileData.profilePicture,
+          companyName: profileData.companyName,
+          registrationType: toUpperSnake(profileData.registrationType as unknown as string),
+          officeEmail: profileData.officeEmail,
+          establishedYear: String(profileData.establishedYear || ''),
+          businessType: profileData.dealingWith && String(profileData.dealingWith).trim().length > 0 ? profileData.dealingWith : 'Manufacturer',
+          description: profileData.description,
+          location: { latitude: 0, longitude: 0 },
+          state: profileData.state,
+          country: profileData.country,
+          postalCode: (profileData as any).pincode,
+          officeAddress: profileData.officeAddress,
+          officePhone: profileData.officePhone,
+        });
         await loadProfileFromBackend(backendUserId);
       }
     } catch { /* ignore */ }

@@ -33,12 +33,15 @@ import {
     TrendingUp,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useRole } from "@/hooks/useRole";
 
 const MerchantProducts = () => {
     const navigate = useNavigate();
     const { products, deleteProduct } = useInventory();
     const { profile } = useProfile();
-     const [merchant, setMerchant] = useState<{
+    const uiRole = useRole(state => state.role);
+
+    const [merchant, setMerchant] = useState<{
           id: string;
           name: string;
           rating?: number;
@@ -230,11 +233,11 @@ const MerchantProducts = () => {
         const loadStocks = async () => {
             try {
                 setIsLoading(true);
-                const role = String(profile?.role || '').toLowerCase();
-                const view = role === 'processor' ? 'merchant' : 'buyer';
+                const effectiveRole = String(uiRole || profile?.role || '').toLowerCase();
+                const view = effectiveRole === 'processor' ? 'merchant' : 'buyer';
                 // Prefer backend type filtering if supported
                 const baseUrl = `/api/stocks/get-all-stocks?type=${encodeURIComponent(currentProductType)}&view=${view}`;
-                const url = role === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
+                const url = effectiveRole === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
                 const resp = await apiFetch(url, { method: "GET" });
                 const stocks = Array.isArray(resp?.data) ? resp.data : [];
 
@@ -304,7 +307,7 @@ const MerchantProducts = () => {
 
         loadStocks();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentProductType]);
+    }, [currentProductType, uiRole]);
 
     const handleDeleteClick = (productId: string) => {
         setProductToDelete(productId);

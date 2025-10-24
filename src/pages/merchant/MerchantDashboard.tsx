@@ -11,6 +11,7 @@ import ProductTypeToggle from "@/components/ProductTypeToggle";
 import { useState, useMemo, useEffect } from "react";
 import { ProductType } from "@/types/user";
 import { apiFetch } from "@/lib/api";
+import { useRole } from "@/hooks/useRole";
 
 const MerchantDashboard = () => {
   const { getProductStats } = useInventory();
@@ -40,6 +41,7 @@ const MerchantDashboard = () => {
   const [dashLists, setDashLists] = useState<any | null>(null);
   const [loadingDash, setLoadingDash] = useState(false);
   const [errorDash, setErrorDash] = useState<string | null>(null);
+  const uiRole = useRole(state => state.role);
 
   // Persisted stock counts (shared with MerchantSidebar and written by MerchantProducts)
   type StatusCounts = { active: number; out_of_stock: number };
@@ -70,6 +72,14 @@ const MerchantDashboard = () => {
 
   const [currentProductType, setCurrentProductType] = useState<ProductType>(getInitialProductType());
 
+  // Sync with global profile productType changes (e.g., RoleSwitcher updates)
+  useEffect(() => {
+    const pt = profile?.productType;
+    if (pt === 'RCN' || pt === 'Kernel') {
+      if (pt !== currentProductType) setCurrentProductType(pt);
+    }
+  }, [profile?.productType]);
+
   // Read counts from localStorage initially and keep in sync with events
   useEffect(() => {
     const readCounts = () => {
@@ -94,14 +104,14 @@ const MerchantDashboard = () => {
     };
   }, []);
 
-  // Fetch protected merchant dashboard
+  // Fetch protected merchant dashboard (filtered by current product type)
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setLoadingDash(true);
         setErrorDash(null);
-        const data = await apiFetch("/api/users/merchant-dashboard");
+        const data = await apiFetch(`/api/users/merchant-dashboard?type=${encodeURIComponent(currentProductType)}`);
         if (!mounted) return;
         setDashCards((data as any)?.data?.cards ?? null);
         setDashLists((data as any)?.lists ?? null);
@@ -113,7 +123,7 @@ const MerchantDashboard = () => {
       }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [currentProductType]);
 
   // Ensure counts exist for the currently selected type; if missing, fetch and persist
   useEffect(() => {
@@ -121,10 +131,10 @@ const MerchantDashboard = () => {
       const hasCounts = stockCounts[type]?.active !== undefined || stockCounts[type]?.out_of_stock !== undefined;
       if (hasCounts) return;
       try {
-        const role = String(profile?.role || '').toLowerCase();
-        const view = role === 'processor' ? 'merchant' : 'buyer';
+        const effectiveRole = String(uiRole || profile?.role || '').toLowerCase();
+        const view = effectiveRole === 'processor' ? 'merchant' : 'buyer';
         const baseUrl = `/api/stocks/get-all-stocks?type=${encodeURIComponent(type)}&view=${view}`;
-        const url = role === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
+        const url = effectiveRole === 'processor' && profile?.id ? `${baseUrl}&userId=${encodeURIComponent(profile.id)}` : baseUrl;
         const resp = await apiFetch(url, { method: 'GET' });
         const items = Array.isArray(resp?.data) ? resp.data : [];
         // Compute counts by status; "active" if availableqty > 0 else "out_of_stock"
@@ -154,7 +164,7 @@ const MerchantDashboard = () => {
     };
     ensureCountsForType(currentProductType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentProductType]);
+  }, [currentProductType, uiRole]);
 
   // Calculate display stats based on current type using persisted API-backed counts
   const getDisplayStats = () => {
@@ -192,10 +202,6 @@ const MerchantDashboard = () => {
   };
 
   const mockRecentActivity = [
-    { id: 1, type: "order", message: "New order received for Premium Cashews W240", time: "2 hours ago" },
-    { id: 2, type: "enquiry", message: "Customer enquiry about W320 grade pricing", time: "4 hours ago" },
-    { id: 3, type: "product", message: "Low stock alert for W180 Cashews", time: "6 hours ago" },
-    { id: 4, type: "order", message: "Order #ORD-123 marked as shipped", time: "1 day ago" },
   ];
 
   // Build recent activity from backend myQuotes; fallback to mock

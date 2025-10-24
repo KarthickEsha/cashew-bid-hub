@@ -45,7 +45,9 @@ import { useResponses } from "@/hooks/useResponses";
 
 const MyRequirements = () => {
   const { getMyRequirements, deleteRequirement, fetchAllRequirements } = useRequirements();
-  const { getResponseCount, getResponsesByRequirementId } = useResponses();
+  const { getResponseCount } = useResponses();
+  const lastFetched = useResponses((s: any) => s.lastFetched);
+  const { ensureLoaded } = useResponses.getState();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,6 +64,7 @@ const MyRequirements = () => {
   // Load from API on mount, then get requirements from the hook
   useEffect(() => {
     fetchAllRequirements?.().catch((e) => console.error('Failed loading requirements:', e));
+    ensureLoaded?.(true).catch((e: any) => console.error('Failed loading responses:', e));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -222,7 +225,7 @@ const MyRequirements = () => {
     applyFilters();
     // Reset to first page when filters change
     setCurrentPage(1);
-  }, [requirements, searchTerm, statusFilter, gradeFilter, sortConfig]);
+  }, [requirements, searchTerm, statusFilter, gradeFilter, sortConfig, lastFetched]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredRequirements.length / itemsPerPage));
@@ -512,11 +515,10 @@ const MyRequirements = () => {
                             </Link>
                           </Button>
                           {(() => {
-                            const processingCount = getResponsesByRequirementId(requirement.id.toString())
-                              .filter(r => r.status === 'new' || r.status === 'viewed').length;
-                            return processingCount > 0 ? (
+                            const totalCount = getResponseCount(requirement.id.toString());
+                            return totalCount > 0 ? (
                               <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] h-4 min-w-4 px-1 leading-none">
-                                {processingCount}
+                                {totalCount}
                               </span>
                             ) : null;
                           })()}
@@ -645,11 +647,21 @@ const MyRequirements = () => {
                     </span>
                   </div>
                   <div className="flex justify-end space-x-2">
-                    <Link to={`/requirement/${requirement.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Eye size={14} className="mr-2" /> View
-                      </Button>
-                    </Link>
+                    <div className="relative inline-block">
+                      <Link to={`/requirement/${requirement.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Eye size={14} className="mr-2" /> View
+                        </Button>
+                      </Link>
+                      {(() => {
+                        const totalCount = getResponseCount(requirement.id.toString());
+                        return totalCount > 0 ? (
+                          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] h-4 min-w-4 px-1 leading-none">
+                            {totalCount}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
                     <Link to={`/edit-requirement/${requirement.id}`}>
                       <Button variant="outline" size="sm">
                         <Edit size={14} className="mr-2" /> Edit

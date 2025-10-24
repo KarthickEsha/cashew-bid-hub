@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { useResponses } from './useResponses';
 import { apiFetch } from '@/lib/api';
 import { useProfile } from '@/hooks/useProfile';
+import { useRole } from '@/hooks/useRole';
 import { extractBackendUserId } from '@/lib/profile';
 
 export interface Requirement {
@@ -114,11 +115,13 @@ export const useRequirements = create<RequirementsState>()(
       fetchAllRequirements: async () => {
         try {
           set({ loading: true, error: null });
+          // Use UI role selected in Layout via useRole store; fall back to profile
+          const uiRole = (useRole.getState().role || '').toLowerCase();
           const profile = useProfile.getState().profile;
-          const role = String(profile?.role || '').toLowerCase();
-          const view = role === 'buyer' ? 'buyer' : 'merchant';
-          const backendUserId = extractBackendUserId() || (useProfile.getState().profile as any)?.id || '';
-          const params = new URLSearchParams({ view, userID: backendUserId });
+          const profileRole = String(profile?.role || '').toLowerCase();
+          const effectiveRole = uiRole || profileRole;
+          const view = effectiveRole === 'buyer' ? 'buyer' : 'merchant';
+          const params = new URLSearchParams({ view });
           const data = await apiFetch(`/api/requirement/get-all-requirements?${params.toString()}`);
 
           // Cache raw payload separately if needed elsewhere

@@ -13,6 +13,7 @@ import ProfilePanel from "@/components/ProfilePanel";
 import { useProfile } from "@/hooks/useProfile";
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useEffect } from "react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,7 +25,7 @@ const Layout = ({ children }: LayoutProps) => {
   const { role, setRole } = useRole();
   const navigate = useNavigate();
   const { user } = useUser();
-  const { profile, updateProfile } = useProfile();
+  const { profile } = useProfile();
 
   // Get display name (prefer firstName, else fall back to email)
   const displayName = user?.firstName || user?.primaryEmailAddress?.emailAddress || t('common.user', 'User');
@@ -39,12 +40,24 @@ const Layout = ({ children }: LayoutProps) => {
 
   // Check if user has both roles
   const hasBothRoles = profile.role === 'both';
-  const currentRole = role == "both" ? "buyer" : role; // Default to buyer if no role is set
+  const currentRole = role === "both" ? "buyer" : role;
+
+  // Sync UI role with profile role on load/login
+  useEffect(() => {
+    const pr = (profile?.role || '').toLowerCase();
+    if (!pr) return;
+    // If profile has both roles, default UI role to buyer; else mirror the profile
+    const desired = pr === 'both' ? 'buyer' : (pr === 'processor' ? 'processor' : 'buyer');
+    if (role !== desired) {
+      setRole(desired as any);
+    }
+  }, [profile?.role]);
 
   const handleSwitch = () => {
+    // Toggle between buyer and processor when user has both roles
     const newRole = currentRole === "buyer" ? "processor" : "buyer";
-    setRole(newRole);
-    navigate(""); // redirect to dashboard after switching
+    setRole(newRole as any);
+    navigate("");
   };
 
   return (

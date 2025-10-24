@@ -67,6 +67,7 @@ import {
 import { useProfile } from "@/hooks/useProfile";
 import { apiFetch } from "@/lib/api";
 import { extractBackendUserId } from "@/lib/profile";
+import { useRole } from "@/hooks/useRole";
 
 type ResponseStatus = 'new' | 'viewed' | 'confirmed' | 'rejected' | 'skipped' | 'accepted';
 
@@ -112,6 +113,8 @@ interface ResponseWithDetails extends MerchantResponse {
 const Responses = () => {
   const { t } = useTranslation();
   const { profile, setProfile } = useProfile();
+  const role = useRole(state => state.role);
+
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedResponse, setSelectedResponse] = useState<ResponseWithDetails | null>(null);
@@ -136,8 +139,8 @@ const Responses = () => {
   // Load quotes from backend
   useEffect(() => {
     setIsLoading(true);
-    const role = String(profile?.role || '').toLowerCase();
-    const view = role === 'buyer' ? 'buyer' : 'merchant';
+    const effectiveRole = String(role || profile?.role || '').toLowerCase();
+    const view = effectiveRole === 'buyer' ? 'buyer' : 'merchant';
     const userID = extractBackendUserId() || (profile as any)?.id || '';
     const params = new URLSearchParams({ view });
     if (userID) params.set('userID', userID);
@@ -184,7 +187,7 @@ const Responses = () => {
         console.error("Failed to load quotes:", err);
       })
       .finally(() => setIsLoading(false));
-  }, [profile?.role]);
+  }, [role]);
 
   // Get requirement title by ID
   const getRequirementTitle = (requirementId: string) => {

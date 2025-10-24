@@ -96,7 +96,7 @@ export function MerchantSidebar() {
   const currentPath = location.pathname;
 
   // Get dynamic counts
-  const { getRequirementsAsEnquiries } = useRequirements();
+  const { getRequirementsAsEnquiries, fetchAllRequirements } = useRequirements();
   const { responses, getStockEnquiriesCount, getSellerResponseCount, ensureLoaded } = useResponses();
 
   const { orders } = useOrders();
@@ -115,10 +115,10 @@ export function MerchantSidebar() {
     );
   });
 
-  // Only show selected (confirmed/accepted) responses
+  // Only show selected (confirmed) responses
   const selectedResponses = activeResponses.filter(r => {
     const s = String(r.status).toLowerCase();
-    return s === 'confirmed' || s === 'accepted';
+    return s === 'confirmed';
   });
   const selectedRejectedResponses = activeResponses.filter(r => r.status === 'rejected');
 
@@ -148,7 +148,7 @@ export function MerchantSidebar() {
 
   // Count calculations
   const enquiriesCount = activeEnquiries.length;
-  const confirmedCount = Math.max(selectedResponses.length, confirmedApiCount);
+  const confirmedCount = Math.max(confirmedApiCount);
   const rejectedCount = Math.max(selectedRejectedResponses.length, rejectedApiCount);
   const ordersCount = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length;
   const stockEnquiriesCount = getStockEnquiriesCount();
@@ -174,15 +174,20 @@ export function MerchantSidebar() {
     ensureLoaded(true).catch(() => {});
   }, [profile?.role]);
 
+  // Ensure requirements are fetched so Buyer Enquiries badge shows without navigating into the page
+  useEffect(() => {
+    fetchAllRequirements?.().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Fetch Buyer Response count from backend
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const view = 'merchant';
-        const userID = extractBackendUserId() || (profile as any)?.id || '';
         const params = new URLSearchParams({ view });
-        if (userID) params.set('userID', userID);
+        params.set('ownOnly', "true");
         const data: unknown = await apiFetch(`/api/stocks/enquiries?${params.toString()}`);
         const payload: unknown = (data as any)?.data ?? data;
         let count = 0;

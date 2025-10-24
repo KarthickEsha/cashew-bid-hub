@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useRole } from '@/hooks/useRole';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ const EnquiryDetails = () => {
   const { profile } = useProfile();
   const { user } = useUser();
   const { updateRequirementStatus } = useRequirements();
+  const { role } = useRole.getState();
 
   // Requirement and responses state
   const [requirement, setRequirement] = useState<any | null>(null);
@@ -118,7 +120,8 @@ const EnquiryDetails = () => {
       setLoading(true);
       setError(null);
       try {
-        const data: any = await apiFetch(`/api/quotes/with-requirement/${id}`);
+        const view = role === 'processor' ? 'merchant' : 'buyer';
+        const data: any = await apiFetch(`/api/quotes/with-requirement/${id}?view=${view}`);
         const root = data?.data ?? data;
         if (!root) throw new Error('Requirement not found');
         const item = root.requirement ?? root.Requirement ?? root.req ?? root.Req ?? root;
@@ -268,7 +271,9 @@ const EnquiryDetails = () => {
       } catch (_) { /* ignore status update error */ }
       // Refresh list
       try {
-        const data: any = await apiFetch(`/api/quotes/with-requirement/${requirement.id}`);
+        const { role } = useRole.getState();
+        const view = role === 'processor' ? 'merchant' : 'buyer';
+        const data: any = await apiFetch(`/api/quotes/with-requirement/${requirement.id}?view=${view}`);
         const root = data?.data ?? data;
         const quotes = (root?.quotes ?? root?.Quotes ?? []) as any[];
         const mapped = (quotes || []).map((q: any) => ({

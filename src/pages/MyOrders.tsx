@@ -90,9 +90,10 @@ const MyOrders = () => {
     (async () => {
       try {
         const view = 'buyer';
-        const userID = extractBackendUserId() || (profile as any)?.id || '';
+        // const userID = extractBackendUserId() || (profile as any)?.id || '';
         const params = new URLSearchParams({ view });
-        if (userID) params.set('userID', userID);
+        params.set('ownOnly', "true");
+        // if (userID) params.set('userID', userID);
         const res: any = await apiFetch(`/api/stocks/enquiries?${params.toString()}`, { method: 'GET' });
         const arr = Array.isArray(res?.data) ? res.data : [];
         const normalized = arr.map((it: any) => ({

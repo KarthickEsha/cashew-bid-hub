@@ -85,12 +85,11 @@ export function AppSidebar() {
     }
   }, [responses, getSellerResponseCount, profile?.productType]);
 
-  // Fetch seller response count directly from API so badge reflects backend total
+  // Fetch seller response count directly from API so badge reflects backend total (merchant view)
   useEffect(() => {
     const fetchCount = async () => {
       try {
-        const role = String(profile?.role || '').toLowerCase();
-        const view = role === 'buyer' ? 'buyer' : 'merchant';
+        const view = 'buyer';
         const userID = extractBackendUserId() || (profile as any)?.id || '';
         const params = new URLSearchParams({ view });
         if (userID) params.set('userID', userID);
@@ -102,7 +101,7 @@ export function AppSidebar() {
       }
     };
     fetchCount();
-  }, [profile?.role]);
+  }, [profile?.id]);
 
   // Ensure seller responses are loaded once from API and persisted
   useEffect(() => {
@@ -122,9 +121,10 @@ export function AppSidebar() {
     const ac = new AbortController();
     try {
       const view = 'buyer';
-      const userID = extractBackendUserId() || (profile as any)?.id || '';
+      // const userID = extractBackendUserId() || (profile as any)?.id || '';
       const params = new URLSearchParams({ view });
-      if (userID) params.set('userID', userID);
+      params.set('ownOnly', "true");
+      // if (userID) params.set('userID', userID);
       const res: any = await apiFetch(`/api/stocks/enquiries?${params.toString()}`, { method: 'GET' });
       const payload: unknown = (res as any)?.data ?? res;
       let count = 0;
@@ -139,14 +139,31 @@ export function AppSidebar() {
         count = (payload as any).count;
       }
       setMyEnquiriesCount(count || 0);
+      try { localStorage.setItem('myEnquiries:lastCount', String(count || 0)); } catch { }
     } catch {
       // keep last known count on error
     }
     return () => ac.abort();
   }, []);
 
-  // Refetch on mount, route change, focus/visibility change, and after new enquiry creation
+  // Initialize My Enquiries count once across the app (guards unmount/mount on route change)
   useEffect(() => {
+    const INIT_KEY = 'myEnquiries:init';
+    const COUNT_CACHE_KEY = 'myEnquiries:lastCount';
+
+    // If we've initialized elsewhere (another Sidebar mount), just hydrate from cache and exit
+    try {
+      const cached = localStorage.getItem(COUNT_CACHE_KEY);
+      if (cached !== null) setMyEnquiriesCount(Number(cached) || 0);
+    } catch { }
+
+    if (sessionStorage.getItem(INIT_KEY) === '1') {
+      // Already initialized listeners and background refetch elsewhere
+      return;
+    }
+
+    sessionStorage.setItem(INIT_KEY, '1');
+
     let cleanup: undefined | (() => void);
     (async () => {
       cleanup = (await fetchMyEnquiriesCount()) as any;
@@ -161,12 +178,13 @@ export function AppSidebar() {
     window.addEventListener('enquiry:created', onEnquiryCreated);
 
     return () => {
+      // Do not clear INIT_KEY so subsequent mounts don't re-initialize
       cleanup?.();
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('enquiry:created', onEnquiryCreated);
     };
-  }, [currentPath, fetchMyEnquiriesCount]);
+  }, [fetchMyEnquiriesCount]);
 
   // Load marketplace stocks from localStorage (per type), then refresh from API with type
   useEffect(() => {
@@ -222,7 +240,7 @@ export function AppSidebar() {
     // { path: "/profile", label: t('sidebar.myActivity.profile'), icon: User },
     { path: "/post-requirement", label: t('sidebar.mainNav.postRequirement'), icon: Plus, },
     { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText, badge: requirements.length },
-    { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: myEnquiriesBadge }
+    { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: newResponseCount }
   ];
 
   const accountItems: NavItem[] = [

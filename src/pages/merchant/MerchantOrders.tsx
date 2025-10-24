@@ -134,9 +134,10 @@ const MerchantOrders = () => {
     (async () => {
       try {
         const view = 'merchant';
-        const userID = extractBackendUserId() || (profile as any)?.id || '';
+        // const userID = extractBackendUserId() || (profile as any)?.id || '';
         const params = new URLSearchParams({ view });
-        if (userID) params.set('userID', userID);
+        // if (userID) params.set('userID', userID);
+        params.set('ownOnly', "true");
         const res: any = await apiFetch(`/api/stocks/enquiries?${params.toString()}`, { method: "GET" });
         const arr = Array.isArray(res?.data) ? res.data : [];
         const normalized = arr.map((it: any) => ({
