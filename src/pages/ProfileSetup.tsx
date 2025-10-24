@@ -478,8 +478,8 @@ const ProfileSetup = () => {
                     id="officePhone"
                     value={formData.officePhone}
                     onChange={(e) => handleInputChange('officePhone', e.target.value)}
+                    maxLength={10}
                     placeholder="Enter business phone number"
-                    maxLength={15}
                   />
                 </div>
               </div>

@@ -21,6 +21,11 @@ const ProfilePanel = ({ children }: ProfilePanelProps) => {
   const { role } = useRole();
   const navigate = useNavigate();
 
+  // Determine which address to display based on the user role
+  const addressToShow = role === 'buyer'
+    ? profile?.address
+    : profile?.officeAddress || profile?.address;
+
   const handleEditProfile = () => {
     setIsOpen(false); // close panel before navigating
     navigate('/profile-setup');
@@ -67,10 +72,10 @@ const ProfilePanel = ({ children }: ProfilePanelProps) => {
               <span>{profile?.email || user?.primaryEmailAddress?.emailAddress}</span>
             </div>
             
-            {profile?.address && (
+            {addressToShow && (
               <div className="flex items-center gap-3 text-sm">
                 <Home className="h-4 w-4 text-muted-foreground" />
-                <span>{profile.address}</span>
+                <span>{addressToShow}</span>
               </div>
             )}
             
@@ -80,7 +85,7 @@ const ProfilePanel = ({ children }: ProfilePanelProps) => {
                 <span>{profile.city}</span>
               </div>
             )}
-            {profile?.companyName && (
+            {role !== 'buyer' && profile?.companyName && (
               <div className="flex items-center gap-3 text-sm">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
                 <span>{profile.companyName}</span>
