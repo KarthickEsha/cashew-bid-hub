@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Clock, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { fetchNotifications, type ServerNotification } from '@/lib/api';
+import { fetchNotifications, deleteNotificationServer, type ServerNotification } from '@/lib/api';
 
 interface NotificationPanelProps {
   children: React.ReactNode;
@@ -50,6 +50,22 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
 
   // deleteNotification and markAllAsRead come from context
 
+  const handleDismissServer = async (id: string) => {
+    // Optimistic remove
+    let prev: ServerNotification[] | null = null;
+    setServerItems((curr) => {
+      prev = curr;
+      return curr ? curr.filter((n) => n.id !== id) : curr;
+    });
+    try {
+      await deleteNotificationServer(id);
+    } catch (e: any) {
+      // Rollback on error and show minimal inline error
+      setServerItems(prev);
+      setError(e?.message || 'Failed to delete notification');
+    }
+  };
+
   const unreadCount = useMemo(() => {
     if (serverItems) return serverItems.filter((n) => !n.isView).length;
     return notifications.filter((n) => !n.read).length;
@@ -76,8 +92,17 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
             serverItems.map((n) => (
               <div
                 key={n.id}
-                className={`p-4 rounded-lg border ${n.isView ? 'bg-background' : 'bg-accent/50'}`}
+                className={`relative p-4 rounded-lg border ${n.isView ? 'bg-background' : 'bg-accent/50'}`}
               >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 p-0 absolute right-2 top-2"
+                  onClick={() => handleDismissServer(n.id)}
+                  aria-label="Dismiss"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
                 <div className="flex items-start gap-3">
                   {getIcon(n.type)}
                   <div className="flex-1 min-w-0">
@@ -108,10 +133,19 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
             notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`p-4 rounded-lg border ${
+                className={`relative p-4 rounded-lg border ${
                   notification.read ? 'bg-background' : 'bg-accent/50'
                 }`}
               >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 p-0 absolute right-2 top-2"
+                  onClick={() => deleteNotification(notification.id)}
+                  aria-label="Dismiss"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
                 <div className="flex items-start gap-3">
                   {getIcon(notification.type)}
                   <div className="flex-1 min-w-0">
@@ -126,16 +160,6 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
                         <Clock className="h-3 w-3" />
                         {notification.time}
                       </span>
-                      {!notification.read && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={() => deleteNotification(notification.id)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </div>

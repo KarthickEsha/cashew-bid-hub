@@ -57,3 +57,8 @@ export async function fetchNotifications(): Promise<NotificationsResponse> {
   const view = role === 'processor' ? 'merchant' : 'buyer';
   return apiFetch(`/api/notifications?view=${encodeURIComponent(view)}`, { method: 'GET' });
 }
+
+// Delete a notification by ID on the server
+export async function deleteNotificationServer(id: string): Promise<{ message?: string; status?: string } | string> {
+  return apiFetch(`/api/notifications/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
