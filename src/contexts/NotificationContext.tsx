@@ -24,6 +24,29 @@ const NotificationContext = createContext<Ctx | null>(null);
 
 const STORAGE_KEY = 'app_notifications_v1';
 
+// Generate a UUID v4 with graceful fallbacks for environments without crypto.randomUUID
+function generateId(): string {
+  const cryptoObj: any = (typeof globalThis !== 'undefined' && (globalThis as any).crypto) || undefined;
+  if (cryptoObj && typeof cryptoObj.randomUUID === 'function') {
+    return cryptoObj.randomUUID();
+  }
+  if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
+    const buf = new Uint8Array(16);
+    cryptoObj.getRandomValues(buf);
+    // RFC 4122 version/variant bits
+    buf[6] = (buf[6] & 0x0f) | 0x40;
+    buf[8] = (buf[8] & 0x3f) | 0x80;
+    const hex = Array.from(buf).map((b) => b.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+  // Weak fallback (non-cryptographic)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     try {
@@ -44,7 +67,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const now = new Date();
     setNotifications((prev) => [
       {
-        id: crypto.randomUUID(),
+        id: generateId(),
         read: n.read ?? false,
         time: n.time ?? now.toLocaleString(),
         ...n,
@@ -78,3 +101,4 @@ export function useNotifications() {
   if (!ctx) throw new Error('useNotifications must be used within NotificationProvider');
   return ctx;
 }
+

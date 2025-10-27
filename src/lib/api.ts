@@ -1,5 +1,5 @@
 
-const BASE_URL = "http://127.0.0.1:8081"; // Adjust as needed
+const BASE_URL = "http:/10.0.0.125:8081"; // Adjust as needed
 
 export async function apiFetch(path: string, init: RequestInit = {}) {
   const token = localStorage.getItem("auth_token"); // Adjust key if different

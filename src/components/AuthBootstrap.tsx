@@ -3,6 +3,7 @@ import { useAuth, useUser } from "@clerk/clerk-react";
 import { exchangeClerkToBackend } from "@/lib/authBridge";
 import { useProfile } from "@/hooks/useProfile";
 import { extractBackendUserId } from "@/lib/profile";
+import { ensureFcmToken } from "@/hooks/useFCM";
 
 export default function AuthBootstrap() {
   const { isSignedIn, getToken } = useAuth();
@@ -16,6 +17,9 @@ export default function AuthBootstrap() {
     if (existing) {
       const id = extractBackendUserId() || user?.id;
       if (id) loadProfileFromBackend(id).catch(() => {});
+      const vapidKey = (import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined)?.trim()
+  ?? 'BGjilRB8cChm-rSmFdVXPWu725bYDcOUhJ_nLWz3kZC5bZA2rkxC8wkOaxgDUKnk176-TespEC-ZOuhgx0Em5ss';
+      if (vapidKey) void ensureFcmToken(vapidKey);
       return;
     }
 
@@ -37,6 +41,8 @@ export default function AuthBootstrap() {
       .then(() => {
         const id = extractBackendUserId() || user?.id;
         if (id) loadProfileFromBackend(id).catch(() => {});
+        const vapidKey = (import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined)?.trim();
+        if (vapidKey) void ensureFcmToken(vapidKey);
       })
       .catch((e) => {
         // Optional: log or surface a toast here

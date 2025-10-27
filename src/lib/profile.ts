@@ -57,3 +57,20 @@ export async function getUserProfile(userId: string) {
   return apiFetch(`/api/users/${encodeURIComponent(userId)}`, { method: "GET" });
 }
 
+// Update only the user's FCM token by backend id
+export async function updateUserFcmToken(userId: string, fcmToken: string) {
+  if (!userId) throw new Error("Missing backend userId for FCM update");
+  if (!fcmToken) throw new Error("Missing FCM token");
+  // Prefer dedicated endpoint; fallback to generic update if not available
+  try {
+    return await apiFetch(`/api/users/${encodeURIComponent(userId)}/fcm`, {
+      method: "PUT",
+      body: JSON.stringify({ fcmToken }),
+    });
+  } catch (_) {
+    return apiFetch(`/api/users/update/${encodeURIComponent(userId)}`, {
+      method: "PUT",
+      body: JSON.stringify({ fcmToken }),
+    });
+  }
+}

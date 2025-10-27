@@ -77,11 +77,14 @@ export const useProfile = create<ProfileState>()(
       clearProfile: () => set({ profile: null }),
       loadProfileFromBackend: async (userId?: string) => {
         try {
+          const token = localStorage.getItem("auth_token");
+          if (!token) return;
           const id = userId || extractBackendUserId() || get().profile?.id || '';
           if (!id) return;
           const data: any = await getUserProfile(id);
           const payload = (data?.data ?? data) as any;
           if (!payload) return;
+
           // Some APIs return { user: { ...fields } }
           const u = (payload && typeof payload === 'object' && 'user' in payload) ? payload.user : payload;
           const loc = u?.location || {};

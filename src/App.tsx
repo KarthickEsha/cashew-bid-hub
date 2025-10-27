@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import TopNotifications from "./components/TopNotifications";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -53,8 +54,7 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-
-
+// Create a client
 const queryClient = new QueryClient();
 // You need to provide your Clerk publishable key here
 const PUBLISHABLE_KEY = "pk_test_ZmVhc2libGUtYnVmZmFsby02NS5jbGVyay5hY2NvdW50cy5kZXYk";
@@ -143,6 +143,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <TopNotifications />
           <BrowserRouter>
             <AuthBootstrap />
             <AppContent />
