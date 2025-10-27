@@ -13,7 +13,8 @@ import ProfilePanel from "@/components/ProfilePanel";
 import { useProfile } from "@/hooks/useProfile";
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { fetchNotifications } from "@/lib/api";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const { user } = useUser();
   const { profile } = useProfile();
+  const [notifCount, setNotifCount] = useState<number>(0);
 
   // Get display name (prefer firstName, else fall back to email)
   const displayName = user?.firstName || user?.primaryEmailAddress?.emailAddress || t('common.user', 'User');
@@ -52,6 +54,24 @@ const Layout = ({ children }: LayoutProps) => {
       setRole(desired as any);
     }
   }, [profile?.role]);
+
+  // Load unread notifications count when role changes or on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchNotifications();
+        if (cancelled) return;
+        const total = (res?.data || []).length;
+        setNotifCount(total);
+      } catch {
+        if (!cancelled) setNotifCount(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [role]);
 
   const handleSwitch = () => {
     // Toggle between buyer and processor when user has both roles
@@ -118,7 +138,7 @@ const Layout = ({ children }: LayoutProps) => {
                         variant="destructive"
                         className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 text-xs"
                       >
-                        3
+                        {notifCount}
                       </Badge>
                     </Button>
                   </NotificationPanel>

@@ -1,5 +1,7 @@
 
-const BASE_URL = "http:/10.0.0.125:8081"; // Adjust as needed
+import { useRole } from '@/hooks/useRole';
+
+const BASE_URL = "http://127.0.0.1:8081"; // Adjust as needed
 
 export async function apiFetch(path: string, init: RequestInit = {}) {
   const token = localStorage.getItem("auth_token"); // Adjust key if different
@@ -21,4 +23,37 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
   }
   const ct = res.headers.get("content-type") || "";
   return ct.includes("application/json") ? res.json() : res.text();
+}
+
+// ===== Notifications API =====
+export type ServerNotification = {
+  id: string;
+  receiverId: string;
+  receiverType?: 'buyer' | 'merchant' | string;
+  type: string; // e.g., "quote"
+  title: string;
+  message: string;
+  isView: boolean; // read flag from server
+  data?: Record<string, any> & {
+    merchantId?: string;
+    priceINR?: number;
+    requirementId?: string;
+    supplyQtyKg?: number;
+    timestamp?: string; // e.g., 2025-10-27T11:12:57+05:30
+  };
+  createdAt: string; // ISO date
+};
+
+export type NotificationsResponse = {
+  data: ServerNotification[];
+  message: string;
+  status: string;
+};
+
+export async function fetchNotifications(): Promise<NotificationsResponse> {
+  // Read current UI role from Zustand (works outside React components)
+  const role = useRole.getState().role;
+  // Map app roles to server views: processor -> merchant, others -> buyer
+  const view = role === 'processor' ? 'merchant' : 'buyer';
+  return apiFetch(`/api/notifications?view=${encodeURIComponent(view)}`, { method: 'GET' });
 }

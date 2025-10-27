@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Clock, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { fetchNotifications, type ServerNotification } from '@/lib/api';
 
 interface NotificationPanelProps {
   children: React.ReactNode;
@@ -12,6 +13,29 @@ interface NotificationPanelProps {
 const NotificationPanel = ({ children }: NotificationPanelProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, deleteNotification, markAllAsRead } = useNotifications();
+  const [serverItems, setServerItems] = useState<ServerNotification[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetchNotifications();
+        if (!cancelled) setServerItems(res.data || []);
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message || 'Failed to load notifications');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -26,6 +50,11 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
 
   // deleteNotification and markAllAsRead come from context
 
+  const unreadCount = useMemo(() => {
+    if (serverItems) return serverItems.filter((n) => !n.isView).length;
+    return notifications.filter((n) => !n.read).length;
+  }, [serverItems, notifications]);
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
@@ -34,14 +63,44 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
           <SheetTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
             <span>Notifications</span>
-            <Badge variant="destructive">
-              {notifications.filter((n) => !n.read).length}
-            </Badge>
+            <Badge variant="destructive">{unreadCount}</Badge>
           </SheetTitle>
         </SheetHeader>
 
         <div className="mt-6 space-y-4">
-          {notifications.length === 0 ? (
+          {loading ? (
+            <p className="text-center text-muted-foreground text-sm">Loading...</p>
+          ) : error ? (
+            <p className="text-center text-red-600 text-sm">{error}</p>
+          ) : serverItems && serverItems.length > 0 ? (
+            serverItems.map((n) => (
+              <div
+                key={n.id}
+                className={`p-4 rounded-lg border ${n.isView ? 'bg-background' : 'bg-accent/50'}`}
+              >
+                <div className="flex items-start gap-3">
+                  {getIcon(n.type)}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm flex items-center gap-2">
+                      <span>{n.title}</span>
+                      {n.data?.receiverType ? (
+                        <Badge variant="secondary" className="text-[10px] capitalize">
+                          {n.data.receiverType}
+                        </Badge>
+                      ) : null}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">{n.message}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {new Date(n.createdAt || n.data?.timestamp || '').toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : notifications.length === 0 ? (
             <p className="text-center text-muted-foreground text-sm">
               No notifications
             </p>
@@ -85,7 +144,7 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
           )}
         </div>
 
-        {notifications.length > 0 && (
+        {!serverItems && notifications.length > 0 && (
           <div className="mt-6">
             <Button
               variant="outline"
