@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { useOrders } from './useOrders';
 import { apiFetch } from '@/lib/api';
 import { useProfile } from './useProfile';
+import { useRole } from './useRole';
 import { extractBackendUserId } from '@/lib/profile';
 
 export interface MerchantResponse {
@@ -205,7 +206,7 @@ export const useResponses = create<ResponsesState>()(
 
         try {
           const profile = useProfile.getState().profile as any;
-          const uiRole = (require('@/hooks/useRole').useRole.getState().role || '').toLowerCase?.() || '';
+          const uiRole = String(useRole.getState().role || '').toLowerCase();
           const profileRole = String(profile?.role || '').toLowerCase();
           const effectiveRole = uiRole || profileRole;
           const view = effectiveRole === 'buyer' ? 'buyer' : 'merchant';

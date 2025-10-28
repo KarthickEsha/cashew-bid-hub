@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +68,7 @@ const MyRequirements = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const requirements = getMyRequirements();
+  const requirements = useMemo(() => getMyRequirements(), [lastFetched]);
 
   // Delete popup state
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -168,7 +168,6 @@ const MyRequirements = () => {
     }
 
     setFilteredRequirements(temp);
-    setCurrentPage(1);
   }
 
   // Format a numeric value with commas for display (e.g., 1000 -> 1,000)

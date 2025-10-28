@@ -20,6 +20,7 @@ import { useResponses } from "@/hooks/useResponses";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiFetch } from "@/lib/api";
+import { extractBackendUserId } from "@/lib/profile";
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -43,7 +44,11 @@ const Dashboard = () => {
       try {
         setLoadingDash(true);
         setErrorDash(null);
-        const data = await apiFetch("/api/users/buyer-dashboard");
+        const userId = extractBackendUserId();
+        const url = userId
+          ? `/api/users/${encodeURIComponent(userId)}/buyer-dashboard`
+          : "/api/users/buyer-dashboard"; // fallback if ID missing
+        const data = await apiFetch(url);
         // expected shape: { status: 'success', data: { cards }, lists? }
         if (!mounted) return;
         setDashCards((data as any)?.data?.cards ?? null);

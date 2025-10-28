@@ -151,39 +151,36 @@ export function AppSidebar() {
     const INIT_KEY = 'myEnquiries:init';
     const COUNT_CACHE_KEY = 'myEnquiries:lastCount';
 
-    // If we've initialized elsewhere (another Sidebar mount), just hydrate from cache and exit
+    // Hydrate from cache if available, then always refetch on every mount for freshness
     try {
       const cached = localStorage.getItem(COUNT_CACHE_KEY);
       if (cached !== null) setMyEnquiriesCount(Number(cached) || 0);
     } catch { }
 
-    if (sessionStorage.getItem(INIT_KEY) === '1') {
-      // Already initialized listeners and background refetch elsewhere
-      return;
+    // Always trigger a fetch on mount to ensure the latest count
+    (async () => { await fetchMyEnquiriesCount(); })();
+
+    // Register listeners only once across the session
+    if (sessionStorage.getItem(INIT_KEY) !== '1') {
+      sessionStorage.setItem(INIT_KEY, '1');
+
+      const onFocus = () => { fetchMyEnquiriesCount(); };
+      const onVisibility = () => { if (!document.hidden) fetchMyEnquiriesCount(); };
+      const onEnquiryCreated = () => { fetchMyEnquiriesCount(); };
+
+      window.addEventListener('focus', onFocus);
+      document.addEventListener('visibilitychange', onVisibility);
+      window.addEventListener('enquiry:created', onEnquiryCreated);
+
+      return () => {
+        // Keep INIT_KEY so we don't re-add listeners; remove only the ones we added in this mount
+        window.removeEventListener('focus', onFocus);
+        document.removeEventListener('visibilitychange', onVisibility);
+        window.removeEventListener('enquiry:created', onEnquiryCreated);
+      };
     }
-
-    sessionStorage.setItem(INIT_KEY, '1');
-
-    let cleanup: undefined | (() => void);
-    (async () => {
-      cleanup = (await fetchMyEnquiriesCount()) as any;
-    })();
-
-    const onFocus = () => { fetchMyEnquiriesCount(); };
-    const onVisibility = () => { if (!document.hidden) fetchMyEnquiriesCount(); };
-    const onEnquiryCreated = () => { fetchMyEnquiriesCount(); };
-
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('enquiry:created', onEnquiryCreated);
-
-    return () => {
-      // Do not clear INIT_KEY so subsequent mounts don't re-initialize
-      cleanup?.();
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('enquiry:created', onEnquiryCreated);
-    };
+    // If listeners already initialized, no cleanup necessary here
+    return;
   }, [fetchMyEnquiriesCount]);
 
   // Load marketplace stocks from localStorage (per type), then refresh from API with type

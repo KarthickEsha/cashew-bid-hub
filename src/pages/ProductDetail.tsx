@@ -1085,15 +1085,15 @@ const ProductDetail = () => {
 
       {/* Enquiry Detail Modal */}
       <Dialog open={showEnquiryDetail} onOpenChange={setShowEnquiryDetail}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto border-l-4 border-l-purple-500">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto border-l-4 border-l-purple-500 rounded-xl shadow-xl">
+          <DialogHeader className="pb-2">
             <DialogTitle className="flex items-center text-purple-700">
-              <MessageSquare size={20} className="mr-2" />
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 mr-2">
+                <MessageSquare size={18} className="text-purple-700" />
+              </span>
               Enquiry Details
-              {selectedEnquiry?.status === 'Processing' && (
-                <Badge variant="outline" className="ml-2 bg-purple-100 text-purple-700 border-purple-300">
-                  New
-                </Badge>
+              {selectedEnquiry?.status && (
+                <span className="ml-3">{getStatusBadge(selectedEnquiry.status)}</span>
               )}
             </DialogTitle>
           </DialogHeader>
@@ -1179,38 +1179,42 @@ const ProductDetail = () => {
                   <p className="text-sm">{selectedEnquiry.message || 'No message provided'}</p>
                 </div>
               </div>
-              {/* Action Buttons */}
-              <div className="flex gap-3 justify-end pt-4 border-t">
-                <Button variant="outline" onClick={() => setShowEnquiryDetail(false)}>
-                  Close
-                </Button>
-                {selectedEnquiry.status === 'Processing' ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      className="border-red-500 text-red-500 hover:bg-red-50"
-                      onClick={() => handleRejectEnquiry(selectedEnquiry.id)}
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Reject
-                    </Button>
-                    <Button
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={() => handleConfirmEnquiry(selectedEnquiry.id)}
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Confirm
-                    </Button>
-                  </>
-                ) : (
-                  <div>
-                    <div className="text-sm text-muted-foreground">Status</div>
-                    <div>{getStatusBadge(selectedEnquiry.status)}</div>
-                  </div>
-                )}
-              </div>
             </div>
           )}
+
+          {/* Sticky Footer with Actions */}
+          <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-t flex items-center justify-between">
+            <div className="hidden sm:block">
+              {selectedEnquiry?.status && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Status:</span>
+                  {getStatusBadge(selectedEnquiry.status)}
+                </div>
+              )}
+            </div>
+            <div className="ml-auto flex gap-2">
+              <Button variant="ghost" onClick={() => setShowEnquiryDetail(false)}>
+                Close
+              </Button>
+              <Button
+                variant="outline"
+                className="border-red-500 text-red-600 hover:bg-red-50"
+                onClick={() => selectedEnquiry && handleRejectEnquiry(selectedEnquiry.id)}
+                disabled={selectedEnquiry?.status !== 'Processing'}
+              >
+                <XCircle className="mr-2 h-4 w-4" />
+                Reject
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => selectedEnquiry && handleConfirmEnquiry(selectedEnquiry.id)}
+                disabled={selectedEnquiry?.status !== 'Processing'}
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Confirm
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
