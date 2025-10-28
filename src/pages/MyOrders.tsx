@@ -85,6 +85,25 @@ const MyOrders = () => {
   // Drive this page from API enquiries instead of local store
   const allOrders = buyerOrders;
 
+  // Dynamic filter option sources (derived from current data)
+  const availableStatuses = useMemo(
+    () => Array.from(new Set(
+      (allOrders || [])
+        .map(o => String(o.status || '').toLowerCase())
+        .filter(Boolean)
+    )),
+    [allOrders]
+  );
+
+  const availableLocations = useMemo(
+    () => Array.from(new Set(
+      (allOrders || [])
+        .map(o => String(o.location || '').trim())
+        .filter(Boolean)
+    )),
+    [allOrders]
+  );
+
   useEffect(() => {
     let ignore = false;
     (async () => {
@@ -183,9 +202,11 @@ const MyOrders = () => {
       const orderId = order.id || '';
       const orderStatus = order.status || '';
       const orderLocation = order.location || '';
+      const merchantName = order.merchantName || '';
 
       const matchesSearch =
         productName.toLowerCase().includes(searchTermLower) ||
+        merchantName.toLowerCase().includes(searchTermLower) ||
         orderId.toLowerCase().includes(searchTermLower);
 
       const matchesStatus =
@@ -277,12 +298,20 @@ const MyOrders = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="processing">Processing</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="shipped">Shipped</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              {availableStatuses.map(s => (
+                <SelectItem key={s} value={s}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </SelectItem>
+              ))}
             </SelectContent>
+          </Select>
+          <Select
+            value={locationFilter}
+            onValueChange={(value) => {
+              setLocationFilter(value);
+              setCurrentPage(1);
+            }}
+          >
           </Select>
         </div>
       </div>

@@ -71,6 +71,43 @@ const Marketplace = () => {
 
     // Backend stocks mapped to marketplace display items
     const [products, setProducts] = useState<any[]>([]);
+    
+    // Dynamic filter options derived from products for the current product type
+    const gradeOptions = useMemo(() => {
+        const set = new Set<string>();
+        products
+            .filter((p) => !currentProductType || p.type === currentProductType)
+            .forEach((p) => {
+                const g = String(p?.grade || '').trim();
+                if (g) set.add(g);
+            });
+        return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }, [products, currentProductType]);
+
+    const originOptions = useMemo(() => {
+        const set = new Set<string>();
+        products
+            .filter((p) => !currentProductType || p.type === currentProductType)
+            .forEach((p) => {
+                const o = String(p?.origin || '').trim();
+                if (o) set.add(o);
+            });
+        return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }, [products, currentProductType]);
+
+    // Ensure selected filter values remain valid when options change
+    useEffect(() => {
+        setFilters((prev) => {
+            let next = { ...prev };
+            if (prev.grade && !gradeOptions.includes(prev.grade)) {
+                next.grade = "";
+            }
+            if (prev.location && !originOptions.includes(prev.location)) {
+                next.location = "";
+            }
+            return next;
+        });
+    }, [gradeOptions, originOptions]);
 
     useEffect(() => {
         if (!currentProductType) return;
@@ -218,13 +255,11 @@ const Marketplace = () => {
         }
 
         if (filters.grade) {
-            result = result.filter((p) => p.grade === filters.grade);
+            result = result.filter((p) => String(p.grade).toLowerCase() === String(filters.grade).toLowerCase());
         }
 
         if (filters.location) {
-            result = result.filter((p) =>
-                p.location.toLowerCase().includes(filters.location.toLowerCase())
-            );
+            result = result.filter((p) => String(p.origin || p.location).toLowerCase() === String(filters.location).toLowerCase());
         }
 
         if (filters.pricingType) {
@@ -251,18 +286,10 @@ const Marketplace = () => {
         setCurrentPage(1);
     };
 
-    const clearFilters = () => {
-        setFilters({
-            search: "",
-            grade: "",
-            location: "",
-            pricingType: "",
-            minPrice: "",
-            maxPrice: ""
-        });
-        setFilteredProducts(products);
-        setCurrentPage(1);
-    };
+    // Auto-apply filters whenever filters or products change
+    useEffect(() => {
+        applyFilters();
+    }, [filters, products]);
 
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [showRequestDialog, setShowRequestDialog] = useState(false);
@@ -429,12 +456,11 @@ const Marketplace = () => {
                 <Card className="mb-6">
                     <CardHeader>
                         <CardTitle className="flex items-center">
-                            <Filter size={20} className="mr-2" />
                             Filter Products
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {/* Search */}
                             <div>
                                 <label className="text-sm font-medium mb-2 block">Search</label>
@@ -466,11 +492,13 @@ const Marketplace = () => {
                                         <SelectValue placeholder="Select grade" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="W180">W180</SelectItem>
-                                        <SelectItem value="W240">W240</SelectItem>
-                                        <SelectItem value="W320">W320</SelectItem>
-                                        <SelectItem value="SW240">SW240</SelectItem>
-                                        <SelectItem value="SW320">SW320</SelectItem>
+                                        {gradeOptions.length === 0 ? (
+                                            <div className="px-3 py-2 text-sm text-muted-foreground">No grades available</div>
+                                        ) : (
+                                            gradeOptions.map((g) => (
+                                                <SelectItem key={g} value={g}>{g}</SelectItem>
+                                            ))
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -487,63 +515,19 @@ const Marketplace = () => {
                                         <SelectValue placeholder="Select location" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="india">India</SelectItem>
-                                        <SelectItem value="vietnam">Vietnam</SelectItem>
-                                        <SelectItem value="ghana">Ghana</SelectItem>
-                                        <SelectItem value="usa">USA</SelectItem>
-                                        <SelectItem value="any">Any</SelectItem>
+                                        {originOptions.length === 0 ? (
+                                            <div className="px-3 py-2 text-sm text-muted-foreground">No origins available</div>
+                                        ) : (
+                                            originOptions.map((o) => (
+                                                <SelectItem key={o} value={o}>{o}</SelectItem>
+                                            ))
+                                        )}
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            {/* Pricing Type */}
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Pricing Type</label>
-                                <Select
-                                    value={filters.pricingType}
-                                    onValueChange={(value) =>
-                                        setFilters({ ...filters, pricingType: value })
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="fixed">Fixed Price</SelectItem>
-                                        <SelectItem value="bidding">Bidding</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            {/* Price Range */}
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">
-                                    Price Range ($/ton)
-                                </label>
-                                <div className="flex space-x-2">
-                                    <Input
-                                        placeholder="Min"
-                                        value={filters.minPrice}
-                                        onChange={(e) =>
-                                            setFilters({ ...filters, minPrice: e.target.value })
-                                        }
-                                    />
-                                    <Input
-                                        placeholder="Max"
-                                        value={filters.maxPrice}
-                                        onChange={(e) =>
-                                            setFilters({ ...filters, maxPrice: e.target.value })
-                                        }
-                                    />
-                                </div>
                             </div>
                         </div>
 
-                        {/* Buttons */}
-                        <div className="flex justify-end mt-4 space-x-3">
-                            <Button variant="outline" onClick={clearFilters}>
-                                Clear Filters
-                            </Button>
-                            <Button onClick={applyFilters}>Apply Filters</Button>
-                        </div>
+                        {/* Buttons removed: filters now auto-apply on change, keeping label alignment unchanged */}
                     </CardContent>
                 </Card>
             )}

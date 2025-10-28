@@ -146,14 +146,25 @@ export const useRequirements = create<RequirementsState>()(
             const updatedAt = item.updatedAt || item.updated_at || createdAt;
 
             const grade = item.grade || item.productGrade || item.product?.grade || 'W320';
-            const quantity = String(item.requiredqty ?? item.qty ?? item.totalQuantity ?? '0');
+            // Normalize quantity across various API payloads
+            const quantityRaw = (
+              item.requiredqty ??
+              item.requiredQty ??
+              item.required_quantity ??
+              item.quantity ??
+              item.qty ??
+              item.totalQuantity ??
+              '0'
+            );
+            const quantity = String(quantityRaw);
             const origin = (item.origin || item.preferredOrigin || item.source || 'any').toString().toLowerCase();
             const expectedPrice = Number(item.expectedprice ?? item.price ?? item.expected_price ?? 0);
             const deliveryLocation = item.deliveryLocation || item.location || '';
             const city = item.city || '';
             const state = item.state || '';
             const country = item.country || '';
-            const deliveryDeadline = item.deliverydate;
+            // Normalize delivery date/expiry keys
+            const deliveryDeadline = item.deliverydate || item.deliveryDate || item.requirementExpiry || item.expiryDate || null;
             const status = (item.status || 'active') as Requirement['status'];
             const specifications = item.description || item.specs || '';
             const allowLowerBid = Boolean(item.lowerbit ?? item.allow_lower_bid ?? false);

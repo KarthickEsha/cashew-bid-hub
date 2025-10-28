@@ -138,24 +138,48 @@ const MerchantProducts = () => {
         location: ''
     });
 
-    // applyFilters is now handled by the useEffect above
-    const applyFilters = () => {
-        // Just close the filters panel - filtering is handled by the useEffect
-        setShowFilters(false);
-    };
+    // derive dynamic filter options from the currently available data for the selected type
+    const { gradeOptions, locationOptions, statusOptions } = useMemo(() => {
+        const source = filteredProductsByType || [];
+        const gradeSet = new Set<string>(
+            source
+                .map((p) => p.grade)
+                .filter((g): g is string => Boolean(g))
+        );
+        const grades: string[] = Array.from(gradeSet).sort((a, b) => a.localeCompare(b));
 
-    const clearFilters = () => {
-        setFilters({
-            search: "",
-            grade: "",
-            location: "",
-            minPrice: "",
-            maxPrice: "",
-            status: "",
+        const locationSet = new Set<string>(
+            source
+                .map((p) => {
+                    const loc = typeof p.location === "string" ? p.location : "";
+                    return loc || (typeof p.origin === "string" ? p.origin : "");
+                })
+                .filter((l): l is string => Boolean(l))
+        );
+        const locations: string[] = Array.from(locationSet).sort((a, b) => a.localeCompare(b));
+
+        const statusSet = new Set<string>(
+            source.map((p) => p.status).filter((s): s is string => Boolean(s))
+        );
+        const statuses: string[] = Array.from(statusSet).sort((a, b) => a.localeCompare(b));
+
+        return {
+            gradeOptions: grades,
+            locationOptions: locations,
+            statusOptions: statuses,
+        };
+    }, [filteredProductsByType]);
+
+    // reset invalid selected values when dataset changes
+    useEffect(() => {
+        setFilters((prev) => {
+            let next = { ...prev };
+            if (prev.grade && !gradeOptions.includes(prev.grade)) next.grade = "";
+            if (prev.location && !locationOptions.includes(prev.location)) next.location = "";
+            if (prev.status && !statusOptions.includes(prev.status)) next.status = "";
+            return next;
         });
-        setFilteredProducts(filteredProductsByType);
-        setCurrentPage(1);
-    };
+    }, [gradeOptions, locationOptions, statusOptions]);
 
     const [showFilters, setShowFilters] = useState(false);
 
@@ -483,7 +507,7 @@ const MerchantProducts = () => {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {/* Search */}
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Search</label>
@@ -514,9 +538,9 @@ const MerchantProducts = () => {
                                                     <SelectValue placeholder="Select grade" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="W240">W240</SelectItem>
-                                                    <SelectItem value="W320">W320</SelectItem>
-                                                    <SelectItem value="Broken BB">Broken BB</SelectItem>
+                                                    {gradeOptions.map((g) => (
+                                                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                                                    ))}
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -525,71 +549,24 @@ const MerchantProducts = () => {
                                     {/* Location */}
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Location</label>
-                                        <Input
-                                            placeholder="Enter location..."
-                                            value={filters.location}
-                                            onChange={(e) =>
-                                                setFilters({ ...filters, location: e.target.value })
-                                            }
-                                        />
-                                    </div>
-
-                                    {/* Status */}
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">Status</label>
                                         <Select
-                                            value={filters.status}
+                                            value={filters.location}
                                             onValueChange={(value) =>
-                                                setFilters({ ...filters, status: value })
+                                                setFilters({ ...filters, location: value })
                                             }
                                         >
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select status" />
+                                                <SelectValue placeholder="Select location" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="active">Active</SelectItem>
-                                                <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                                                {locationOptions.map((l) => (
+                                                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
-                                    </div>
-
-                                    {/* Price Range */}
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">Price Range</label>
-                                        <div className="flex space-x-2">
-                                            <Input
-                                                className="w-[6.5rem]" // 
-                                                placeholder="Min"
-                                                value={filters.minPrice}
-                                                onChange={(e) =>
-                                                    setFilters({ ...filters, minPrice: e.target.value })
-                                                }
-                                            />
-                                            <Input
-                                                className="w-[6.5rem]"
-                                                placeholder="Max"
-                                                value={filters.maxPrice}
-                                                onChange={(e) =>
-                                                    setFilters({ ...filters, maxPrice: e.target.value })
-                                                }
-                                            />
-                                        </div>
-                                    </div>
+                                    </div>                                   
                                 </div>
-
-                                {/* Buttons */}
-                                <div className="flex justify-end mt-4 space-x-3">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            clearFilters();
-                                            setShowFilters(false); // also close when clearing
-                                        }}
-                                    >
-                                        Clear Filters
-                                    </Button>
-                                    <Button onClick={applyFilters}>Apply Filters</Button>
-                                </div>
+                                {/* Filters auto-apply on change; buttons removed as requested */}
                             </CardContent>
                         </Card>
                     )}

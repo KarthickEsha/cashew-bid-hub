@@ -131,9 +131,11 @@ const Responses = () => {
   // Filter states
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<ResponseStatus | 'all'>("all");
+  const [gradeFilter, setGradeFilter] = useState<string | 'all'>("all");
   const [appliedFilters, setAppliedFilters] = useState({
     searchText: "",
-    status: "all" as ResponseStatus | 'all'
+    status: "all" as ResponseStatus | 'all',
+    grade: "all" as string | 'all',
   });
 
   // Load quotes from backend
@@ -258,6 +260,22 @@ const Responses = () => {
       : <ArrowDown className="ml-1 h-4 w-4 text-primary" />;
   };
 
+  // Build dynamic filter options from current data
+  const availableStatuses: (ResponseStatus)[] = Array.from(
+    new Set(
+      getMerchantResponses()
+        .map(r => r.status)
+        .filter((s): s is ResponseStatus => !!s)
+    )
+  );
+  const availableGrades: string[] = Array.from(
+    new Set(
+      getMerchantResponses()
+        .map(r => r.grade)
+        .filter((g): g is string => !!g && g !== 'N/A')
+    )
+  );
+
   // Filter and sort responses
   const filteredResponses = responsesWithDetails
     .filter(response => {
@@ -273,7 +291,11 @@ const Responses = () => {
       const matchesStatus = appliedFilters.status === 'all' ||
         (response.status && response.status.toLowerCase() === appliedFilters.status.toLowerCase());
 
-      return matchesSearch && matchesStatus;
+      // Handle grade filtering
+      const matchesGrade = appliedFilters.grade === 'all' ||
+        (response.grade && response.grade.toLowerCase() === String(appliedFilters.grade).toLowerCase());
+
+      return matchesSearch && matchesStatus && matchesGrade;
     })
     .sort((a, b) => {
       if (!sortField) return 0;
@@ -433,10 +455,12 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
   const resetFilters = () => {
     setSearchText('');
     setStatusFilter('all');
+    setGradeFilter('all');
     setFilterOpen(false);
     setAppliedFilters({
       searchText: '',
-      status: 'all'
+      status: 'all',
+      grade: 'all'
     });
   };
   
@@ -445,7 +469,8 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
   const handleApplyFilters = () => {
     setAppliedFilters({
       searchText,
-      status: statusFilter
+      status: statusFilter,
+      grade: gradeFilter,
     });
     setFilterOpen(false);
     setCurrentPage(1);
@@ -460,17 +485,6 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
-      </div>
-    );
-  }
-
-  // No responses state
-  if (responsesWithDetails.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <Inbox className="h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900">{t('responses.noResponses')}</h3>
-        <p className="text-gray-500">{t('responses.noResponsesDescription')}</p>
       </div>
     );
   }
@@ -515,10 +529,27 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('responses.filter.status.all')}</SelectItem>
-                  <SelectItem value="new">{t('responses.filter.status.new')}</SelectItem>
-                  <SelectItem value="viewed">{t('responses.filter.status.viewed')}</SelectItem>
-                  <SelectItem value="accepted">{t('responses.filter.status.accepted')}</SelectItem>
-                  <SelectItem value="rejected">{t('responses.filter.status.rejected')}</SelectItem>
+                  {availableStatuses.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={gradeFilter}
+                onValueChange={(value: string | 'all') => setGradeFilter(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Grades</SelectItem>
+                  {availableGrades.map((g) => (
+                    <SelectItem key={g} value={g}>
+                      {g}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2">
@@ -547,11 +578,6 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
                 ? 'Try adjusting your filters or search criteria.'
                 : 'There are no responses available at the moment.'}
             </p>
-            {Object.values(appliedFilters).some(Boolean) && (
-              <Button variant="outline" onClick={resetFilters}>
-                Clear all filters
-              </Button>
-            )}
           </div>
         ) : (
           <Table>

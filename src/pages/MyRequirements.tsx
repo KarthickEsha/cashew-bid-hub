@@ -45,6 +45,8 @@ import { useResponses } from "@/hooks/useResponses";
 
 const MyRequirements = () => {
   const { getMyRequirements, deleteRequirement, fetchAllRequirements } = useRequirements();
+  // Subscribe to store requirements so derived list recomputes on updates
+  const storeRequirements = useRequirements((s: any) => s.requirements);
   const { getResponseCount } = useResponses();
   const lastFetched = useResponses((s: any) => s.lastFetched);
   const { ensureLoaded } = useResponses.getState();
@@ -60,6 +62,8 @@ const MyRequirements = () => {
     key: string;
     direction: 'asc' | 'desc';
   } | null>({ key: 'statusPriority', direction: 'desc' });
+  // Track locally deleted ids so UI updates immediately post-delete
+  const [deletedIds, setDeletedIds] = useState<Set<number>>(new Set());
 
   // Load from API on mount, then get requirements from the hook
   useEffect(() => {
@@ -68,7 +72,24 @@ const MyRequirements = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const requirements = useMemo(() => getMyRequirements(), [lastFetched]);
+  const requirements = useMemo(() => getMyRequirements(), [storeRequirements, lastFetched]);
+
+  // Dynamic filter options derived from data
+  const statusOptions = useMemo(() => {
+    const set = new Set<string>();
+    requirements.forEach((r: any) => {
+      if (r?.status) set.add(String(r.status));
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [requirements]);
+
+  const gradeOptions = useMemo(() => {
+    const set = new Set<string>();
+    requirements.forEach((r: any) => {
+      if (r?.grade) set.add(String(r.grade));
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [requirements]);
 
   // Delete popup state
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -106,6 +127,11 @@ const MyRequirements = () => {
   // Apply filter and sorting, prioritizing processing count when selected
   const applyFilters = () => {
     let temp = [...requirements];
+
+    // Exclude locally deleted items (optimistic UI update)
+    if (deletedIds.size > 0) {
+      temp = temp.filter((req) => !deletedIds.has(Number(req.id)));
+    }
 
     // Apply filters
     if (searchTerm) {
@@ -224,7 +250,7 @@ const MyRequirements = () => {
     applyFilters();
     // Reset to first page when filters change
     setCurrentPage(1);
-  }, [requirements, searchTerm, statusFilter, gradeFilter, sortConfig, lastFetched]);
+  }, [requirements, searchTerm, statusFilter, gradeFilter, sortConfig, lastFetched, deletedIds]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredRequirements.length / itemsPerPage));
@@ -238,6 +264,12 @@ const MyRequirements = () => {
     if (deleteId !== null) {
       try {
         await deleteRequirement(deleteId.toString());
+        // Optimistically remove from UI immediately
+        setDeletedIds((prev) => {
+          const next = new Set(prev);
+          next.add(Number(deleteId));
+          return next;
+        });
       } catch (e) {
         console.error('Delete failed:', e);
       } finally {
@@ -357,9 +389,11 @@ const MyRequirements = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
+                    {statusOptions.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {String(status).charAt(0).toUpperCase() + String(status).slice(1)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -371,11 +405,11 @@ const MyRequirements = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Grades</SelectItem>
-                    <SelectItem value="W180">W180</SelectItem>
-                    <SelectItem value="W210">W210</SelectItem>
-                    <SelectItem value="W240">W240</SelectItem>
-                    <SelectItem value="W320">W320</SelectItem>
-                    <SelectItem value="W450">W450</SelectItem>
+                    {gradeOptions.map((grade) => (
+                      <SelectItem key={grade} value={grade}>
+                        {grade}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

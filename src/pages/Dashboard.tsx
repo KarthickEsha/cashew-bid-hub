@@ -99,6 +99,26 @@ const Dashboard = () => {
   const confirmedOrders = orders.filter(order => order.productId && order.productId.trim() !== '' && order.status === 'Confirmed').length;
   const pendingOrders = orders.filter(order => order.status === 'Processing').length;
 
+  // Derive My Responses confirmed/pending aligning with API and table
+  // Prefer backend-provided counts when available
+  const backendMyRespConfirmed = (dashCards as any)?.myResponses?.confirmed;
+  const backendMyRespPending = (dashCards as any)?.myResponses?.pending;
+
+  // Derive from responses table/store: treat these statuses as pending-like
+  const pendingLikeStatuses = new Set(['new', 'viewed', 'accepted', 'processing', 'pending']);
+  const responsesConfirmed = responses.filter(r => String(r.status || '').toLowerCase() === 'confirmed').length;
+  const responsesPending = responses.filter(r => pendingLikeStatuses.has(String(r.status || '').toLowerCase())).length;
+
+  // Compose final counts: backend > derived-from-responses > fallback-to-orders
+  const myResponsesConfirmed =
+    typeof backendMyRespConfirmed === 'number'
+      ? backendMyRespConfirmed
+      : (responsesConfirmed || confirmedOrders);
+  const myResponsesPending =
+    typeof backendMyRespPending === 'number'
+      ? backendMyRespPending
+      : (responsesPending + pendingOrders);
+
   // Calculate total value (mock calculation - in real app this would come from orders)
   const totalValue = requirements.reduce((acc, req) => {
     // budgetRange is like "₹8,000/kg" or similar. Extract numeric part safely.
@@ -136,10 +156,12 @@ const Dashboard = () => {
     },
     {
       title: t('dashboard.totalEnquiries'),
-      value: (myRespCard?.count ?? enquiriesCount).toString(),
+      // Use backend total when present, otherwise sum of confirmed + pending
+      value: (myRespCard?.count ?? (myResponsesConfirmed + myResponsesPending)).toString(),
       icon: Clock,
       color: "text-orange-500",
-      trend: t('dashboard.orderStats', { confirmed: confirmedOrders, pending: pendingOrders }),
+      // Trend should reflect confirmed/pending aligned with API/table
+      trend: t('dashboard.orderStats', { confirmed: myResponsesConfirmed, pending: myResponsesPending }),
       path: "/my-orders"
     },
     {
