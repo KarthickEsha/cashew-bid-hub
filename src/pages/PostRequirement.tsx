@@ -197,10 +197,10 @@ const PostRequirement = () => {
       return false;
     }
 
-    if (price && currentFixedPrice && numPrice > currentFixedPrice) {
-      setPriceError(`Expected price cannot exceed fixed price of ₹${currentFixedPrice.toLocaleString()}`);
-      return false;
-    }
+    // if (price && currentFixedPrice && numPrice > currentFixedPrice) {
+    //   setPriceError(`Expected price cannot exceed fixed price of ₹${currentFixedPrice.toLocaleString()}`);
+    //   return false;
+    // }
 
     setPriceError("");
     return true;

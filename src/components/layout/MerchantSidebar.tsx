@@ -115,7 +115,7 @@ export function MerchantSidebar() {
     );
   });
 
-  // Only show selected (confirmed) responses
+  // Only show selected (confirmed) responses (kept for potential local usage)
   const selectedResponses = activeResponses.filter(r => {
     const s = String(r.status).toLowerCase();
     return s === 'confirmed';
@@ -148,8 +148,9 @@ export function MerchantSidebar() {
 
   // Count calculations
   const enquiriesCount = activeEnquiries.length;
-  const confirmedCount = Math.max(confirmedApiCount);
-  const rejectedCount = Math.max(selectedRejectedResponses.length, rejectedApiCount);
+  // Use API-derived counts only to avoid stale local state showing incorrect badges
+  const confirmedCount = confirmedApiCount;
+  const rejectedCount = rejectedApiCount;
   const ordersCount = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length;
   const stockEnquiriesCount = getStockEnquiriesCount();
   const sellerResponseCount = getSellerResponseCount();

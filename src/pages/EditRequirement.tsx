@@ -144,10 +144,10 @@ const EditRequirement = () => {
   const validateExpectedPrice = (price: string) => {
     const numPrice = parseFloat(price);
     const currentFixedPrice = getFixedPrice();
-    if (price && currentFixedPrice && numPrice > currentFixedPrice) {
-      setPriceError(`Expected price cannot exceed fixed price of ₹${currentFixedPrice}`);
-      return false;
-    }
+    // if (price && currentFixedPrice && numPrice > currentFixedPrice) {
+    //   setPriceError(`Expected price cannot exceed fixed price of ₹${currentFixedPrice}`);
+    //   return false;
+    // }
     setPriceError("");
     return true;
   };

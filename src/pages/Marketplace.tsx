@@ -159,7 +159,9 @@ const Marketplace = () => {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(6);
-    const itemsToShow = filteredProducts.filter((p) => p.type === currentProductType).sort((a, b) => {
+    const itemsToShow = filteredProducts
+        .filter((p) => p.type === currentProductType && Number(p.quantity) > 0)
+        .sort((a, b) => {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
     const totalPages = Math.ceil(itemsToShow.length / pageSize);
@@ -552,11 +554,11 @@ const Marketplace = () => {
                                             <div>
                                                 <div className="flex items-center justify-between mb-1">
                                                     <CardTitle className="text-lg">{product.merchantName || 'Your Company'}</CardTitle>
-                                                    {product.verified && (
+                                                    {/* {product.verified && (
                                                         <Badge variant="default" className="text-xs ml-2">
                                                             Verified
                                                         </Badge>
-                                                    )}
+                                                    )} */}
                                                 </div>
 
                                                 <div className="flex items-center text-muted-foreground text-sm">
@@ -564,10 +566,10 @@ const Marketplace = () => {
                                                     {product.origin}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center space-x-1">
+                                            {/* <div className="flex items-center space-x-1">
                                                 <Star size={14} className="text-yellow-500 fill-current" />
                                                 <span className="text-sm font-medium">{product.rating}</span>
-                                            </div>
+                                            </div> */}
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
