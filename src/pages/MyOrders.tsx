@@ -46,16 +46,16 @@ import { extractBackendUserId } from "@/lib/profile";
 
 import {
   Table,
+  TableHeader,
   TableBody,
   TableCell,
   TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type SortField = 'productName' | 'orderDate' | 'status' | 'totalAmount' | 'quantity';
+type SortField = 'productName' | 'orderDate' | 'status' | 'totalAmount' | 'quantity' | 'source';
 type SortDirection = 'asc' | 'desc';
 
 const MyOrders = () => {
@@ -245,6 +245,10 @@ const MyOrders = () => {
           aValue = parseFloat(a.quantity.split(' ')[0]);
           bValue = parseFloat(b.quantity.split(' ')[0]);
           break;
+        case 'source':
+          aValue = String(a.source || '').toLowerCase();
+          bValue = String(b.source || '').toLowerCase();
+          break;
         default:
           return 0;
       }
@@ -332,6 +336,15 @@ const MyOrders = () => {
               </TableHead>
               <TableHead>Merchant</TableHead>
               <TableHead
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleSort('source')}
+              >
+                <div className="flex items-center">
+                  Source
+                  {getSortIcon('source')}
+                </div>
+              </TableHead>
+              <TableHead
                 className="text-right cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('quantity')}
               >
@@ -374,7 +387,7 @@ const MyOrders = () => {
           <TableBody>
             {currentOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center py-6">
                     <Package className="h-10 w-10 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">No enquiries found</p>
@@ -391,6 +404,7 @@ const MyOrders = () => {
                     </div>
                   </TableCell>
                   <TableCell>{order.merchantName || '-'}</TableCell>
+                  <TableCell>{order.source || '-'}</TableCell>
                   <TableCell className="text-right">{formatWithCommas(order.quantity)} Kg</TableCell>
                   <TableCell className="text-right font-medium">{order.totalAmount}</TableCell>
                   <TableCell className="text-right font-medium">
