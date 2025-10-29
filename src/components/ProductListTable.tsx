@@ -69,7 +69,7 @@ const ProductListTable = ({
 
         // Orders for this product (active only)
         const productOrders = allOrders.filter(
-          (order) => order.productId === pid && order.status !== 'Cancelled' && order.status !== 'Delivered'  && order.status !== 'Confirmed' 
+          (order) => order.productId === pid && order.status !== 'Cancelled' && order.status !== 'Delivered' && order.status !== 'Confirmed'
         );
         const processingOrders = productOrders.length;
 
@@ -193,7 +193,9 @@ const ProductListTable = ({
                       : (product.location as Location).city || (product.location as Location).region || (product.location as Location).country || 'N/A'
                     }
                   </TableCell>
-                  <TableCell>{format(new Date(product.expireDate), 'dd-MM-yyyy')}</TableCell>
+                  <TableCell>
+                    <span>{new Date(product.expireDate).toLocaleDateString()}</span>
+                  </TableCell>
                 </>
               ) : (
                 <>

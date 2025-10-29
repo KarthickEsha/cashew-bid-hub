@@ -146,6 +146,18 @@ export function AppSidebar() {
     return () => ac.abort();
   }, []);
 
+  // Listen for new enquiry events to refresh the count
+  useEffect(() => {
+    const handleEnquiryCreated = () => {
+      fetchMyEnquiriesCount().catch(console.error);
+    };
+
+    window.addEventListener('enquiry:created', handleEnquiryCreated);
+    return () => {
+      window.removeEventListener('enquiry:created', handleEnquiryCreated);
+    };
+  }, [fetchMyEnquiriesCount]);
+
   // Initialize My Enquiries count once across the app (guards unmount/mount on route change)
   useEffect(() => {
     const INIT_KEY = 'myEnquiries:init';

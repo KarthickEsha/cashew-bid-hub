@@ -261,23 +261,20 @@ const MyRequirements = () => {
 
   // Handle delete confirm
   const handleDelete = async () => {
-    if (deleteId !== null) {
-      try {
-        await deleteRequirement(deleteId.toString());
-        // Optimistically remove from UI immediately
-        setDeletedIds((prev) => {
-          const next = new Set(prev);
-          next.add(Number(deleteId));
-          return next;
-        });
-      } catch (e) {
-        console.error('Delete failed:', e);
-      } finally {
-        setDeleteId(null);
-        setDeleteOpen(false);
-      }
+  if (deleteId !== null) {
+    try {
+      // Just call deleteRequirement, it will update the store
+      await deleteRequirement(deleteId.toString());
+    } catch (e) {
+      console.error('Delete failed:', e);
+      // Re-fetch requirements to restore the correct state
+      await fetchAllRequirements();
+    } finally {
+      setDeleteId(null);
+      setDeleteOpen(false);
     }
-  };
+  }
+};
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

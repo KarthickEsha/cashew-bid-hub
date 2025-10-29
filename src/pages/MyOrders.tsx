@@ -118,7 +118,7 @@ const MyOrders = () => {
         const normalized = arr.map((it: any) => ({
           id: it.id,
           productName: it.productName || '',
-          merchantName: it.username || '',
+          merchantName: it.companyName || '',
           quantity: `${it.quantity ?? 0}`,
           totalAmount: `₹${it.expectedPrice ?? 0}`,
           status: String(it.status || 'processing').toLowerCase(),

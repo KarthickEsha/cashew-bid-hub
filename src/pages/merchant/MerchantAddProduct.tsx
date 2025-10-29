@@ -143,6 +143,7 @@ const MerchantAddProduct = () => {
     }, [formData, currentProductType, expireDate, formErrors]);
 
     useEffect(() => {
+
         if (profile?.productType && profile.productType !== "Both") {
             setCurrentProductType(profile.productType);
         } else {
@@ -153,84 +154,121 @@ const MerchantAddProduct = () => {
     // Update form data when editing product is found (from local inventory)
     useEffect(() => {
         if (isEditMode && editingProduct) {
-            setCurrentProductType(editingProduct.type);
-            if (editingProduct.expireDate) setExpireDate(new Date(editingProduct.expireDate));
-            setImages(editingProduct.images || []);
-            setFormData({
-                name: editingProduct.name,
-                availableQty: (editingProduct.availableQty || '').toString(),
-                minOrderQty: (editingProduct.minOrderQty || '').toString(),
-                price: editingProduct.price.toString(),
-                unit: editingProduct.unit,
-                location: typeof editingProduct.location === 'string' ? editingProduct.location :
-                    (editingProduct.location as Location)?.address || '',
+            // Set product type
+            if (editingProduct.type) {
+                setCurrentProductType(editingProduct.type as ProductType);
+            }
+
+            // Set expiry date if available
+            if (editingProduct.expireDate) {
+                const expDate = new Date(editingProduct.expireDate);
+                if (!isNaN(expDate.getTime())) {
+                    setExpireDate(expDate);
+                }
+            }
+
+            // Set images
+            if (Array.isArray(editingProduct.images)) {
+                setImages(editingProduct.images);
+            }
+
+            // Update form data
+            setFormData(prev => ({
+                ...prev,
+                name: editingProduct.name || '',
+                availableQty: String(editingProduct.availableQty || ''),
+                minOrderQty: String(editingProduct.minOrderQty || ''),
+                price: String(editingProduct.price || ''),
+                unit: editingProduct.unit || 'kg',
+                location: typeof editingProduct.location === 'string'
+                    ? editingProduct.location
+                    : (editingProduct.location as Location)?.address || '',
                 origin: editingProduct.origin || '',
                 description: editingProduct.description || '',
-                allowBuyerOffers: editingProduct.allowBuyerOffers || false,
+                allowBuyerOffers: Boolean(editingProduct.allowBuyerOffers),
                 yearOfCrop: editingProduct.yearOfCrop || '',
                 nutCount: editingProduct.nutCount || '',
                 outTurn: editingProduct.outTurn || '',
                 grade: editingProduct.grade || '',
-                stockAvailable: (editingProduct.stock || '').toString(),
-            });
+                stockAvailable: String(editingProduct.stock || '')
+            }));
         }
     }, [isEditMode, editingProduct]);
 
     // If editing via API-driven list, fetch selected stock by ID and prefill
     useEffect(() => {
+        let isMounted = true;
+
         const fetchAndPrefill = async () => {
             if (!isEditMode || !editProductId) return;
+
             try {
                 const resp: any = await apiFetch(`/api/stocks/get-stock/${editProductId}`, { method: 'GET' });
-                const s = resp?.data || resp; // backend might wrap in {data}
-                if (!s) return;
+                if (!isMounted) return;
 
-                // Map backend stock fields to our form state
-                // Normalize type with safe fallback. Prefer explicit type; else infer from presence of grade (Kernel) or RCN fields.
-                const rawType = (s.type ?? '').toString().toLowerCase();
-                const inferredType = rawType === 'rcn'
-                    ? 'RCN'
-                    : rawType === 'kernel'
-                        ? 'Kernel'
-                        : (s.grade ? 'Kernel' : 'RCN');
-                setCurrentProductType(inferredType as ProductType);
+                console.log('API Response:', resp); // Debug log
 
-                if (s.expiredate) {
-                    const d = new Date(String(s.expiredate));
-                    if (!isNaN(d.getTime())) setExpireDate(d);
+                const stockData = resp?.data?.stock;
+                if (!stockData) {
+                    console.warn('No stock data found in response');
+                    return;
                 }
-                setImages([]);
 
+                const s = stockData;
+
+                // Set product type if available
+                const productType = (s.type || '').toString().toLowerCase() === 'rcn' ? 'RCN' : 'Kernel';
+                setCurrentProductType(productType as ProductType);
+
+                // Set expiry date if available
+                if (s.expiredate) {
+                    const expDate = new Date(s.expiredate);
+                    if (!isNaN(expDate.getTime())) {
+                        setExpireDate(expDate);
+                    }
+                }
+
+                // Update form data with the stock data
                 setFormData(prev => ({
                     ...prev,
-                    grade: s.grade || '',
-                    availableQty: String(s.availableqty ?? s.availableQty ?? ''),
-                    minOrderQty: String(s.minimumqty ?? s.minimumQty ?? ''),
-                    price: String(s.sellingprice ?? s.price ?? ''),
-                    unit: 'kg',
-                    location: s.location || s.origin || '',
+                    name: s.productId || '', // Using productId as name if name is not available
+                    availableQty: String(s.availableqty || ''),
+                    minOrderQty: String(s.minimumqty || ''),
+                    price: String(s.sellingprice || ''),
+                    unit: 'kg', // Default unit as it's not in the response
+                    location: s.location || '',
                     origin: s.origin || '',
                     description: s.description || '',
-                    allowBuyerOffers: Boolean(
-                        s.allowbuyeroffers ??
-                        s.allowBuyerOffers ??
-                        s.negotiateprice ??
-                        s.negotiatePrice ??
-                        false
-                    ),
-                    // Prefer snake_case keys from backend, fallback to camelCase if present
-                    yearOfCrop: String(s.yearofcrop ?? s.yearOfCrop ?? ''),
-                    nutCount: String(s.netcount ?? s.nutCount ?? ''),
-                    outTurn: String(s.outturn ?? s.outTurn ?? ''),
-                    stockAvailable: String(s.availableqty ?? s.availableQty ?? ''),
+                    allowBuyerOffers: Boolean(s.negotiatePrice || false),
+                    yearOfCrop: '', // Not in the response
+                    nutCount: '', // Not in the response
+                    outTurn: '', // Not in the response
+                    grade: s.grade || '',
+                    stockAvailable: String(s.availableqty || '')
                 }));
+
+                console.log('Form data updated with:', {
+                    name: s.productId,
+                    availableQty: s.availableqty,
+                    minOrderQty: s.minimumqty,
+                    price: s.sellingprice,
+                    location: s.location,
+                    origin: s.origin,
+                    description: s.description,
+                    allowBuyerOffers: s.negotiatePrice,
+                    grade: s.grade
+                });
+
             } catch (e) {
-                // silent fail; user can still edit manually
                 console.warn('Failed to load stock for editing', e);
             }
         };
+
         fetchAndPrefill();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
+        return () => {
+            isMounted = false;
+        };
     }, [isEditMode, editProductId]);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -304,7 +342,7 @@ const MerchantAddProduct = () => {
                 enquiries: 0,
                 orders: 0,
                 origin: formData.origin || '',
-                negotiatePrice: formData.allowBuyerOffers || false,    
+                negotiatePrice: formData.allowBuyerOffers || false,
                 availableQty: parseFloat(formData.availableQty) || 0,
                 minOrderQty: parseFloat(formData.minOrderQty) || 1,
             };
@@ -329,22 +367,21 @@ const MerchantAddProduct = () => {
             if (isEditMode && editProductId) {
                 // Map to backend-required keys for update
                 const updateStockPayload = {
-                    // Keep payload consistent with create-stock (snake_case, proper types)
-                    grade: currentProductType === 'Kernel' ? formData.grade : "",
-
-                    // RCN-only fields mapped and typed
-                    netcount: currentProductType === 'RCN' ? parseInt(formData.nutCount || '0', 10) : 0,
-                    outturn: currentProductType === 'RCN' ? parseInt(formData.outTurn || '0', 10) : 0,
-                    yearofcrop: currentProductType === 'RCN' ? parseInt(formData.yearOfCrop || '0', 10) : 0,
-                    origin: formData.origin || '',
-                    availableqty: parseInt(formData.availableQty || '0', 10),
-                    minimumqty: parseInt(formData.minOrderQty || '1', 10),
-                    sellingprice: parseFloat(formData.price || '0'),
+                    name: formData.name,
+                    grade: formData.grade,
+                    netcount: parseInt(formData.nutCount) || 0,
+                    outturn: parseInt(formData.outTurn) || 0,
+                    yearofcrop: parseInt(formData.yearOfCrop) || 0,
+                    origin: formData.origin,
+                    availableqty: parseFloat(formData.availableQty) || 0,
+                    minimumqty: parseFloat(formData.minOrderQty) || 0,
+                    sellingprice: parseFloat(formData.price) || 0,
                     location: formData.location,
-                    expiredate: new Date(expireDate).toISOString(),
-                    description: formData.description || '',
-                    negotiateprice: !!formData.allowBuyerOffers,
+                    description: formData.description,
+                    expiredate: expireDate ? new Date(expireDate).toISOString() : null, // Format date properly
                     type: currentProductType,
+                    negotiatePrice: formData.allowBuyerOffers,
+                    status: 'active'
                 };
 
                 await apiFetch(`/api/stocks/update-stock/${editProductId}`, {
@@ -733,7 +770,11 @@ const MerchantAddProduct = () => {
                                                 caption_label:
                                                     "text-sm font-semibold text-purple-700",
                                             }}
-                                            disabled={(date) => date < new Date()}
+                                            disabled={(date) => {
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
+                                                return date < today;
+                                            }}
                                         />
                                     </PopoverContent>
                                 </Popover>
