@@ -60,10 +60,12 @@ const MerchantEnquiries = () => {
   // Actual filters applied to the table
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState(''); // '' means no filter / "All"
+  const [productFilter, setProductFilter] = useState(''); // '' means all products
 
-  // Temporary filters (controlled inputs)
-  const [tempSearchFilter, setTempSearchFilter] = useState('');
-  const [tempStatusFilter, setTempStatusFilter] = useState(''); // keep '' so placeholder shows
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchFilter, statusFilter, productFilter]);
 
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -87,7 +89,8 @@ const MerchantEnquiries = () => {
     all: [], // no filter
     '': [], // treat empty like "all"
     new: ['active'],
-    viewed: ['responded'],
+    viewed: ['viewed'],
+    responded: ['responded'],
     contacted: ['responded'],
     negotiating: ['pending'],
   };
@@ -165,41 +168,41 @@ const MerchantEnquiries = () => {
 
   // Sort enquiries
   // Keep 'active' first, then apply header sorting, fallback to createdAt desc
-const sortEnquiries = (enqs: any[]) => {
-  return [...enqs].sort((a, b) => {
-    // 1) Status priority: active first
-    const aPri = a.status === 'active' ? 0 : 1;
-    const bPri = b.status === 'active' ? 0 : 1;
-    if (aPri !== bPri) return aPri - bPri;
+  const sortEnquiries = (enqs: any[]) => {
+    return [...enqs].sort((a, b) => {
+      // 1) Status priority: active first
+      const aPri = a.status === 'active' ? 0 : 1;
+      const bPri = b.status === 'active' ? 0 : 1;
+      if (aPri !== bPri) return aPri - bPri;
 
-    // 2) If no selected column, sort by createdAt desc (newest first)
-    if (!sortField) {
-      const aDate = new Date(a.createdAt || a.lastModified || 0).getTime();
-      const bDate = new Date(b.createdAt || b.lastModified || 0).getTime();
-      return bDate - aDate;
-    }
+      // 2) If no selected column, sort by createdAt desc (newest first)
+      if (!sortField) {
+        const aDate = new Date(a.createdAt || a.lastModified || 0).getTime();
+        const bDate = new Date(b.createdAt || b.lastModified || 0).getTime();
+        return bDate - aDate;
+      }
 
-    // 3) Sort by selected column with proper type handling
-    let aValue: any = a[sortField];
-    let bValue: any = b[sortField];
+      // 3) Sort by selected column with proper type handling
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
 
-    if (sortField === 'deliveryDeadline') {
-      aValue = new Date(aValue || 0).getTime();
-      bValue = new Date(bValue || 0).getTime();
-    } else if (sortField === 'quantity' || sortField === 'expectedPrice') {
-      // numeric fields: strip non-numeric
-      aValue = parseFloat(String(aValue ?? '0').replace(/[^0-9.]/g, '')) || 0;
-      bValue = parseFloat(String(bValue ?? '0').replace(/[^0-9.]/g, '')) || 0;
-    } else if (typeof aValue === 'string' && typeof bValue === 'string') {
-      aValue = aValue.toLowerCase();
-      bValue = bValue.toLowerCase();
-    }
+      if (sortField === 'deliveryDeadline') {
+        aValue = new Date(aValue || 0).getTime();
+        bValue = new Date(bValue || 0).getTime();
+      } else if (sortField === 'quantity' || sortField === 'expectedPrice') {
+        // numeric fields: strip non-numeric
+        aValue = parseFloat(String(aValue ?? '0').replace(/[^0-9.]/g, '')) || 0;
+        bValue = parseFloat(String(bValue ?? '0').replace(/[^0-9.]/g, '')) || 0;
+      } else if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
 
-    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-    return 0;
-  });
-};
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
 
   // State for enquiries
   const [enquiries, setEnquiries] = useState(() => {
@@ -399,7 +402,10 @@ const sortEnquiries = (enqs: any[]) => {
     const matchesStatus =
       normalized === '' || normalized === 'all' || allowedStatuses.includes(enquiry.status);
 
-    return matchesSearch && matchesStatus;
+    const matchesProduct =
+      productFilter === '' || productFilter === 'all' || enquiry.productName === productFilter;
+
+    return matchesSearch && matchesStatus && matchesProduct;
   }));
 
   const totalPages = Math.ceil(filteredEnquiries.length / pageSize);
@@ -414,7 +420,7 @@ const sortEnquiries = (enqs: any[]) => {
       if (aPri !== bPri) return aPri - bPri;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
-   });
+  });
 
   sortedEnquiries = sortEnquiries(filteredEnquiries);
 
@@ -425,7 +431,7 @@ const sortEnquiries = (enqs: any[]) => {
     const idParam = enquiry.apiId ?? enquiry.id;
     // Mark as viewed in background (non-blocking)
     if (enquiry.status === 'active') {
-      try { await updateRequirementStatus(String(idParam), 'viewed'); } catch (_) {}
+      try { await updateRequirementStatus(String(idParam), 'viewed'); } catch (_) { }
     }
     // Navigate to enquiry details page
     navigate(`/merchant/enquiries/${idParam}`);
@@ -443,22 +449,25 @@ const sortEnquiries = (enqs: any[]) => {
     }
   };
 
-  const handleApplyFilters = () => {
-    setSearchFilter(tempSearchFilter);
-    setStatusFilter(tempStatusFilter);
-    setFilterOpen(false);
-    setCurrentPage(1);
-  };
+  // Derive dynamic filter options from data
+  const productOptions = useMemo(() => {
+    const set = new Set<string>();
+    activeEnquiries.forEach(e => {
+      if (e.productName) set.add(e.productName);
+    });
+    return Array.from(set).sort();
+  }, [activeEnquiries]);
 
-  const handleCancelFilters = () => {
-    // Clear both applied and temporary filters
-    setSearchFilter('');
-    setStatusFilter('');
-    setTempSearchFilter('');
-    setTempStatusFilter('');
-    setFilterOpen(false);
-    setCurrentPage(1);
-  };
+  const statusOptions = useMemo(() => {
+    const present = new Set<string>(activeEnquiries.map(e => String(e.status || '')));
+    const opts: { value: string; label: string }[] = [{ value: 'all', label: 'All Status' }];
+    if (present.has('active')) opts.push({ value: 'new', label: 'New' });
+    if (present.has('responded')) opts.push({ value: 'responded', label: 'Responded' });
+    if (present.has('viewed')) opts.push({ value: 'viewed', label: 'Viewed' });
+    if (present.has('pending')) opts.push({ value: 'negotiating', label: 'Negotiating' });
+    if (present.has('responded')) opts.push({ value: 'contacted', label: 'Contacted' });
+    return opts;
+  }, [activeEnquiries]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -661,26 +670,26 @@ const sortEnquiries = (enqs: any[]) => {
 
       try {
 
-// Update the status in the store (prefer backend apiId if available)
-await updateRequirementStatus(String(selectedEnquiry.apiId ?? selectedEnquiry.id), newStatus);
+        // Update the status in the store (prefer backend apiId if available)
+        await updateRequirementStatus(String(selectedEnquiry.apiId ?? selectedEnquiry.id), newStatus);
 
-// Force a refresh of the enquiries list to ensure UI is up to date
-console.log('Refreshing enquiries after status update...');
-refreshEnquiries();
+        // Force a refresh of the enquiries list to ensure UI is up to date
+        console.log('Refreshing enquiries after status update...');
+        refreshEnquiries();
 
-// Also update the selected enquiry in the modal if it's open
-if (selectedEnquiry) {
-console.log('Selected enquiry ID:', selectedEnquiry.id);
-console.log('Current enquiry status:', selectedEnquiry.status);
         // Also update the selected enquiry in the modal if it's open
         if (selectedEnquiry) {
-          console.log('Updating selected enquiry in modal...');
-          setSelectedEnquiry(prev => ({
-            ...prev!,
-            status: newStatus === 'selected' ? 'selected' : prev?.status
-          }));
-        }
-      } // Close outer if (selectedEnquiry)
+          console.log('Selected enquiry ID:', selectedEnquiry.id);
+          console.log('Current enquiry status:', selectedEnquiry.status);
+          // Also update the selected enquiry in the modal if it's open
+          if (selectedEnquiry) {
+            console.log('Updating selected enquiry in modal...');
+            setSelectedEnquiry(prev => ({
+              ...prev!,
+              status: newStatus === 'selected' ? 'selected' : prev?.status
+            }));
+          }
+        } // Close outer if (selectedEnquiry)
         console.log('updateRequirementStatus completed');
 
         // Refresh the enquiries to get the latest data
@@ -738,7 +747,7 @@ console.log('Current enquiry status:', selectedEnquiry.status);
     }
   };
 
-    
+
   // Format a numeric value with commas for display (e.g., 1000 -> 1,000)
   const formatWithCommas = (val: any) => {
     if (val === null || val === undefined) return "0";
@@ -845,17 +854,18 @@ console.log('Current enquiry status:', selectedEnquiry.status);
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
-          <Filter className="h-4 w-4 mr-2" />
-          Filter Enquiries
+          <Filter className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Filters */}
       {filterOpen && (
-        <Card>
-          <CardHeader></CardHeader>
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Filter Enquiries</CardTitle>
+          </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Search</label>
                 <div className="relative">
@@ -863,34 +873,48 @@ console.log('Current enquiry status:', selectedEnquiry.status);
                   <Input
                     placeholder="Search customer, product..."
                     className="pl-8"
-                    value={tempSearchFilter}
-                    onChange={(e) => setTempSearchFilter(e.target.value)}
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
                   />
                 </div>
               </div>
 
-              {/* Filter by Status — shadcn/ui Select (exact structure you asked for) */}
+              {/* Filter by Product */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Filter by Status</label>
+                <label className="text-sm font-medium mb-2 block">Product</label>
                 <Select
-                  value={tempStatusFilter}
-                  onValueChange={(value) => setTempStatusFilter(value)}
+                  value={productFilter || 'all'}
+                  onValueChange={(value) => setProductFilter(value === 'all' ? '' : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
+                    {productOptions.map((p) => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filter by Status */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Status</label>
+                <Select
+                  value={statusFilter || 'all'}
+                  onValueChange={(value) => setStatusFilter(value === 'all' ? '' : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="new">Pending</SelectItem>
-                    <SelectItem value="viewed">Responded</SelectItem>
+                    {statusOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 mt-4">
-              <Button variant="outline" onClick={handleCancelFilters}>Cancel</Button>
-              <Button onClick={handleApplyFilters}>Apply</Button>
             </div>
           </CardContent>
         </Card>
@@ -968,8 +992,8 @@ console.log('Current enquiry status:', selectedEnquiry.status);
                   <TableCell className="font-medium">{enquiry.customerName}</TableCell>
                   <TableCell>{enquiry.productName}</TableCell>
                   <TableCell className="text-right">
-                      {formatWithCommas(enquiry.quantity)} kg
-                    </TableCell>
+                    {formatWithCommas(enquiry.quantity)} kg
+                  </TableCell>
                   <TableCell>₹{formatWithCommas(enquiry.expectedPrice)}/kg</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

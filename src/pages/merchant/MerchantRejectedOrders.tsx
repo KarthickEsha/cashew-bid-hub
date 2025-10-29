@@ -15,8 +15,7 @@ const MerchantRejectedOrders = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  const [searchFilter, setSearchFilter] = useState('');
-  const [tempSearchFilter, setTempSearchFilter] = useState('');
+  const [filters, setFilters] = useState({ search: "", product: "all", status: "all" });
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -51,6 +50,19 @@ const MerchantRejectedOrders = () => {
     return () => { mounted = false };
   }, []);
 
+  // Derive dynamic filter options from API data
+  const productOptions = useMemo(() => {
+    const set = new Set<string>();
+    apiOrders.forEach(o => { if (o.productName) set.add(String(o.productName)); });
+    return ["all", ...Array.from(set).sort()];
+  }, [apiOrders]);
+
+  const statusOptions = useMemo(() => {
+    const set = new Set<string>();
+    apiOrders.forEach(o => { if (o.status) set.add(String(o.status).toLowerCase()); });
+    return ["all", ...Array.from(set).sort()];
+  }, [apiOrders]);
+
   // Sort rejected orders
   const sortOrders = (orders: typeof apiOrders) => {
     if (!sortField) return orders;
@@ -80,32 +92,38 @@ const MerchantRejectedOrders = () => {
 
   // Filter rejected orders
   const filteredOrders = useMemo(() => {
-    const filtered = apiOrders.filter(order => 
-      searchFilter === '' ||
-      order.customerName.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      order.productName.toLowerCase().includes(searchFilter.toLowerCase())
-    );
+    const filtered = apiOrders.filter(order => {
+      const matchesSearch = filters.search
+        ? [order.customerName, order.productName]
+            .map(v => String(v || '').toLowerCase())
+            .some(v => v.includes(filters.search.toLowerCase()))
+        : true;
+
+      const matchesProduct = filters.product !== 'all'
+        ? String(order.productName || '').toLowerCase() === String(filters.product).toLowerCase()
+        : true;
+
+      const matchesStatus = filters.status !== 'all'
+        ? String(order.status || '').toLowerCase() === String(filters.status).toLowerCase()
+        : true;
+
+      return matchesSearch && matchesProduct && matchesStatus;
+    });
     
     return sortOrders(filtered);
-  }, [apiOrders, searchFilter, sortField, sortDirection]);
+  }, [apiOrders, filters, sortField, sortDirection]);
+
+  // Reset pagination when filters or sorting change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, sortField, sortDirection, pageSize]);
 
   const totalPages = Math.ceil(filteredOrders.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, filteredOrders.length);
   const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
 
-  const handleApplyFilters = () => {
-    setSearchFilter(tempSearchFilter);
-    setFilterOpen(false);
-    setCurrentPage(1);
-  };
-
-  const handleCancelFilters = () => {
-    setSearchFilter('');
-    setTempSearchFilter('');
-    setFilterOpen(false);
-    setCurrentPage(1);
-  };
+  // Filters auto-apply via state changes and useMemo; no explicit handlers needed
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -137,8 +155,7 @@ const MerchantRejectedOrders = () => {
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
-          <Filter className="h-4 w-4 mr-2" />
-          Filter Orders
+          <Filter className="h-4 w-4" />
         </Button>
       </div>
 
@@ -146,7 +163,7 @@ const MerchantRejectedOrders = () => {
       {filterOpen && (
         <Card>
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Search</label>
                 <div className="relative">
@@ -154,16 +171,49 @@ const MerchantRejectedOrders = () => {
                   <Input
                     placeholder="Search customer, product..."
                     className="pl-8 border-input focus:ring-ring"
-                    value={tempSearchFilter}
-                    onChange={(e) => setTempSearchFilter(e.target.value)}
+                    value={filters.search}
+                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                   />
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-end space-x-2 mt-4">
-              <Button variant="outline" onClick={handleCancelFilters}>Cancel</Button>
-              <Button onClick={handleApplyFilters}>Apply</Button>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Product</label>
+                <Select
+                  value={filters.product}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, product: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All products" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {productOptions.map(opt => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt === 'all' ? 'All' : opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Status</label>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(opt => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt === 'all' ? 'All' : opt.charAt(0).toUpperCase() + opt.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>

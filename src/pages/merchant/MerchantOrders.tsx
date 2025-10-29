@@ -39,7 +39,7 @@ const MerchantOrders = () => {
   const { reduceAvailableStock } = useInventory();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  const [filters, setFilters] = useState({ orderId: "", customer: "", product: "" });
+  const [filters, setFilters] = useState({ search: "", product: "all", status: "all" });
   const [showFilterCard, setShowFilterCard] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -53,19 +53,46 @@ const MerchantOrders = () => {
   // Use API-driven buyer responses for listing
   const merchantOrders = buyerResponses;
 
+  // Build dynamic filter options from API data
+  const productOptions = useMemo(() => {
+    const set = new Set<string>();
+    merchantOrders.forEach(o => {
+      if (o.productName) set.add(String(o.productName));
+    });
+    return ["all", ...Array.from(set)];
+  }, [merchantOrders]);
+
+  const statusOptions = useMemo(() => {
+    const set = new Set<string>();
+    merchantOrders.forEach(o => {
+      if (o.status) set.add(String(o.status).toLowerCase());
+    });
+    return ["all", ...Array.from(set)];
+  }, [merchantOrders]);
+
   // Calculate displayed orders based on filters and sorting
   const displayedOrders = useMemo(() => {
     if (!merchantOrders) return [];
     let result = [...merchantOrders];
 
     // Apply filters
-    if (filters.orderId || filters.customer || filters.product) {
-      result = result.filter(order =>
-        (filters.orderId ? order.id?.toLowerCase().includes(filters.orderId.toLowerCase()) : true) &&
-        (filters.customer ? order.customerName?.toLowerCase().includes(filters.customer.toLowerCase()) : true) &&
-        (filters.product ? order.productName?.toLowerCase().includes(filters.product.toLowerCase()) : true)
-      );
-    }
+    result = result.filter(order => {
+      const matchesSearch = filters.search
+        ? [order.id, order.customerName, order.productName]
+            .map(v => String(v || "").toLowerCase())
+            .some(v => v.includes(filters.search.toLowerCase()))
+        : true;
+
+      const matchesProduct = filters.product !== "all"
+        ? String(order.productName || "").toLowerCase() === String(filters.product).toLowerCase()
+        : true;
+
+      const matchesStatus = filters.status !== "all"
+        ? String(order.status || "").toLowerCase() === String(filters.status).toLowerCase()
+        : true;
+
+      return matchesSearch && matchesProduct && matchesStatus;
+    });
 
     // Apply sorting
     if (sortField) {
@@ -274,17 +301,7 @@ const MerchantOrders = () => {
     });
   };
 
-  const handleApplyFilter = () => {
-    // The filtering is already handled by the displayedOrders useMemo
-    setCurrentPage(1);
-    setShowFilterCard(false);
-  };
-
-  const handleCancelFilter = () => {
-    setFilters({ orderId: "", customer: "", product: "" });
-    setCurrentPage(1);
-    setShowFilterCard(false);
-  };
+  // Filters are auto-applied via state changes and useMemo; no explicit handlers needed
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -378,7 +395,7 @@ const MerchantOrders = () => {
           onClick={() => setShowFilterCard(prev => !prev)}
           className="flex items-center space-x-1"
         >
-          <Filter className="h-4 w-4" /> <span>Filter Orders</span>
+          <Filter className="h-4 w-4" />
         </Button>
       </div>
 
@@ -386,45 +403,55 @@ const MerchantOrders = () => {
       {showFilterCard && (
         <Card className="mb-4">
           <CardHeader>
-            <CardTitle>Filter Orders</CardTitle>
+            <CardTitle>Filter Response</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Search Order ID</label>
+                <label className="text-sm font-medium mb-2 block">Search</label>
                 <Input
                   type="text"
-                  placeholder="Enter Order ID"
-                  value={filters.orderId}
-                  onChange={e => setFilters(prev => ({ ...prev, orderId: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Customer</label>
-                <Input
-                  type="text"
-                  placeholder="Enter Customer Name"
-                  value={filters.customer}
-                  onChange={e => setFilters(prev => ({ ...prev, customer: e.target.value }))}
+                  placeholder="Search by Buyer or Product..."
+                  value={filters.search}
+                  onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Product</label>
-                <Input
-                  type="text"
-                  placeholder="Enter Product Name"
+                <Select
                   value={filters.product}
-                  onChange={e => setFilters(prev => ({ ...prev, product: e.target.value }))}
-                />
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, product: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All products" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {productOptions.map(opt => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt === "all" ? "All" : opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" size="sm" onClick={handleCancelFilter}>
-                Cancel
-              </Button>
-              <Button variant="default" size="sm" onClick={handleApplyFilter}>
-                Apply
-              </Button>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Status</label>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(opt => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt === "all" ? "All" : opt.charAt(0).toUpperCase() + opt.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
