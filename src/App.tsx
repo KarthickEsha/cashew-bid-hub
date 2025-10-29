@@ -14,6 +14,7 @@ import PostRequirement from "./pages/PostRequirement";
 import MyRequirements from "./pages/MyRequirements";
 import MyBids from "./pages/MyBids";
 import MyOrders from "./pages/MyOrders";
+import MyOrderDetails from "./pages/MyOrderDetails";
 import EditRequirement from "./pages/EditRequirement";
 import Responses from "./pages/Responses";
 import RequestDetails from "./pages/RequestDetails";
@@ -106,6 +107,7 @@ const AppContent = () => {
         <Route path="/my-requests" element={<MyRequests />} />
         <Route path="/my-bids" element={<MyBids />} />
         <Route path="/my-orders" element={<MyOrders />} />
+        <Route path="/my-orders/:id" element={<MyOrderDetails />} />
         <Route path="/post-requirement" element={<PostRequirement />} />
         <Route path="/my-requirements" element={<MyRequirements />} />
         <Route path="/edit-requirement/:id" element={<EditRequirement />} />

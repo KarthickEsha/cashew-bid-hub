@@ -78,18 +78,17 @@ const ViewAllProducts = () => {
           <p>{merchant.description || 'Cashew merchant specializing in high-quality products and reliable service.'}</p>
           <div className="flex flex-wrap gap-3">
             <Badge variant="secondary">Location: {merchant.address || merchant?.location?.city || 'N/A'}</Badge>
-            <Badge variant="secondary">Rating: ⭐ 4.5</Badge>
+            {/* <Badge variant="secondary">Rating: ⭐ 4.5</Badge> */}
             <Badge variant="secondary">Total Products: {merchantProducts.length}</Badge>
           </div>
           <div className="mt-4 text-sm text-muted-foreground">
-            📞 {merchant.phone || 'N/A'} | ✉️ {merchant.email || 'N/A'} | 🌐{" "}
+            📞 {merchant.phone || 'N/A'} | ✉️ {merchant.email || 'N/A'}
             <a
               href="https://www.kriyartec.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline"
             >
-              www.kriyartec.com
             </a>
           </div>
 
@@ -126,10 +125,6 @@ const ViewAllProducts = () => {
                       <MapPin size={14} className="mr-1" />
                       {merchant?.location?.city || 'N/A'}
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Star size={14} className="text-yellow-500 fill-current" />
-                    <span className="text-sm font-medium">{'rating' in prod ? String(prod.rating) : '5'}</span>
                   </div>
                 </div>
               </CardHeader>

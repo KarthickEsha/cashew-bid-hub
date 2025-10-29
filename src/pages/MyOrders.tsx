@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +56,7 @@ import {
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type SortField = 'productName' | 'orderDate' | 'status' | 'totalAmount' | 'quantity' | 'source';
+type SortField = 'productName' | 'merchantName' | 'orderDate' | 'status' | 'totalAmount' | 'quantity' | 'source';
 type SortDirection = 'asc' | 'desc';
 
 const MyOrders = () => {
@@ -77,7 +78,8 @@ const MyOrders = () => {
 
   // dialog states
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [trackingOpen, setTrackingOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
@@ -134,6 +136,33 @@ const MyOrders = () => {
     })();
     return () => { ignore = true; };
   }, []);
+
+  // Accept navigation state with a newly submitted order and optimistically show it
+  useEffect(() => {
+    const state = location.state as any;
+    const newOrder = state?.newOrder;
+    if (!newOrder) return;
+
+    // Normalize to MyOrders row shape
+    const qtyNum = parseFloat(String(newOrder.quantity || '').replace(/[^0-9.]/g, '')) || 0;
+    const normalized = {
+      id: newOrder.id,
+      productName: newOrder.productName || '',
+      merchantName: newOrder.merchantName || '',
+      quantity: `${qtyNum}`,
+      totalAmount: newOrder.unitPrice || newOrder.totalAmount || '₹0',
+      status: String(newOrder.status || 'processing').toLowerCase(),
+      orderDate: newOrder.orderDate || new Date().toISOString(),
+      location: newOrder.location || '',
+      productId: newOrder.productId || '',
+      source: newOrder.source || 'marketplace',
+    };
+    setBuyerOrders(prev => {
+      // Avoid dupes if exists
+      if (prev.some(o => o.id === normalized.id)) return prev;
+      return [normalized, ...prev];
+    });
+  }, [location.state]);
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -228,6 +257,10 @@ const MyOrders = () => {
         case 'productName':
           aValue = a.productName.toLowerCase();
           bValue = b.productName.toLowerCase();
+          break;
+        case 'merchantName':
+          aValue = String(a.merchantName || '').toLowerCase();
+          bValue = String(b.merchantName || '').toLowerCase();
           break;
         case 'orderDate':
           aValue = new Date(a.orderDate);
@@ -334,7 +367,15 @@ const MyOrders = () => {
                   {getSortIcon('productName')}
                 </div>
               </TableHead>
-              <TableHead>Merchant</TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleSort('merchantName')}
+              >
+                <div className="flex items-center">
+                  Merchant
+                  {getSortIcon('merchantName')}
+                </div>
+              </TableHead>
               <TableHead
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('source')}
@@ -430,10 +471,7 @@ const MyOrders = () => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => {
-                          setSelectedOrder(order);
-                          setDetailsOpen(true);
-                        }}
+                        onClick={() => navigate(`/my-orders/${order.id}` , { state: { order } })}
                       >
                         <Eye className="h-4 w-4" />
                         <span className="sr-only">View details</span>
@@ -548,65 +586,7 @@ const MyOrders = () => {
         )}
       </Card>
 
-      {/* View Details Popup */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Enquiries Details</DialogTitle>
-          </DialogHeader>
-          {selectedOrder && (
-            <Card>
-              <CardContent className="space-y-4 p-6">
-                {/* Order Info */}
-                <div>
-                  <h3 className="font-semibold text-lg mb-2 flex items-center">
-                    <Package className="mr-2 h-5 w-5 text-blue-500" /> Enquirie Information
-                  </h3>
-                  {/* <p><strong>Order ID:</strong> {selectedOrder.id}</p> */}
-                  <p><strong>Status:</strong> {selectedOrder.status}</p>
-                  <p className="flex items-center text-sm text-muted-foreground">
-                    <Calendar size={14} className="mr-1" /> Enquire on: {selectedOrder.orderDate}
-                  </p>
-                  {selectedOrder.shippingDate && (
-                    <p className="flex items-center text-sm text-muted-foreground">
-                      <Truck size={14} className="mr-1" /> Shipped: {selectedOrder.shippingDate}
-                    </p>
-                  )}
-                  {selectedOrder.deliveryDate && (
-                    <p className="flex items-center text-sm text-muted-foreground">
-                      <CheckCircle size={14} className="mr-1" /> Delivery: {selectedOrder.deliveryDate}
-                    </p>
-                  )}
-                </div>
-
-                {/* Product Info */}
-                <div>
-                  <h3 className="font-semibold text-lg mb-2 flex items-center">
-                    <Package className="mr-2 h-5 w-5 text-green-500" /> Product Information
-                  </h3>
-                  <p><strong>Product:</strong> {selectedOrder.productName}</p>
-                  <p><strong>Quantity:</strong> {formatWithCommas(selectedOrder.quantity)} Kg</p>
-                  <p><strong>Unit Price:</strong> {formatINR(selectedOrder.unitPrice)}</p>
-                  <p>
-                    <strong> Total Amount:</strong> {formatINR(selectedOrder.totalAmount)}
-                  </p>
-                </div>
-
-                {/* Merchant & Location */}
-                <div>
-                  <h3 className="font-semibold text-lg mb-2 flex items-center">
-                    <User className="mr-2 h-5 w-5 text-purple-500" /> Merchant & Location
-                  </h3>
-                  <p><strong>Merchant:</strong> {profile.companyName}</p>
-                  <p className="flex items-center text-sm text-muted-foreground">
-                    <MapPin size={14} className="mr-1" /> {profile.city}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Details popup removed: now navigates to /my-orders/:id */}
 
       {/* Track Order Popup */}
       <Dialog open={trackingOpen} onOpenChange={setTrackingOpen}>

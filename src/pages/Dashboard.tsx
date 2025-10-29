@@ -2,13 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  TrendingUp,
   Clock,
   FileText,
   MessageSquare,
   ArrowRight,
   Eye,
-  Calendar
+  Calendar,
+  Store
 } from "lucide-react";
 import cashewHero from "@/assets/cashew-hero.jpg";
 import { Link, useNavigate } from "react-router-dom"; // ✅ import navigate
@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiFetch } from "@/lib/api";
 import { extractBackendUserId } from "@/lib/profile";
+import { useProfile } from "@/hooks/useProfile";
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -36,6 +37,8 @@ const Dashboard = () => {
   const [loadingDash, setLoadingDash] = useState(false);
   const [errorDash, setErrorDash] = useState<string | null>(null);
   const [enquiriesCount, setEnquiriesCount] = useState<number>(0);
+  const { profile } = useProfile();
+  const [marketplaceCount, setMarketplaceCount] = useState<number>(0);
 
   // Fetch protected buyer dashboard
   useEffect(() => {
@@ -64,6 +67,37 @@ const Dashboard = () => {
       mounted = false;
     };
   }, []);
+
+  // Fetch marketplace count for dashboard card
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const role = String(profile?.role || '').toLowerCase();
+        const view = role === 'processor' ? 'merchant' : 'buyer';
+        const userIdParam = role === 'processor' && profile?.id ? `&userId=${encodeURIComponent(profile.id)}` : '';
+        const types = ['RCN', 'Kernel'];
+        const results = await Promise.all(
+          types.map(async (type) => {
+            const url = `/api/stocks/get-all-stocks?type=${encodeURIComponent(type)}&view=${view}${userIdParam}`;
+            const resp: any = await apiFetch(url, { method: 'GET' });
+            const list: any[] = Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
+            // Count only items with positive available quantity when possible
+            const count = list.filter((s: any) => Number(s?.availableqty ?? s?.quantity ?? 0) > 0).length;
+            return count;
+          })
+        );
+        if (!mounted) return;
+        setMarketplaceCount(results.reduce((a, b) => a + b, 0));
+      } catch {
+        if (!mounted) return;
+        setMarketplaceCount(0);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [profile?.role, profile?.id]);
 
   // Fetch buyer enquiries to compute myResponses count from enquiries endpoint
   useEffect(() => {
@@ -119,23 +153,11 @@ const Dashboard = () => {
       ? backendMyRespPending
       : (responsesPending + pendingOrders);
 
-  // Calculate total value (mock calculation - in real app this would come from orders)
-  const totalValue = requirements.reduce((acc, req) => {
-    // budgetRange is like "₹8,000/kg" or similar. Extract numeric part safely.
-    const priceNum = typeof req.budgetRange === 'number'
-      ? req.budgetRange
-      : parseFloat(String(req.budgetRange ?? '0').replace(/[^\d.]/g, '') || '0');
-    // quantity could be a number or a formatted string like "1,000" or "1000kg"
-    const quantityNum = typeof req.quantity === 'number'
-      ? req.quantity
-      : parseFloat(String(req.quantity ?? '0').replace(/[^\d.]/g, '') || '0');
-    return acc + (priceNum * quantityNum / 1000); // Convert to tons for calculation
-  }, 0);
-
   // Prefer backend-provided cards when available
   const myReqCard = dashCards?.myRequirements;
   const sellerRespCard = dashCards?.sellerResponses;
   const myRespCard = dashCards?.myResponses;
+  const marketplaceCard = (dashCards as any)?.marketplace;
 
   const stats = [
     {
@@ -165,11 +187,12 @@ const Dashboard = () => {
       path: "/my-orders"
     },
     {
-      title: t('dashboard.totalValue'),
-      value: `₹${(totalValue / 100000).toFixed(1)}L`,
-      icon: TrendingUp,
-      color: "text-primary",
-      trend: t('dashboard.estimatedFromRequirements'),
+      title: 'Marketplace',
+      value: (marketplaceCard?.count ?? marketplaceCount).toString(),
+      icon: Store,
+      color: "text-violet-500",
+      trend: t('dashboard.browseMarketplace'),
+      path: "/marketplace",
     }
   ];
 

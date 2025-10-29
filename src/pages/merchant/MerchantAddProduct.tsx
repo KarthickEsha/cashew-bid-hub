@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Upload, X, CalendarIcon } from "lucide-react";
+import { Upload, X, CalendarIcon, ArrowLeft } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -476,16 +476,22 @@ const MerchantAddProduct = () => {
 
     return (
         <div className="p-6 space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold text-primary">
-                    {isEditMode ? 'Edit Stock' : 'Add New Stocks'}
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                    {isEditMode
-                        ? `Update your ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product information`
-                        : `List a new ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product for sale`
-                    }
-                </p>
+            <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/merchant/products')}>
+                    <ArrowLeft size={16} className="mr-2" />
+                    Back to Products
+                </Button>
+                <div>
+                    <h1 className="text-3xl font-bold text-primary">
+                        {isEditMode ? 'Edit Stock' : 'Add New Stocks'}
+                    </h1>
+                    <p className="text-muted-foreground mt-2">
+                        {isEditMode
+                            ? `Update your ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product information`
+                            : `List a new ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product for sale`
+                        }
+                    </p>
+                </div>
             </div>
 
             {/* Product Type Toggle */}

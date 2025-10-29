@@ -50,7 +50,7 @@ const ProductDetail = () => {
   const [merchant, setMerchant] = useState<{
     id: string;
     name: string;
-    rating?: number;
+    // rating?: number;
     totalOrders?: number;
     location: string | LocationType;
     verified?: boolean;
@@ -474,6 +474,11 @@ const ProductDetail = () => {
         description: "Your enquiry has been successfully submitted.",
       });
 
+      // Redirect to My Orders with the submitted data
+      try {
+        navigate('/my-orders', { state: { newOrder: orderData } });
+      } catch {}
+
       // Reset form
       setBidQuantity('');
       setBidPrice('');
@@ -882,10 +887,7 @@ const ProductDetail = () => {
                   <div>
                     <CardTitle className="text-xl font-bold text-primary">{merchant.name}</CardTitle>
                     <div className="flex items-center mt-2">
-                      <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-full border border-yellow-200">
-                        <Star size={14} className="text-yellow-500 mr-1" />
-                        <span className="font-semibold text-sm">{merchant?.rating || 'N/A'}</span>
-                      </div>
+                      
                       {/* <span className="text-muted-foreground ml-2 text-sm">
  ({merchant?.totalOrders || 0} {merchant?.totalOrders === 1 ? 'order' : 'orders'})
  </span> */}
