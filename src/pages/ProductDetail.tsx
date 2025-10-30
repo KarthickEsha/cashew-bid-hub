@@ -157,7 +157,7 @@ const ProductDetail = () => {
                   .map((e: any) => ({
                     id: e.id || e._id,
                     type: 'enquiry',
-                    status: e.status || 'new',
+                    status: String(e.status || 'processing').toLowerCase(),
                     date: e.createdAt || e.updatedAt || new Date().toISOString(),
                     customer: e.username || 'Buyer',
                     quantity: e.quantity,
@@ -223,6 +223,24 @@ const ProductDetail = () => {
     const nextKeys = sorted.map((e: any) => `${e.type}:${e.id}`).join('|');
     if (prevKeys !== nextKeys) setEnquiries(sorted);
   }, [id, enquiries]);
+
+  // Cross-component sync: listen for updates from Buyer Response table
+  useEffect(() => {
+    const handler = (ev: Event) => {
+      const anyEv = ev as CustomEvent<{ id: string; status: string }>;
+      const detail = anyEv.detail || ({} as any);
+      const eid = detail.id;
+      const status = String(detail.status || '').toLowerCase();
+      if (!eid || !status) return;
+
+      setEnquiries(prev => prev.map(e => e.id === eid ? { ...e, status } : e));
+      setSelectedEnquiry(prev => prev && prev.id === eid ? { ...prev, status } : prev);
+    };
+    window.addEventListener('enquiry:status-updated', handler as EventListener);
+    return () => {
+      window.removeEventListener('enquiry:status-updated', handler as EventListener);
+    };
+  }, []);
 
   const getStatusBadge = (status: string) => {
     if (!status) return null;
@@ -511,6 +529,16 @@ const ProductDetail = () => {
         throw new Error('Enquiry not found');
       }
 
+      // Update status in backend
+      try {
+        await apiFetch(`/api/stocks/enquiries/${encodeURIComponent(enquiryId)}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({ status: 'confirmed' }),
+        });
+      } catch (err) {
+        throw new Error(err instanceof Error ? err.message : 'Failed to update status');
+      }
+
       // If it's an order type, update the order status using the orders hook
       if (enquiry.type === 'order' && enquiry.details) {
         await updateOrderStatus(enquiry.details.id, "Confirmed");
@@ -532,6 +560,9 @@ const ProductDetail = () => {
           status: 'confirmed'
         }));
       }
+
+      // Optional: notify other parts of the app
+      try { window.dispatchEvent(new CustomEvent('enquiry:status-updated', { detail: { id: enquiryId, status: 'confirmed' } })); } catch {}
 
       toast({
         title: "Enquiry Confirmed",
@@ -560,16 +591,27 @@ const ProductDetail = () => {
         throw new Error('Enquiry not found');
       }
 
+      // Update status in backend
+      try {
+        // Backend expects 'Rejected'; normalize locally to 'cancelled' for UI consistency
+        await apiFetch(`/api/stocks/enquiries/${encodeURIComponent(enquiryId)}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({ status: 'Rejected' }),
+        });
+      } catch (err) {
+        throw new Error(err instanceof Error ? err.message : 'Failed to update status');
+      }
+
       // If it's an order type, update the order status using the orders hook
       if (enquiry.type === 'order' && enquiry.details) {
         await updateOrderStatus(enquiry.details.id, "Cancelled");
       }
 
-      // Update the enquiry status to rejected
+      // Update the enquiry status locally
       setEnquiries(prev =>
         prev.map(e =>
           e.id === enquiryId
-            ? { ...e, status: 'rejected' }
+            ? { ...e, status: 'cancelled' }
             : e
         )
       );
@@ -578,9 +620,12 @@ const ProductDetail = () => {
       if (selectedEnquiry?.id === enquiryId) {
         setSelectedEnquiry(prev => ({
           ...prev!,
-          status: 'rejected'
+          status: 'cancelled'
         }));
       }
+
+      // Optional: notify other parts of the app
+      try { window.dispatchEvent(new CustomEvent('enquiry:status-updated', { detail: { id: enquiryId, status: 'cancelled' } })); } catch {}
 
       toast({
         title: "Enquiry Rejected",
@@ -1198,23 +1243,25 @@ const ProductDetail = () => {
               <Button variant="ghost" onClick={() => setShowEnquiryDetail(false)}>
                 Close
               </Button>
-              <Button
-                variant="outline"
-                className="border-red-500 text-red-600 hover:bg-red-50"
-                onClick={() => selectedEnquiry && handleRejectEnquiry(selectedEnquiry.id)}
-                disabled={selectedEnquiry?.status !== 'Processing'}
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                Reject
-              </Button>
-              <Button
-                className="bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => selectedEnquiry && handleConfirmEnquiry(selectedEnquiry.id)}
-                disabled={selectedEnquiry?.status !== 'Processing'}
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Confirm
-              </Button>
+              {selectedEnquiry?.status?.toLowerCase() === 'processing' && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="border-red-500 text-red-600 hover:bg-red-50"
+                    onClick={() => selectedEnquiry && handleRejectEnquiry(selectedEnquiry.id)}
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Reject
+                  </Button>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => selectedEnquiry && handleConfirmEnquiry(selectedEnquiry.id)}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Confirm
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </DialogContent>

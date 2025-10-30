@@ -215,6 +215,9 @@ const MerchantOrders = () => {
 
       setBuyerResponses(prev => prev.map(item => item.id === orderId ? { ...item, status: 'confirmed' } : item));
 
+      // Notify other parts of the app (e.g., ProductDetail) to update UI
+      try { window.dispatchEvent(new CustomEvent('enquiry:status-updated', { detail: { id: orderId, status: 'confirmed' } })); } catch {}
+
       toast({
         title: 'Response Submitted Successfully',
         description: 'Response has been confirmed.',
@@ -238,6 +241,9 @@ const MerchantOrders = () => {
       });
 
       setBuyerResponses(prev => prev.map(item => item.id === orderId ? { ...item, status: 'cancelled' } : item));
+
+      // Notify other parts of the app (e.g., ProductDetail) to update UI
+      try { window.dispatchEvent(new CustomEvent('enquiry:status-updated', { detail: { id: orderId, status: 'cancelled' } })); } catch {}
 
       toast({
         title: 'Enquiry Cancelled',
