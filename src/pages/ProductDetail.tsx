@@ -120,7 +120,7 @@ const ProductDetail = () => {
                 enquiries: 0,
                 orders: 0,
                 buyerResponses: 0,
-                allowBuyerOffers: true,
+                allowBuyerOffers: !!(s as any)?.negotiatePrice,
                 images: Array.isArray(s.images) ? s.images : [],
                 availableQty: Number(s.availableqty ?? 0),
                 yearOfCrop: s.yearofcrop ? String(s.yearofcrop) : undefined,

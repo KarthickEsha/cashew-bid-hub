@@ -186,7 +186,7 @@ export function MerchantSidebar() {
     let mounted = true;
     (async () => {
       try {
-        const view = 'merchant';
+        const view = 'buyer';
         const params = new URLSearchParams({ view });
         params.set('ownOnly', "true");
         const data: unknown = await apiFetch(`/api/stocks/enquiries?${params.toString()}`);

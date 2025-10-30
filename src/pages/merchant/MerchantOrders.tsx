@@ -160,7 +160,7 @@ const MerchantOrders = () => {
     let ignore = false;
     (async () => {
       try {
-        const view = 'merchant';
+        const view = 'buyer';
         // const userID = extractBackendUserId() || (profile as any)?.id || '';
         const params = new URLSearchParams({ view });
         // if (userID) params.set('userID', userID);

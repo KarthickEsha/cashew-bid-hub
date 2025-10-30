@@ -110,7 +110,7 @@ const MyOrders = () => {
     let ignore = false;
     (async () => {
       try {
-        const view = 'buyer';
+        const view = 'merchant';
         // const userID = extractBackendUserId() || (profile as any)?.id || '';
         const params = new URLSearchParams({ view });
         params.set('ownOnly', "true");
