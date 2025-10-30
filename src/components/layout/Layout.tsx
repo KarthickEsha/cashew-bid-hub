@@ -95,48 +95,51 @@ const Layout = ({ children }: LayoutProps) => {
 
             <div className="flex-1 flex flex-col">
               {/* Fixed Header */}
-              <header className="h-12 flex items-center justify-between border-b bg-background px-4 sticky top-0 z-50">
+              <header className="h-14 md:h-12 flex items-center justify-between border-b bg-background px-2 sm:px-4 sticky top-0 z-50">
                 {/* Left side */}
-                <div className="flex items-center">
+                <div className="flex items-center gap-1 sm:gap-2 min-w-0">
                   <SidebarTrigger />
-                  <h1 className="ml-4 font-semibold">
-                    {t('header.greeting', { name: displayName })}
+                  <h1 className="ml-1 sm:ml-4 font-semibold text-sm sm:text-base truncate">
+                    <span className="hidden sm:inline">{t('header.greeting', { name: displayName })}</span>
+                    <span className="sm:hidden">{displayName}</span>
                   </h1>
                 </div>
 
                 {/* Right side icons */}
-                <div className="flex items-center space-x-4">
-                  {/* Role Switcher - Only show if user has both roles or is in a specific role */}
-
-                  <div className="flex items-center gap-4">
-                    <Badge variant="secondary" className="px-3 py-1 hidden sm:inline-flex">
+                <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
+                  {/* Role Switcher - Only show if user has both roles */}
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Badge variant="secondary" className="px-2 py-1 text-xs hidden lg:inline-flex">
                       {currentRole === "buyer" ? t('header.buyerMode') : t('header.merchantMode')}
                     </Badge>
                     {(hasBothRoles) && (
                       <Button
                         onClick={handleSwitch}
                         variant="outline"
-                        className="flex items-center gap-2"
+                        size="sm"
+                        className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
                       >
-                        <ArrowRightLeft className="h-4 w-4" />
-                        {t('header.switchTo', { role: currentRole === "buyer" ? t('header.merchantMode') : t('header.buyerMode') })}
+                        <ArrowRightLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="hidden md:inline">
+                          {t('header.switchTo', { role: currentRole === "buyer" ? t('header.merchantMode') : t('header.buyerMode') })}
+                        </span>
+                        <span className="md:hidden">Switch</span>
                       </Button>
-                    )
-
-                    }
-
+                    )}
                   </div>
 
                   {/* Language Switcher */}
-                  <LanguageSwitcher />
+                  <div className="hidden sm:block">
+                    <LanguageSwitcher />
+                  </div>
                   
                   {/* Notifications */}
                   <NotificationPanel>
-                    <Button variant="ghost" size="sm" className="relative p-2">
-                      <Bell size={18} />
+                    <Button variant="ghost" size="sm" className="relative p-1.5 sm:p-2">
+                      <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
                       <Badge
                         variant="destructive"
-                        className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 text-xs"
+                        className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 px-1 min-w-[14px] h-3.5 sm:min-w-[16px] sm:h-4 text-[10px] sm:text-xs"
                       >
                         {notifCount}
                       </Badge>
@@ -145,15 +148,15 @@ const Layout = ({ children }: LayoutProps) => {
 
                   {/* Profile */}
                   <ProfilePanel>
-                    <Button variant="ghost" size="sm" className="p-2">
-                      <User size={18} />
+                    <Button variant="ghost" size="sm" className="p-1.5 sm:p-2">
+                      <User className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </ProfilePanel>
                 </div>
               </header>
 
               {/* Scrollable Content */}
-              <main className="flex-1 overflow-y-auto pb-6 px-4">
+              <main className="flex-1 overflow-y-auto pb-4 sm:pb-6 px-2 sm:px-4 md:px-6">
                 {children}
               </main>
             </div>
