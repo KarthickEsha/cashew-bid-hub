@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiFetch } from "@/lib/api";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Package, DollarSign, CheckCircle, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Package, IndianRupee, CheckCircle, Clock } from "lucide-react";
 
 const formatINR = (val: any) => `₹${new Intl.NumberFormat('en-IN').format(
   typeof val === 'number' ? val : parseFloat(String(val).replace(/[^0-9.-]+/g, "")) || 0
@@ -169,14 +169,14 @@ const MyOrderDetails = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <DollarSign size={16} className="text-muted-foreground" />
+                  <IndianRupee size={16} className="text-muted-foreground" />
                   <div>
                     <div className="text-sm text-muted-foreground">Unit Price</div>
                     <div className="font-medium">{formatINR(order.unitPrice)}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <DollarSign size={16} className="text-muted-foreground" />
+                  <IndianRupee size={16} className="text-muted-foreground" />
                   <div>
                     <div className="text-sm text-muted-foreground">Total Amount</div>
                     <div className="font-medium">{formatINR(order.totalAmount)}</div>

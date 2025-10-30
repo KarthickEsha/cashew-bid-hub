@@ -117,6 +117,7 @@ const Responses = () => {
 
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
+  // Removed inline details dialog; we'll navigate to QuoteView instead
   const [selectedResponse, setSelectedResponse] = useState<ResponseWithDetails | null>(null);
   const [responseToDelete, setResponseToDelete] = useState<{ id: string, name: string } | null>(null);
   const responses = useResponses(s => s.responses);
@@ -651,7 +652,13 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSelectedResponse(response)}
+                        onClick={() => {
+                          const reqId = String(response.requirementId || '');
+                          const qId = String(response.id || '');
+                          if (reqId && qId) {
+                            navigate(`/quote/${reqId}/${qId}?view=buyer`);
+                          }
+                        }}
                         className="h-8 w-8 p-0"
                         title="View details"
                       >
@@ -795,120 +802,6 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
               {t('common.actions.delete')}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Response Details Dialog */}
-      <Dialog
-        open={!!selectedResponse}
-        onOpenChange={(open) => !open && setSelectedResponse(null)}
-      >
-        <DialogContent className="max-w-3xl">
-          {selectedResponse && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{t('responses.dialogs.details.title')}</DialogTitle>
-                <DialogDescription>
-                  {t('responses.dialogs.details.description')}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">{t('responses.details.merchant')}</h4>
-                    <p className="text-muted-foreground">
-                      {profile.companyName}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-medium">{t('responses.details.price')}</h4>
-                    <p className="font-medium">₹{selectedResponse.price} / kg</p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-medium">{t('responses.details.quantity')}</h4>
-                    <p className="font-medium">{selectedResponse.quantity} / kg</p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-medium">{t('responses.details.grade')}</h4>
-                    <p className="font-medium">{selectedResponse.grade}</p>
-                  </div>
-                  {/* <div className="space-y-2">
-                    <h4 className="font-medium">Delivery Time</h4>
-                    <p className="font-medium">{selectedResponse.deliveryTime}</p>
-                  </div> */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium">
-                      {selectedResponse.origin
-                        ? t('responses.details.origin')
-                        : selectedResponse.merchantLocation
-                          ? t('responses.details.merchantLocation')
-                          : ""}
-                    </h4>
-
-                    <p className="font-medium">
-                      {selectedResponse.origin
-                        ? selectedResponse.origin.charAt(0).toUpperCase() + selectedResponse.origin.slice(1)
-                        : selectedResponse.merchantLocation || "N/A"}
-                    </p>
-                  </div>
-
-                  {/* <div className="space-y-2">
- <h4 className="font-medium">Certifications</h4>
- <div className="flex flex-wrap gap-2">
- {selectedResponse.certifications?.length > 0 ? (
- selectedResponse.certifications.map((cert, i) => (
- <Badge key={i} variant="secondary">
- {cert}
- </Badge>
- ))
- ) : (
- <p className="text-muted-foreground">No certifications</p>
- )}
- </div>
- </div> */}
-                </div>
-
-                {selectedResponse.message && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium">{t('responses.details.merchantMessage')}</h4>
-                    <p className="text-muted-foreground whitespace-pre-line">
-                      {selectedResponse.message}
-                    </p>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedResponse(null)}
-                >
-                  {t('common.actions.close')}
-                </Button>
-                {(selectedResponse.status === 'new' || selectedResponse.status === 'viewed') && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        handleStatusUpdate(selectedResponse.id, 'rejected');
-                        setSelectedResponse(null);
-                      }}
-                    >
-                      <X className="h-4 w-4 mr-1" /> Reject
-                    </Button>
-
-                    <Button
-                      onClick={() => {
-                        handleStatusUpdate(selectedResponse.id, 'confirmed');
-                        setSelectedResponse(null);
-                      }}
-                    >
-                      <Check className="h-4 w-4 mr-1" /> Accept
-                    </Button>
-                  </div>
-                )}
-              </DialogFooter>
-            </>
-          )}
         </DialogContent>
       </Dialog>
     </div>

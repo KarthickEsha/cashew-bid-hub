@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from "@/components/ui/dialog";
+// Keep dialog components for delete confirmation (inline view dialog has been removed)
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useOrders } from "@/hooks/useOrders";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
@@ -41,8 +42,7 @@ const MerchantOrders = () => {
   const [pageSize, setPageSize] = useState(5);
   const [filters, setFilters] = useState({ search: "", product: "all", status: "all" });
   const [showFilterCard, setShowFilterCard] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // Removed inline dialog state; we'll navigate to QuoteView instead
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
@@ -178,6 +178,8 @@ const MerchantOrders = () => {
           status: String(it.status || 'processing').toLowerCase(),
           productId: it.productId || '',
           grade: it.productName || 'N/A',
+          requirementId: it.requirementId || it.reqId || it.requirement_id || '',
+          quoteId: it.quoteId || it.quote_id || '',
           // add any fields you need in handleViewDetails, etc.
         }));
         if (!ignore) {
@@ -335,7 +337,7 @@ const MerchantOrders = () => {
       : <ArrowDown className="h-4 w-4 text-primary" />;
   };
 
-  const handleViewDetails = (order: any) => {
+  const handleViewDetails = async (order: any) => {
     const source = String(order?.source || '').toLowerCase();
 
     // If order came from Market Place, go to product details page
@@ -347,9 +349,32 @@ const MerchantOrders = () => {
       }
     }
 
-    // Otherwise, show the existing inline popup
-    setSelectedOrder(order);
-    setIsDialogOpen(true);
+    // Otherwise, navigate to the new split view. Prefer using requirementId and quoteId embedded in row
+    try {
+      const requirementId = String(order?.requirementId);
+      if (!requirementId) throw new Error('Missing requirement id');
+      const view = 'merchant';
+      const knownQuoteId = String(order?.quoteId || '');
+      if (knownQuoteId) {
+        navigate(`/quote/${requirementId}/${knownQuoteId}?view=${view}`);
+        return;
+      }
+      // Fallback: fetch requirement and find confirmed quote
+      const data: any = await apiFetch(`/api/quotes/with-requirement/${encodeURIComponent(requirementId)}?view=${view}`);
+      const root = data?.data ?? data;
+      const quotes: any[] = (root?.quotes ?? root?.Quotes ?? []) as any[];
+      const confirmed = quotes.find((q: any) => String(q?.status || '').toLowerCase() === 'confirmed');
+      if (!confirmed) {
+        toast({ title: 'No confirmed quote', description: 'This requirement has no confirmed quote yet.' });
+        return;
+      }
+      const quoteId = String(confirmed?.id ?? confirmed?._id ?? confirmed?.ID ?? confirmed?.quoteId ?? '');
+      if (!quoteId) throw new Error('Missing quote id');
+      navigate(`/quote/${requirementId}/${quoteId}?view=${view}`);
+    } catch (e) {
+      console.error('Failed to open quote view', e);
+      toast({ title: 'Error', description: 'Unable to open quote details', variant: 'destructive' });
+    }
   };
 
   const handleDeleteClick = (orderId: string, e: React.MouseEvent) => {
@@ -688,125 +713,6 @@ const MerchantOrders = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* View Details Popup */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Buyer Response Details</DialogTitle>
-            <DialogDescription>
-              Detailed information about the selected response.
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedOrder && (
-            <div className="mt-4 space-y-3">
-
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Customer Name</span>
-                <span className="font-semibold">{selectedOrder.customerName || profile.name}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Product Name</span>
-                <span className="font-semibold">{selectedOrder.productName}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Quantity</span>
-                <span className="font-semibold">{selectedOrder.quantity}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Total Amount</span>
-                <span className="font-semibold">{formatINR(parseFloat(selectedOrder.totalAmount.replace(/[^0-9.-]+/g, "")))}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Date</span>
-                <span className="font-semibold">{new Date(selectedOrder.orderDate).toLocaleDateString()}</span>
-              </div>
-
-              {/* <div className="flex justify-between">
- <span className="font-medium text-muted-foreground">Delivery Date</span>
- <span className="font-semibold">{new Date(selectedOrder.deliveryDate).toLocaleDateString()}</span>
- </div> */}
-
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-muted-foreground">Status</span>
-                <Badge variant={getStatusColor(selectedOrder.status)}>
-                  {String(selectedOrder.status).toLowerCase() === "processing" ? "New" : selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
-                </Badge>
-              </div>
-
-              {/* Buyer Response Section */}
-              <div className="mt-4 pt-4 border-t">
-                <h4 className="font-medium mb-3">Buyer Remarks</h4>
-
-                {/* Last Status Only */}
-                {selectedOrder.statusHistory?.length > 0 && (
-                  <div className="mb-4">
-                    {(() => {
-                      const lastHistory =
-                        selectedOrder.statusHistory[selectedOrder.statusHistory.length - 1];
-                      return (
-                        <div className="flex items-start gap-3 text-sm">
-                          <div
-                            className={`flex-shrink-0 w-2 h-2 mt-1.5 rounded-full ${lastHistory.status === "rejected"
-                              ? "bg-destructive"
-                              : "bg-primary"
-                              }`}
-                          ></div>
-                          <div className="flex-1">
-                            <div className="flex justify-between">
-                              <div>
-                                <span className="font-medium">
-                                  {lastHistory.updatedBy === "Buyer" ? "Buyer " : ""}
-                                  <span className="capitalize">{lastHistory.status}</span>
-                                </span>
-                                {lastHistory.updatedBy &&
-                                  lastHistory.updatedBy !== "System" && (
-                                    <span className="text-xs text-muted-foreground ml-2">
-                                      (by {lastHistory.updatedBy})
-                                    </span>
-                                  )}
-                              </div>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(lastHistory.timestamp).toLocaleString()}
-                              </span>
-                            </div>
-                            {lastHistory.remarks && (
-                              <div className="mt-1 bg-muted/50 p-2 rounded-md">
-                                <p className="text-sm whitespace-pre-wrap">
-                                  {lastHistory.remarks}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-
-
-            </div>
-          )}
-
-          {/* <div className="mt-6 flex justify-end">
- <DialogClose asChild>
- <Button
- className="bg-purple-600 text-white hover:bg-purple-700"
- size="sm"
- >
- Close
- </Button>
- </DialogClose>
- </div> */}
-
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

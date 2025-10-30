@@ -50,12 +50,11 @@ import AdminSubscribers from "./pages/admin/AdminSubscribers";
 import AdminBuyerDetails from "./pages/admin/AdminBuyerDetails";
 import AuthBootstrap from "./components/AuthBootstrap";
 import { useFCM } from "./hooks/useFCM";
+import QuoteView from "./pages/QuoteView";
 
 interface LayoutProps {
   children: ReactNode;
 }
-
-// Create a client
 const queryClient = new QueryClient();
 // You need to provide your Clerk publishable key here
 const PUBLISHABLE_KEY = "pk_test_ZmVhc2libGUtYnVmZmFsby02NS5jbGVyay5hY2NvdW50cy5kZXYk";
@@ -127,6 +126,7 @@ const AppContent = () => {
         <Route path="/merchant/buyer-response" element={<MerchantOrders />} />
         <Route path="/merchant/stock-response" element={<StockResponse />} />
         <Route path="/merchant/requirements" element={<MerchantRequirements />} />
+        <Route path="/quote/:requirementId/:quoteId" element={<QuoteView />} />
         
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
