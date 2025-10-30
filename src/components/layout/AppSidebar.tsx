@@ -120,7 +120,7 @@ export function AppSidebar() {
   const fetchMyEnquiriesCount = useCallback(async () => {
     const ac = new AbortController();
     try {
-      const view = 'merchant';
+      const view = 'buyer';
       // const userID = extractBackendUserId() || (profile as any)?.id || '';
       const params = new URLSearchParams({ view });
       params.set('ownOnly', "true");
