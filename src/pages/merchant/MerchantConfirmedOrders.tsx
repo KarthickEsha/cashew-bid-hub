@@ -145,27 +145,32 @@ const MerchantConfirmedOrders = () => {
   };
 
   return (
-    <div className="merchant-theme p-6 space-y-6">
+    <div className="merchant-theme p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Confirmed Enquiries</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary">Confirmed Enquiries</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2">
             View all confirmed enquiries from buyers
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
+        <Button
+          aria-label="Toggle filters"
+          variant="outline"
+          size="sm"
+          onClick={() => setFilterOpen(prev => !prev)}
+        >
           <Filter className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Filters (All screens - shown only when toggled) */}
       {filterOpen && (
         <Card>
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Search</label>
+                <label className="text-xs sm:text-sm font-medium mb-2 block">Search</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
@@ -178,7 +183,7 @@ const MerchantConfirmedOrders = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">Product</label>
+                <label className="text-xs sm:text-sm font-medium mb-2 block">Product</label>
                 <Select
                   value={filters.product}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, product: value }))}
@@ -197,7 +202,7 @@ const MerchantConfirmedOrders = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
+                <label className="text-xs sm:text-sm font-medium mb-2 block">Status</label>
                 <Select
                   value={filters.status}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
@@ -219,8 +224,53 @@ const MerchantConfirmedOrders = () => {
         </Card>
       )}
 
-      {/* Confirmed Orders Table */}
-      <Card>
+      {/* Mobile/Tablet Card List */}
+      <div className="space-y-3 lg:hidden">
+        {paginatedOrders.map((order) => (
+          <Card key={order.id} className="shadow-sm">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-sm sm:text-base font-semibold text-primary">{order.productName}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Buyer: {order.customerName}</div>
+                </div>
+                <Badge className="bg-green-100 text-green-800">Confirmed</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-[11px] sm:text-xs text-muted-foreground">Required Qty</div>
+                  <div className="text-sm sm:text-base font-medium">{order.quantity || 'N/A'} kg</div>
+                </div>
+                <div>
+                  <div className="text-[11px] sm:text-xs text-muted-foreground">Available Qty</div>
+                  <div className="text-sm sm:text-base font-medium">{order.availableQty} kg</div>
+                </div>
+                <div>
+                  <div className="text-[11px] sm:text-xs text-muted-foreground">Expected Price</div>
+                  <div className="text-sm sm:text-base">₹{order.expectedPrice}/kg</div>
+                </div>
+                <div>
+                  <div className="text-[11px] sm:text-xs text-muted-foreground">Your Price</div>
+                  <div className="text-sm sm:text-base font-semibold text-primary">₹ {order.price}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {filteredOrders.length === 0 && (
+          <Card>
+            <CardContent className="py-8">
+              <div className="text-center text-muted-foreground">
+                <Package className="mx-auto h-12 w-12 mb-2" />
+                No confirmed enquiries found.
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Confirmed Orders Table (Desktop only) */}
+      <Card className="hidden lg:block">
         <CardContent className="pt-6">
           <Table>
             <TableHeader>
@@ -296,8 +346,7 @@ const MerchantConfirmedOrders = () => {
               )}
             </TableBody>
           </Table>
-
-          {/* Pagination */}
+          {/* Pagination (Desktop) */}
           {filteredOrders.length > 0 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
@@ -339,6 +388,47 @@ const MerchantConfirmedOrders = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination (Mobile/Tablet) */}
+      {filteredOrders.length > 0 && (
+        <div className="lg:hidden flex items-center justify-between mt-2">
+          <div className="text-xs sm:text-sm text-muted-foreground">
+            Showing {startIndex + 1} to {endIndex} of {filteredOrders.length} orders
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[84px] sm:w-[100px]">
+                <SelectValue placeholder="Page size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                disabled={currentPage === 1}
+              >
+                Prev
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

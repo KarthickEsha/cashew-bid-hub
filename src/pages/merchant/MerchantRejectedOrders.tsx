@@ -145,25 +145,88 @@ const MerchantRejectedOrders = () => {
   };
 
   return (
-    <div className="merchant-theme p-6 space-y-6">
+    <div className="merchant-theme p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Rejected Orders</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-primary">Rejected Orders</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-2">
             View all rejected orders from buyers
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setFilterOpen(prev => !prev)}
+          aria-label="Toggle filters"
+        >
           <Filter className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Mobile/Tablet Filters (toggle list) */}
       {filterOpen && (
-        <Card>
+        <Card className="lg:hidden">
+          <CardContent className="pt-4">
+            <ul className="space-y-4">
+              <li>
+                <label className="text-sm font-medium mb-2 block">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search customer, product..."
+                    className="pl-8 border-input focus:ring-ring"
+                    value={filters.search}
+                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  />
+                </div>
+              </li>
+              <li>
+                <label className="text-sm font-medium mb-2 block">Product</label>
+                <Select
+                  value={filters.product}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, product: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All products" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {productOptions.map(opt => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt === 'all' ? 'All' : opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </li>
+              <li>
+                <label className="text-sm font-medium mb-2 block">Status</label>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(opt => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt === 'all' ? 'All' : opt.charAt(0).toUpperCase() + opt.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Desktop Filters (hidden by default, shown when toggled) */}
+      {filterOpen && (
+        <Card className="hidden lg:block">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Search</label>
                 <div className="relative">
@@ -219,8 +282,52 @@ const MerchantRejectedOrders = () => {
         </Card>
       )}
 
-      {/* Rejected Orders Table */}
-      <Card>
+      {/* Rejected Orders Cards (Mobile/Tablet) */}
+      <div className="space-y-4 lg:hidden">
+        {paginatedOrders.map((order) => (
+          <Card key={order.id} className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base sm:text-lg font-semibold flex items-center justify-between">
+                <span className="truncate">{order.productName}</span>
+                <Badge variant="destructive" className="ml-2 shrink-0">Rejected</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm sm:text-base grid grid-cols-1 gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Buyer</span>
+                <span className="font-medium text-right">{order.customerName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Required Qty</span>
+                <span className="font-medium text-right">{order.quantity || 'N/A'} kg</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Expected</span>
+                <span className="font-medium text-right">₹{order.expectedPrice}/kg</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Your Price</span>
+                <span className="font-semibold text-primary text-right">₹{order.price}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Available Qty</span>
+                <span className="font-medium text-right">{order.availableQty} kg</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {filteredOrders.length === 0 && (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              <Package className="mx-auto h-12 w-12 text-muted-foreground" />
+              No rejected orders found.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Rejected Orders Table (Desktop) */}
+      <Card className="hidden lg:block">
         <CardContent className="pt-6">
           <Table>
             <TableHeader>
@@ -296,49 +403,49 @@ const MerchantRejectedOrders = () => {
               )}
             </TableBody>
           </Table>
-
-          {/* Pagination */}
-          {filteredOrders.length > 0 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {startIndex + 1} to {endIndex} of {filteredOrders.length} orders
-              </div>
-
-              <div className="flex items-center space-x-4">
-                <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setCurrentPage(1); }}>
-                  <SelectTrigger className="w-[100px]">
-                    <SelectValue placeholder="Page size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
+
+      {/* Shared Pagination */}
+      {filteredOrders.length > 0 && (
+        <div className="flex items-center justify-between mt-2">
+          <div className="text-xs sm:text-sm text-muted-foreground">
+            Showing {startIndex + 1} to {endIndex} of {filteredOrders.length} orders
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[90px] sm:w-[100px]">
+                <SelectValue placeholder="Page size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -131,7 +131,7 @@ const ProductListTable = ({
     <Table className="w-full border-collapse">
       <TableHeader>
         <TableRow>
-          <SortableHeader field="name">Product</SortableHeader>
+          {/* <SortableHeader field="name">Product</SortableHeader> */}
           {currentProductType === "Kernel" ? (
             <>
               <SortableHeader field="grade">Grade</SortableHeader>
@@ -159,24 +159,11 @@ const ProductListTable = ({
         {sortedProducts.length > 0 ? (
           sortedProducts.map((product) => (
             <TableRow key={product.id}>
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  <img
-                    src={Array.isArray((product as any).images) && (product as any).images[0] ? (product as any).images[0] : '/placeholder.svg'}
-                    alt={product.name || 'Product'}
-                    className="h-10 w-10 rounded object-cover bg-muted"
-                  />
-                  {/* <div className="min-w-[120px]">
-                    <div className="font-medium text-sm leading-tight">{product.name || product.grade || 'Product'}</div>
-                    {product.grade && (
-                      <div className="text-xs text-muted-foreground">{product.grade}</div>
-                    )}
-                  </div> */}
-                </div>
-              </TableCell>
               {currentProductType === "Kernel" ? (
                 <>
-                  <TableCell>{product.grade || "-"}</TableCell>
+                  <TableCell>
+                    {product.grade ? `${product.grade} Cashew` : '-'}
+                  </TableCell>
                   <TableCell>
                     <span
                       className={

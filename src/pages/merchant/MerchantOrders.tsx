@@ -411,12 +411,12 @@ const MerchantOrders = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Buyer Response</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">Buyer Response</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-2">
             Manage buyer response and shipments
           </p>
         </div>
@@ -424,7 +424,7 @@ const MerchantOrders = () => {
           variant="outline"
           size="sm"
           onClick={() => setShowFilterCard(prev => !prev)}
-          className="flex items-center space-x-1"
+          className="flex items-center space-x-1 lg:hidden"
         >
           <Filter className="h-4 w-4" />
         </Button>
@@ -434,12 +434,12 @@ const MerchantOrders = () => {
       {showFilterCard && (
         <Card className="mb-4">
           <CardHeader>
-            <CardTitle>Filter Response</CardTitle>
+            <CardTitle className="text-base md:text-lg">Filter Response</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Search</label>
+                <label className="text-xs md:text-sm font-medium mb-2 block">Search</label>
                 <Input
                   type="text"
                   placeholder="Search by Buyer or Product..."
@@ -448,7 +448,7 @@ const MerchantOrders = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Product</label>
+                <label className="text-xs md:text-sm font-medium mb-2 block">Product</label>
                 <Select
                   value={filters.product}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, product: value }))}
@@ -466,7 +466,7 @@ const MerchantOrders = () => {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
+                <label className="text-xs md:text-sm font-medium mb-2 block">Status</label>
                 <Select
                   value={filters.status}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
@@ -488,8 +488,8 @@ const MerchantOrders = () => {
         </Card>
       )}
 
-      {/* Orders Table */}
-      <Card>
+      {/* Orders Table - Desktop only */}
+      <Card className="hidden lg:block">
         <CardHeader>
           {/* <CardTitle>Customer Orders</CardTitle> */}
         </CardHeader>
@@ -713,6 +713,153 @@ const MerchantOrders = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Orders Cards - Mobile & Tablet only */}
+      <div className="grid grid-cols-1 gap-4 lg:hidden">
+        {paginatedOrders && paginatedOrders.length > 0 ? (
+          paginatedOrders.map((order) => (
+            <Card key={order.id} className="shadow-sm border border-muted/40">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-base md:text-lg">
+                      {order.productName || 'Cashews'}
+                    </CardTitle>
+                    <p className="text-xs md:text-sm text-muted-foreground mt-1">Buyer: {order.customerName || profile.name}</p>
+                  </div>
+                  <Badge variant={getStatusColor(order.status)} className="text-[10px] md:text-xs">
+                    {String(order.status).toLowerCase() === 'processing' ? 'New' : (order.status.charAt(0).toUpperCase() + order.status.slice(1))}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between text-xs md:text-sm">
+                  <span className="text-muted-foreground">Source</span>
+                  <span className="font-medium">{order.source || 'Market Place'}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs md:text-sm">
+                  <span className="text-muted-foreground">Quantity</span>
+                  <span className="font-medium">{order.quantity}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs md:text-sm">
+                  <span className="text-muted-foreground">Unit Price</span>
+                  <span className="font-semibold">{formatINR(parseFloat(order.totalAmount.replace(/[^0-9.-]+/g, "")))}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs md:text-sm">
+                  <span className="text-muted-foreground">Total Amount</span>
+                  <span className="font-semibold">
+                    {formatINR(
+                      (parseFloat(String(order.quantity).replace(/[^0-9.-]+/g, '')) || 0) *
+                      (parseFloat(String(order.totalAmount).replace(/[^0-9.-]+/g, '')) || 0)
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs md:text-sm">
+                  <span className="text-muted-foreground">Date</span>
+                  <span className="font-medium">{new Date(order.orderDate).toLocaleDateString()}</span>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleViewDetails(order)}
+                    className="text-xs md:text-sm"
+                  >
+                    <Eye className="h-4 w-4 mr-1" /> View
+                  </Button>
+                  {(String(order.status).toLowerCase() === 'confirmed' || String(order.status).toLowerCase() === 'rejected') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => handleDeleteClick(order.id, e as any)}
+                      title="Delete Response"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {String(order.status).toLowerCase() === "processing" && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-green-600 hover:text-green-700"
+                        onClick={() => handleAcceptOrder(order.id)}
+                        title="Confirm"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleRejectOrder(order.id)}
+                        title="Reject"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card className="lg:hidden">
+            <CardContent className="py-6 text-center text-muted-foreground">
+              <Package className="mx-auto h-10 w-10 mb-2" />
+              {merchantOrders.length === 0 ? 'No buyer response found' : 'No orders match the current filters'}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Pagination - Mobile & Tablet only (desktop has its own inside the table card) */}
+      {merchantOrders.length > 0 && (
+        <div className="flex items-center justify-between mt-2 lg:hidden">
+          <div className="text-xs md:text-sm text-muted-foreground">
+            Showing {startIndex + 1} to {Math.min(startIndex + pageSize, merchantOrders.length)} of {merchantOrders.length} orders
+          </div>
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => {
+                setPageSize(Number(value));
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[88px] md:w-[100px]">
+                <SelectValue placeholder="Page size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

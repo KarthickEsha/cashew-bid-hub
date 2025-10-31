@@ -848,17 +848,23 @@ const MerchantEnquiries = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Buyer Enquiries</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary">Buyer Enquiries</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2">
             Manage enquiries from buyers about your products
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
+        {/* Filter icon prominently on mobile/tablet */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setFilterOpen(prev => !prev)}
+          aria-label="Toggle filters"
+        >
           <Filter className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Filters (stacked as list on mobile) */}
       {filterOpen && (
         <Card className="mb-4">
           <CardHeader>
@@ -920,8 +926,119 @@ const MerchantEnquiries = () => {
         </Card>
       )}
 
-      {/* Enquiries Table */}
-      <Card>
+      {/* Mobile/Tablet Card View */}
+      <div className="block lg:hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {paginatedEnquiries.map((enquiry) => (
+            <Card key={enquiry.id} className="border shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-base sm:text-lg font-semibold">
+                      {enquiry.customerName}
+                    </CardTitle>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                      {enquiry.productName}
+                    </p>
+                  </div>
+                  <Badge variant={
+                    enquiry.status === 'pending'
+                      ? 'default'
+                      : enquiry.status === 'active'
+                        ? 'secondary'
+                        : enquiry.status === 'responded' || enquiry.status === 'viewed'
+                          ? 'default'
+                          : enquiry.status === 'selected'
+                            ? 'outline'
+                            : enquiry.status === 'confirmed'
+                              ? 'outline'
+                              : enquiry.status === 'closed'
+                                ? 'destructive'
+                                : 'default'
+                  }>
+                    {enquiry.status === 'closed'
+                      ? 'Skipped'
+                      : enquiry.status === 'selected'
+                        ? 'Selected'
+                        : enquiry.status === 'active'
+                          ? 'New'
+                          : enquiry.status === 'responded' ? 'Responded' : enquiry.status === 'viewed'
+                            ? 'Viewed'
+                            : enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-0">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
+                  <span className="text-muted-foreground">Required Qty</span>
+                  <span className="font-medium">{formatWithCommas(enquiry.quantity)} kg</span>
+                </div>
+                <div className="flex items-center justify-between text-xs sm:text-sm">
+                  <span className="text-muted-foreground">Expected Price</span>
+                  <span className="font-medium">₹{formatWithCommas(enquiry.expectedPrice)}/kg</span>
+                </div>
+                <div className="flex items-center justify-between text-xs sm:text-sm">
+                  <span className="text-muted-foreground">Expected Date</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{new Date(enquiry.deliveryDeadline).toLocaleDateString()}</span>
+                    {isExpiringSoon(enquiry) && (
+                      <Badge variant="outline" className="text-orange-600 border-orange-600 text-[10px]">
+                        Expiring Soon
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button variant="default" size="sm" className="flex-1" onClick={() => handleViewClick(enquiry)}>
+                    <Eye className="h-4 w-4 mr-1" /> View
+                  </Button>
+                  <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleViewClick(enquiry)}>
+                    <MessageSquare className="h-4 w-4 mr-1" /> Responses
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Empty state */}
+        {filteredEnquiries.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <Package className="mx-auto h-12 w-12 text-muted-foreground" />
+            No enquiries found for selected filters.
+          </div>
+        )}
+
+        {/* Pagination (mobile/tablet) */}
+        {filteredEnquiries.length > 0 && (
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {endIndex} of {filteredEnquiries.length} enquiries
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[90px] sm:w-[100px]"><SelectValue placeholder="Page size" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Previous</Button>
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>Next</Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Enquiries Table (Desktop) */}
+      <Card className="hidden lg:block">
         <CardHeader>
           {/* <CardTitle>Product Enquiries</CardTitle> */}
         </CardHeader>

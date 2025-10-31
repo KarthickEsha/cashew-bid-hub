@@ -649,10 +649,10 @@ const PostRequirement = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-6 border-t border-border">
-            <Button variant="outline" className="w-full sm:w-auto text-sm sm:text-base" onClick={() => handleSubmit(true)}>
+            {/* <Button variant="outline" className="w-full sm:w-auto text-sm sm:text-base" onClick={() => handleSubmit(true)}>
               <Save size={16} className="mr-2" />
               {t('postRequirement.saveDraft')}
-            </Button>
+            </Button> */}
             <Button className="w-full sm:w-auto text-sm sm:text-base" onClick={() => handleSubmit(false)} size="lg" disabled={!isFormValid || isSubmitting}>
               <Send size={16} className="mr-2" />
               {t('postRequirement.postRequirementBtn')}

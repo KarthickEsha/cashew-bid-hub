@@ -447,8 +447,8 @@ const MerchantProducts = () => {
             {/* Header with Add & Filter Buttons */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-primary">My Stocks</h1>
-                    <p className="text-muted-foreground mt-2">
+                    <h1 className="font-bold text-primary text-[clamp(1.5rem,3vw,2.25rem)]">My Stocks</h1>
+                    <p className="text-muted-foreground mt-1 sm:mt-2 text-[clamp(0.95rem,1.4vw,1.125rem)]">
                         Manage your{" "}
                         {currentProductType === "RCN" ? "Raw Cashew Nut" : "Kernel"} Stocks
                     </p>
@@ -456,19 +456,20 @@ const MerchantProducts = () => {
 
                 {/* Buttons in same line */}
                 <div className="flex items-center gap-[10px]">
-                    {/* Filter Button */}
-                    {/* <Button
- variant="outline"
- onClick={() => setShowFilters(!showFilters)}
- className="flex items-center gap-2"
- >
- <Filter className="h-4 w-4" />
- </Button> */}
+                    {/* Mobile/Tablet Filter Toggle */}
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="flex items-center gap-2 lg:hidden"
+                        aria-label="Toggle filters"
+                    >
+                        <Filter className="h-4 w-4" />
+                    </Button>
 
                     {/* Add Product Button */}
                     <Button
                         onClick={() => navigate("/merchant/add-product")}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 text-sm sm:text-base py-2 sm:py-2.5 px-3 sm:px-4"
                     >
                         <Plus className="h-4 w-4" />
                         Add New Stocks
@@ -481,11 +482,175 @@ const MerchantProducts = () => {
                 currentType={currentProductType}
                 onTypeChange={setCurrentProductType}
             />
+            
+            {/* Mobile/Tablet Filter Panel */}
+            {showFilters && (
+                <div className="lg:hidden">
+                    <Card className="border shadow-sm">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Filter className="h-5 w-5" />
+                                Filter Stocks
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {/* Search */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Search</label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                        <Input
+                                            placeholder="Search products..."
+                                            className="pl-8"
+                                            value={filters.search}
+                                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
 
-            {/* Filters */}
+                                {/* Grade - Only for Kernel */}
+                                {currentProductType === "Kernel" && (
+                                    <div>
+                                        <label className="text-sm font-medium mb-2 block">Grade</label>
+                                        <Select
+                                            value={filters.grade}
+                                            onValueChange={(value) => setFilters({ ...filters, grade: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select grade" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {gradeOptions.map((g) => (
+                                                    <SelectItem key={g} value={g}>
+                                                        {g}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
 
+                                {/* Location */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Location</label>
+                                    <Select
+                                        value={filters.location}
+                                        onValueChange={(value) => setFilters({ ...filters, location: value })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select location" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {locationOptions.map((l) => (
+                                                <SelectItem key={l} value={l}>
+                                                    {l}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-            {/* Table */}
+                                {/* Status */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Status</label>
+                                    <Select
+                                        value={filters.status}
+                                        onValueChange={(value) => setFilters({ ...filters, status: value })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {statusOptions.map((s) => (
+                                                <SelectItem key={s} value={s}>
+                                                    {s}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Cards: Mobile/Tablet only */}
+            <div className="block lg:hidden">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {paginatedProducts.map((p) => (
+                        <Card key={p.id} className="overflow-hidden rounded-xl border shadow-sm hover:shadow-md transition">
+                            <CardHeader className="pb-2">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                        <CardTitle className="font-semibold text-[clamp(1rem,1.8vw,1.125rem)]">
+                                            {p.name}
+                                        </CardTitle>
+                                        <div className="text-xs sm:text-sm text-muted-foreground">
+                                            {p.type === "RCN" ? "Raw Cashew Nut" : "Kernel"}
+                                        </div>
+                                    </div>
+                                    <Badge variant={p.status === 'active' ? 'default' : 'secondary'} className="text-[10px] sm:text-xs">
+                                        {p.status === 'active' ? 'Active' : 'Out of stock'}
+                                    </Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <div className="flex justify-between text-xs sm:text-sm">
+                                    <span className="text-muted-foreground">Grade</span>
+                                    <span>{p.grade || "-"}</span>
+                                </div>
+                                <div className="flex justify-between text-xs sm:text-sm">
+                                    <span className="text-muted-foreground">Location</span>
+                                    <span>
+                                        {typeof p.location === "string" ? p.location : (p.origin || "-")}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-xs sm:text-sm">
+                                    <span className="text-muted-foreground">Price</span>
+                                    <span>₹{p.price?.toLocaleString()}/{p.unit || "kg"}</span>
+                                </div>
+                                <div className="flex justify-between text-xs sm:text-sm">
+                                    <span className="text-muted-foreground">Available</span>
+                                    <span>{(p.availableQty ?? p.stock ?? 0).toLocaleString()} {p.unit || "kg"}</span>
+                                </div>
+
+                                <div className="pt-2 flex flex-wrap gap-2">
+                                    <Button size="sm" variant="outline" onClick={() => navigate(`/product/${p.id}`)}>
+                                        View
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => navigate(`/merchant/add-product?edit=${p.id}`)}>
+                                        Edit
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleDeleteClick(p.id)}>
+                                        Delete
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                {filteredProducts.length > 0 && (
+                    <div className="flex items-center justify-between mt-4">
+                        <div className="text-xs text-muted-foreground">
+                            Showing {startIndex + 1} to {Math.min(startIndex + pageSize, filteredProducts.length)} of {filteredProducts.length}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}>
+                                Prev
+                            </Button>
+                            <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}>
+                                Next
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Table: Desktop only (lg and up) */}
+            <div className="hidden lg:block">
             <Card>
                 <CardHeader className="pb-2">
                     <div className="flex">
@@ -600,7 +765,7 @@ const MerchantProducts = () => {
                     {/* Pagination */}
                     {filteredProducts.length > 0 && (
                         <div className="flex items-center justify-between mt-4">
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-[clamp(0.875rem,1.2vw,1rem)] text-muted-foreground">
                                 Showing {startIndex + 1} to{" "}
                                 {Math.min(startIndex + pageSize, filteredProducts.length)} of{" "}
                                 {filteredProducts.length} products
@@ -654,6 +819,7 @@ const MerchantProducts = () => {
                     )}
                 </CardContent>
             </Card>
+            </div>
 
             {/* Enquiry/Order Drawer */}
             <EnquiryOrderDrawer

@@ -475,17 +475,17 @@ const MerchantAddProduct = () => {
     };
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 text-sm md:text-base lg:text-lg">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" onClick={() => navigate('/merchant/products')}>
                     <ArrowLeft size={16} className="mr-2" />
                     Back to Products
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-bold text-primary">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">
                         {isEditMode ? 'Edit Stock' : 'Add New Stocks'}
                     </h1>
-                    <p className="text-muted-foreground mt-2">
+                    <p className="text-sm sm:text-base md:text-lg text-muted-foreground mt-2">
                         {isEditMode
                             ? `Update your ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product information`
                             : `List a new ${currentProductType === 'RCN' ? 'Raw Cashew Nut' : 'Kernel'} product for sale`
@@ -502,8 +502,8 @@ const MerchantAddProduct = () => {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>{isEditMode ? 'Edit Product Details' : 'Product Details'}</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg sm:text-xl md:text-2xl">{isEditMode ? 'Edit Product Details' : 'Product Details'}</CardTitle>
+                    <CardDescription className="text-sm sm:text-base">
                         {isEditMode
                             ? 'Update the information for your product'
                             : 'Fill in the information for your new product'
