@@ -134,12 +134,12 @@ const MyOrderDetails = () => {
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="sm" onClick={() => navigate('/my-orders')}>
-          <ArrowLeft size={16} className="mr-2" />
+          <ArrowLeft className="mr-2 w-3.5 h-3.5 sm:w-4 sm:h-4" />
           Back to My Responses
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Response Details</h1>
-          <p className="text-muted-foreground">Enquiry #{order.id}</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Response Details</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Enquiry #{order.id}</p>
         </div>
       </div>
 
@@ -151,7 +151,7 @@ const MyOrderDetails = () => {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-xl">{order.productName || 'Cashews'}</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl">{order.productName || 'Cashews'}</CardTitle>
                   <p className="text-muted-foreground mt-1">Source: {order.source || '-'}</p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -162,31 +162,31 @@ const MyOrderDetails = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center space-x-2">
-                  <Package size={16} className="text-muted-foreground" />
+                  <Package className="text-muted-foreground w-4 h-4 sm:w-5 sm:h-5" />
                   <div>
-                    <div className="text-sm text-muted-foreground">Quantity</div>
-                    <div className="font-medium">{formatWithCommas(order.quantity)} Kg</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Quantity</div>
+                    <div className="font-medium text-sm sm:text-base md:text-lg">{formatWithCommas(order.quantity)} Kg</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <IndianRupee size={16} className="text-muted-foreground" />
+                  <IndianRupee className="text-muted-foreground w-4 h-4 sm:w-5 sm:h-5" />
                   <div>
-                    <div className="text-sm text-muted-foreground">Unit Price</div>
-                    <div className="font-medium">{formatINR(order.unitPrice)}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Unit Price</div>
+                    <div className="font-medium text-sm sm:text-base md:text-lg">{formatINR(order.unitPrice)}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <IndianRupee size={16} className="text-muted-foreground" />
+                  <IndianRupee className="text-muted-foreground w-4 h-4 sm:w-5 sm:h-5" />
                   <div>
-                    <div className="text-sm text-muted-foreground">Total Amount</div>
-                    <div className="font-medium">{formatINR(order.totalAmount)}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Total Amount</div>
+                    <div className="font-medium text-sm sm:text-base md:text-lg">{formatINR(order.totalAmount)}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Calendar size={16} className="text-muted-foreground" />
+                  <Calendar className="text-muted-foreground w-4 h-4 sm:w-5 sm:h-5" />
                   <div>
-                    <div className="text-sm text-muted-foreground">Date</div>
-                    <div className="font-medium">
+                    <div className="text-xs sm:text-sm text-muted-foreground">Date</div>
+                    <div className="font-medium text-sm sm:text-base md:text-lg">
                       {new Date(order.orderDate).toLocaleDateString('en-GB')}
                     </div>
                   </div>
@@ -197,22 +197,22 @@ const MyOrderDetails = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm text-muted-foreground">Merchant</div>
-                  <div className="font-medium">{order.merchantName || '-'}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Merchant</div>
+                  <div className="font-medium text-sm sm:text-base md:text-lg">{order.merchantName || '-'}</div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <MapPin size={16} className="text-muted-foreground" />
+                  <MapPin className="text-muted-foreground w-4 h-4 sm:w-5 sm:h-5" />
                   <div>
-                    <div className="text-sm text-muted-foreground">Location</div>
-                    <div className="font-medium">{order.location || '-'}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Location</div>
+                    <div className="font-medium text-sm sm:text-base md:text-lg">{order.location || '-'}</div>
                   </div>
                 </div>
               </div>
 
               {order.remarks ? (
                 <div className="pt-2">
-                  <div className="text-sm text-muted-foreground mb-1">Remarks</div>
-                  <div className="text-sm">{order.remarks}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Remarks</div>
+                  <div className="text-sm sm:text-base">{order.remarks}</div>
                 </div>
               ) : null}
             </CardContent>
@@ -222,20 +222,20 @@ const MyOrderDetails = () => {
           {(order.shippingDate || order.deliveryDate || order.trackingNumber) && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Shipping</CardTitle>
+                <CardTitle className="text-base sm:text-lg md:text-xl">Shipping</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {order.trackingNumber && (
-                  <div className="text-sm"><span className="text-muted-foreground">Tracking: </span>{order.trackingNumber}</div>
+                  <div className="text-xs sm:text-sm"><span className="text-muted-foreground">Tracking: </span>{order.trackingNumber}</div>
                 )}
                 {order.shippingDate && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock size={14} className="mr-2" /> Shipped: {order.shippingDate}
+                  <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+                    <Clock className="mr-2 w-3.5 h-3.5 sm:w-4 sm:h-4" /> Shipped: {order.shippingDate}
                   </div>
                 )}
                 {order.deliveryDate && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <CheckCircle size={14} className="mr-2" /> Delivery: {order.deliveryDate}
+                  <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+                    <CheckCircle className="mr-2 w-3.5 h-3.5 sm:w-4 sm:h-4" /> Delivery: {order.deliveryDate}
                   </div>
                 )}
               </CardContent>

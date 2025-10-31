@@ -491,164 +491,142 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="relative max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
-          <h1 className="text-3xl font-bold">{t('responses.title')}</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">{t('responses.title')}</h1>
+          <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">
             {t('responses.subtitle')}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}>
+        <Button variant="outline" size="sm" onClick={() => setFilterOpen(prev => !prev)}
+          className="h-9 w-9 sm:h-9 sm:w-9">
           <Filter className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Filters */}
       {filterOpen && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>{t('responses.filter.title')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder={t('responses.filter.searchPlaceholder')}
-                  className="pl-10"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                />
+        <div className="lg:absolute lg:right-0 lg:top-20 lg:w-[420px] lg:z-40">
+          <Card className="mb-4 sm:mb-6 shadow-md">
+            <CardHeader>
+              <CardTitle className="text-base sm:text-lg lg:text-xl">{t('responses.filter.title')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-w-md mx-auto grid grid-cols-1 gap-3 sm:gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder={t('responses.filter.searchPlaceholder')}
+                    className="pl-10 text-sm sm:text-base"
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                  />
+                </div>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value: ResponseStatus | 'all') => setStatusFilter(value)}
+                >
+                  <SelectTrigger className="text-sm sm:text-base">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('responses.filter.status.all')}</SelectItem>
+                    {availableStatuses.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={gradeFilter}
+                  onValueChange={(value: string | 'all') => setGradeFilter(value)}
+                >
+                  <SelectTrigger className="text-sm sm:text-base">
+                    <SelectValue placeholder="Filter by grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Grades</SelectItem>
+                    {availableGrades.map((g) => (
+                      <SelectItem key={g} value={g}>
+                        {g}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <Button onClick={handleApplyFilters} className="w-full sm:w-auto">
+                    {t('common.actions.applyFilters')}
+                  </Button>
+                  <Button variant="outline" onClick={resetFilters} className="w-full sm:w-auto">
+                    {t('common.actions.reset')}
+                  </Button>
+                </div>
               </div>
-              <Select
-                value={statusFilter}
-                onValueChange={(value: ResponseStatus | 'all') => setStatusFilter(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('responses.filter.status.all')}</SelectItem>
-                  {availableStatuses.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={gradeFilter}
-                onValueChange={(value: string | 'all') => setGradeFilter(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Grades</SelectItem>
-                  {availableGrades.map((g) => (
-                    <SelectItem key={g} value={g}>
-                      {g}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-2">
-                <Button onClick={handleApplyFilters} className="w-full md:w-auto">
-                  {t('common.actions.applyFilters')}
-                </Button>
-                <Button variant="outline" onClick={resetFilters} className="w-full md:w-auto">
-                  {t('common.actions.reset')}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* Responses Table */}
+      {/* Responses List - Responsive */}
       <div className="rounded-md border">
         {filteredResponses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center">
+          <div className="flex flex-col items-center justify-center p-10 sm:p-12 text-center">
             <div className="rounded-full bg-muted p-4 mb-4">
-              <Search className="h-8 w-8 text-muted-foreground" />
+              <Search className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium mb-1">No responses found</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <h3 className="text-base sm:text-lg font-medium mb-1">No responses found</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-4">
               {Object.values(appliedFilters).some(Boolean)
                 ? 'Try adjusting your filters or search criteria.'
                 : 'There are no responses available at the moment.'}
             </p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('merchantName')}>
-                  <div className="flex items-center">
-                    {t('responses.table.merchant')}
-                    {getSortIcon('merchantName')}
-                  </div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('price')}>
-                  <div className="flex items-center">
-                    {t('responses.table.price')}
-                    {getSortIcon('price')}
-                  </div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('quantity')}>
-                  <div className="flex items-center">
-                    {t('responses.table.quantity')}
-                    {getSortIcon('quantity')}
-                  </div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('grade')}>
-                  <div className="flex items-center">
-                    {t('responses.table.grade')}
-                    {getSortIcon('grade')}
-                  </div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
-                  <div className="flex items-center">
-                    {t('responses.table.status')}
-                    {getSortIcon('status')}
-                  </div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('responseDate')}>
-                  <div className="flex items-center">
-                    {t('responses.table.responseDate')}
-                    {getSortIcon('responseDate')}
-                  </div>
-                </TableHead>
-                <TableHead className="text-right">{t('common.actions.title')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Mobile/Tablet: Cards */}
+            <div className="block lg:hidden space-y-3 sm:space-y-4 p-3 sm:p-4">
               {currentResponses.map((response) => (
-                <TableRow key={response.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {response.merchantName}
-                      {response.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+                <Card key={response.id} className="shadow-sm">
+                  <CardContent className="pt-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm sm:text-base font-semibold">{response.merchantName}</span>
+                          {response.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+                        </div>
+                        <div className="text-[11px] sm:text-xs text-muted-foreground mt-1">
+                          {format(parseISO(response.responseDate), 'MM/dd/yyyy')}
+                        </div>
+                      </div>
+                      <Badge
+                        variant={response.status === 'confirmed' ? 'default' : response.status === 'rejected' ? 'destructive' : 'outline'}
+                        className="capitalize text-[11px] sm:text-xs"
+                      >
+                        {response.status}
+                      </Badge>
                     </div>
-                  </TableCell>
-                  <TableCell>₹{response.price} / kg</TableCell>
-                  <TableCell>{response.quantity} kg</TableCell>
-                  <TableCell>{response.grade || 'N/A'}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={response.status === 'confirmed' ? 'default' :
-                        response.status === 'rejected' ? 'destructive' : 'outline'}
-                      className="capitalize"
-                    >
-                      {response.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {format(parseISO(response.responseDate), 'MM/dd/yyyy')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <Separator className="my-3" />
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                      <div>
+                        <div className="text-[11px] sm:text-xs text-muted-foreground">{t('responses.table.price')}</div>
+                        <div className="text-sm sm:text-base font-medium">₹{response.price} / kg</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] sm:text-xs text-muted-foreground">{t('responses.table.quantity')}</div>
+                        <div className="text-sm sm:text-base font-medium">{response.quantity} kg</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] sm:text-xs text-muted-foreground">{t('responses.table.grade')}</div>
+                        <div className="text-sm sm:text-base">{response.grade || 'N/A'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] sm:text-xs text-muted-foreground">{t('responses.table.merchant')}</div>
+                        <div className="text-sm sm:text-base">{response.merchantLocation || '-'}</div>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -711,68 +689,260 @@ const handleStatusUpdate = async (responseId: string, status: 'confirmed' | 'rej
                         </>
                       )}
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </CardContent>
+                </Card>
               ))}
-            </TableBody>
-            {filteredResponses.length > 0 && (
-              <tfoot>
-                <tr>
-                  <td colSpan={8} className="border-t px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-muted-foreground">
-                        {t('common.pagination.showing', {
-                          start: startIndex + 1,
-                          end: Math.min(startIndex + itemsPerPage, filteredResponses.length),
-                          total: filteredResponses.length,
-                          item: t('common.pagination.responses')
-                        })}
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <Select
-                          value={String(itemsPerPage)}
-                          onValueChange={(value) => {
-                            setItemsPerPage(Number(value));
-                            setCurrentPage(1);
-                          }}
-                        >
-                          <SelectTrigger className="w-[70px] h-8">
-                            <SelectValue placeholder="Page size" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="5">5 </SelectItem>
-                            <SelectItem value="10">10 </SelectItem>
-                            <SelectItem value="20">20 </SelectItem>
-                            <SelectItem value="50">50 </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8"
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                          >
-                            {t('common.pagination.previous')}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8"
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                          >
-                            {t('common.pagination.next')}
-                          </Button>
-                        </div>
-                      </div>
+
+              {/* Mobile/Tablet Pagination */}
+              {filteredResponses.length > 0 && (
+                <div className="flex items-center justify-between pt-2">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    {t('common.pagination.showing', {
+                      start: startIndex + 1,
+                      end: Math.min(startIndex + itemsPerPage, filteredResponses.length),
+                      total: filteredResponses.length,
+                      item: t('common.pagination.responses')
+                    })}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Select
+                      value={String(itemsPerPage)}
+                      onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-[70px] h-8 text-xs sm:text-sm">
+                        <SelectValue placeholder="Page size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 </SelectItem>
+                        <SelectItem value="10">10 </SelectItem>
+                        <SelectItem value="20">20 </SelectItem>
+                        <SelectItem value="50">50 </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                      >
+                        {t('common.pagination.previous')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                      >
+                        {t('common.pagination.next')}
+                      </Button>
                     </div>
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </Table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop/Laptop: Table */}
+            <div className="hidden lg:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('merchantName')}>
+                      <div className="flex items-center">
+                        {t('responses.table.merchant')}
+                        {getSortIcon('merchantName')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('price')}>
+                      <div className="flex items-center">
+                        {t('responses.table.price')}
+                        {getSortIcon('price')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('quantity')}>
+                      <div className="flex items-center">
+                        {t('responses.table.quantity')}
+                        {getSortIcon('quantity')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('grade')}>
+                      <div className="flex items-center">
+                        {t('responses.table.grade')}
+                        {getSortIcon('grade')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
+                      <div className="flex items-center">
+                        {t('responses.table.status')}
+                        {getSortIcon('status')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('responseDate')}>
+                      <div className="flex items-center">
+                        {t('responses.table.responseDate')}
+                        {getSortIcon('responseDate')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">{t('common.actions.title')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentResponses.map((response) => (
+                    <TableRow key={response.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {response.merchantName}
+                          {response.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+                        </div>
+                      </TableCell>
+                      <TableCell>₹{response.price} / kg</TableCell>
+                      <TableCell>{response.quantity} kg</TableCell>
+                      <TableCell>{response.grade || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={response.status === 'confirmed' ? 'default' :
+                            response.status === 'rejected' ? 'destructive' : 'outline'}
+                          className="capitalize"
+                        >
+                          {response.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {format(parseISO(response.responseDate), 'MM/dd/yyyy')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const reqId = String(response.requirementId || '');
+                              const qId = String(response.id || '');
+                              if (reqId && qId) {
+                                navigate(`/quote/${reqId}/${qId}?view=buyer`);
+                              }
+                            }}
+                            className="h-8 w-8 p-0"
+                            title="View details"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">{t('common.actions.viewDetails')}</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setResponseToDelete({
+                                id: response.id,
+                                name: `${response.merchantName}'s response for ${response.requirementTitle}`
+                              });
+                            }}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">{t('common.actions.delete')}</span>
+                          </Button>
+                          {(response.status === 'new' || response.status === 'viewed') && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStatusUpdate(response.id, 'rejected');
+                                }}
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                title="Reject"
+                              >
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">{t('common.actions.reject')}</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStatusUpdate(response.id, 'confirmed');
+                                }}
+                                className="h-8 w-8 p-0"
+                                title="Accept"
+                              >
+                                <Check className="h-4 w-4" />
+                                <span className="sr-only">{t('common.actions.accept')}</span>
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                {filteredResponses.length > 0 && (
+                  <tfoot>
+                    <tr>
+                      <td colSpan={8} className="border-t px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">
+                            {t('common.pagination.showing', {
+                              start: startIndex + 1,
+                              end: Math.min(startIndex + itemsPerPage, filteredResponses.length),
+                              total: filteredResponses.length,
+                              item: t('common.pagination.responses')
+                            })}
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <Select
+                              value={String(itemsPerPage)}
+                              onValueChange={(value) => {
+                                setItemsPerPage(Number(value));
+                                setCurrentPage(1);
+                              }}
+                            >
+                              <SelectTrigger className="w-[70px] h-8">
+                                <SelectValue placeholder="Page size" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="5">5 </SelectItem>
+                                <SelectItem value="10">10 </SelectItem>
+                                <SelectItem value="20">20 </SelectItem>
+                                <SelectItem value="50">50 </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                              >
+                                {t('common.pagination.previous')}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                              >
+                                {t('common.pagination.next')}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tfoot>
+                )}
+              </Table>
+            </div>
+          </>
         )}
       </div>
 

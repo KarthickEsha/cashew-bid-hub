@@ -302,20 +302,21 @@ const MyOrders = () => {
   const currentOrders = filteredAndSortedOrders.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div className="container mx-auto py-6 px-4 text-sm md:text-base">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold">My Responses</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">My Responses</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             View and manage your responses
           </p>
         </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:flex-none md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        {/* Filters: stack and center on mobile/tablet; right-aligned row on desktop */}
+        <div className="w-full lg:w-auto lg:ml-auto flex flex-col items-center gap-2 lg:flex-row lg:items-center lg:justify-end">
+          <div className="relative w-full max-w-md lg:max-w-none lg:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
             <Input
               placeholder="Search by product or merchant..."
-              className="pl-9"
+              className="pl-9 w-full"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -330,7 +331,7 @@ const MyOrders = () => {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full max-w-md lg:max-w-none lg:w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -353,13 +354,139 @@ const MyOrders = () => {
         </div>
       </div>
 
-      {/* Orders Table */}
-      <Card>
+      {/* Mobile/Tablet Cards View */}
+      <div className="lg:hidden">
+        {currentOrders.length === 0 ? (
+          <Card>
+            <CardContent className="py-10">
+              <div className="flex flex-col items-center justify-center">
+                <Package className="h-10 w-10 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No enquiries found</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {currentOrders.map((order) => (
+              <Card key={order.id}>
+                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                  <CardTitle className="text-base sm:text-lg md:text-xl font-semibold">
+                    {order.productName || 'Cashews'}
+                  </CardTitle>
+                  <div>{getStatusBadge(order.status)}</div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Merchant</p>
+                      <p className="text-sm md:text-base">{order.merchantName || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Source</p>
+                      <p className="text-sm md:text-base">{order.source || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Quantity</p>
+                      <p className="text-sm md:text-base">{formatWithCommas(order.quantity)} Kg</p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Amount/kg</p>
+                      <p className="text-sm md:text-base">{order.totalAmount}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Total Amount</p>
+                      <p className="text-sm md:text-base font-medium">{formatINR(
+                        (parseFloat(String(order.quantity).replace(/[^0-9.-]+/g, "")) || 0) *
+                        (parseFloat(String(order.totalAmount).replace(/[^0-9.-]+/g, "")) || 0)
+                      )}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Date</p>
+                      <p className="text-sm md:text-base">
+                        {format(new Date(order.orderDate), 'MM/dd/yyyy')} · {format(new Date(order.orderDate), 'h:mm a')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/my-orders/${order.id}` , { state: { order } })}
+                    >
+                      <Eye className="h-4 w-4 mr-1" /> View
+                    </Button>
+                    {order.trackingNumber && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setTrackingOpen(true);
+                        }}
+                      >
+                        <Truck className="h-4 w-4 mr-1" /> Track
+                      </Button>
+                    )}
+                    {(order.status === 'confirmed' || order.status === 'rejected') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700"
+                        onClick={() => {
+                          setOrderToDelete(order.id);
+                          setDeleteConfirmOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" /> Delete
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination for mobile/tablet */}
+        {filteredAndSortedOrders.length > 0 && (
+          <div className="flex items-center justify-between px-1 py-3">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredAndSortedOrders.length)} of {filteredAndSortedOrders.length} enquiries
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Previous page</span>
+              </Button>
+              <div className="text-sm">
+                {currentPage} / {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Next page</span>
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <Card className="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50"
+                className="text-xs md:text-sm cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('productName')}
               >
                 <div className="flex items-center">
@@ -368,7 +495,7 @@ const MyOrders = () => {
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50"
+                className="text-xs md:text-sm cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('merchantName')}
               >
                 <div className="flex items-center">
@@ -377,7 +504,7 @@ const MyOrders = () => {
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50"
+                className="text-xs md:text-sm cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('source')}
               >
                 <div className="flex items-center">
@@ -386,7 +513,7 @@ const MyOrders = () => {
                 </div>
               </TableHead>
               <TableHead
-                className="text-right cursor-pointer hover:bg-muted/50"
+                className="text-xs md:text-sm text-right cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('quantity')}
               >
                 <div className="flex items-center justify-end">
@@ -395,7 +522,7 @@ const MyOrders = () => {
                 </div>
               </TableHead>
               <TableHead
-                className="text-right cursor-pointer hover:bg-muted/50"
+                className="text-xs md:text-sm text-right cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('totalAmount')}
               >
                 <div className="flex items-center justify-end">
@@ -403,9 +530,9 @@ const MyOrders = () => {
                   {getSortIcon('totalAmount')}
                 </div>
               </TableHead>
-              <TableHead className="text-right">Total Amount</TableHead>
+              <TableHead className="text-xs md:text-sm text-right">Total Amount</TableHead>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50"
+                className="text-xs md:text-sm cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('status')}
               >
                 <div className="flex items-center">
@@ -414,7 +541,7 @@ const MyOrders = () => {
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50"
+                className="text-xs md:text-sm cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('orderDate')}
               >
                 <div className="flex items-center">
@@ -422,7 +549,7 @@ const MyOrders = () => {
                   {getSortIcon('orderDate')}
                 </div>
               </TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
+              <TableHead className="text-xs md:text-sm w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -446,9 +573,9 @@ const MyOrders = () => {
                   </TableCell>
                   <TableCell>{order.merchantName || '-'}</TableCell>
                   <TableCell>{order.source || '-'}</TableCell>
-                  <TableCell className="text-right">{formatWithCommas(order.quantity)} Kg</TableCell>
-                  <TableCell className="text-right font-medium">{order.totalAmount}</TableCell>
-                  <TableCell className="text-right font-medium">
+                  <TableCell className="text-right text-xs md:text-sm lg:text-base">{formatWithCommas(order.quantity)} Kg</TableCell>
+                  <TableCell className="text-right text-xs md:text-sm lg:text-base font-medium">{order.totalAmount}</TableCell>
+                  <TableCell className="text-right text-xs md:text-sm lg:text-base font-medium">
                     {formatINR(
                       (parseFloat(String(order.quantity).replace(/[^0-9.-]+/g, "")) || 0) *
                       (parseFloat(String(order.totalAmount).replace(/[^0-9.-]+/g, "")) || 0)
@@ -459,7 +586,7 @@ const MyOrders = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span>{format(new Date(order.orderDate), 'MM/dd/yyyy')}</span>
+                      <span className="text-sm md:text-base">{format(new Date(order.orderDate), 'MM/dd/yyyy')}</span>
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(order.orderDate), 'h:mm a')}
                       </span>
@@ -512,7 +639,7 @@ const MyOrders = () => {
           </TableBody>
         </Table>
 
-        {/* Pagination */}
+        {/* Pagination for desktop */}
         {filteredAndSortedOrders.length > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <div className="text-sm text-muted-foreground">

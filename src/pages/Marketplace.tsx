@@ -406,8 +406,8 @@ const Marketplace = () => {
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground mb-2">Cashew Marketplace</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2">Cashew Marketplace</h1>
+                    <p className="text-sm sm:text-base text-muted-foreground">
                         Discover premium cashews from verified merchants worldwide
                     </p>
                 </div>
@@ -423,8 +423,8 @@ const Marketplace = () => {
                             <SelectItem value="Kernel">Kernel</SelectItem>
                         </SelectContent>
                     </Select>
-                    {/* View Toggle Button */}
-                    <div className="flex border rounded-md">
+                    {/* View Toggle Button (hidden on small screens) */}
+                    <div className="hidden lg:flex border rounded-md">
                         <Button
                             variant={viewMode === 'card' ? 'default' : 'ghost'}
                             size="sm"
@@ -541,19 +541,18 @@ const Marketplace = () => {
                 </div>
             ) : (
                 <>
-                    {/* Card View */}
-                    {viewMode === 'card' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {currentProducts.map((product) => (
-                                <Card
-                                    key={product.id}
-                                    className="hover:shadow-warm transition-all duration-200 hover:-translate-y-1"
-                                >
+                    {/* Card View - always visible on mobile/tablet */}
+                    <div className="grid lg:hidden grid-cols-1 md:grid-cols-2 gap-6">
+                        {currentProducts.map((product) => (
+                            <Card
+                                key={product.id}
+                                className="hover:shadow-warm transition-all duration-200 hover:-translate-y-1"
+                            >
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
                                             <div>
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <CardTitle className="text-lg">{product.merchantName || 'Your Company'}</CardTitle>
+                                                    <CardTitle className="text-base sm:text-lg md:text-xl">{product.merchantName || 'Your Company'}</CardTitle>
                                                     {/* {product.verified && (
                                                         <Badge variant="default" className="text-xs ml-2">
                                                             Verified
@@ -573,7 +572,7 @@ const Marketplace = () => {
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
-                                        <p className="text-sm text-muted-foreground">{product.description}</p>
+                                        <p className="text-sm sm:text-base text-muted-foreground">{product.description}</p>
 
                                         <div className="grid grid-cols-2 gap-3 text-sm">
                                             <div>
@@ -619,14 +618,124 @@ const Marketplace = () => {
                                             </Link>
                                         </div>
                                     </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+
+                    {/* Card View - desktop only when selected */}
+                    {viewMode === 'card' && (
+                        <div className="hidden lg:grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {currentProducts.map((product) => (
+                                <Card
+                                    key={product.id}
+                                    className="hover:shadow-warm transition-all duration-200 hover:-translate-y-1"
+                                >
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <CardTitle className="text-lg">{product.merchantName || 'Your Company'}</CardTitle>
+                                                </div>
+
+                                                <div className="flex items-center text-muted-foreground text-sm">
+                                                    <MapPin size={14} className="mr-1" />
+                                                    {product.origin}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <p className="text-sm text-muted-foreground">{product.description}</p>
+
+                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                                <span className="text-xs sm:text-sm text-muted-foreground">Grade:</span>
+                                                <div className="font-semibold text-sm sm:text-base md:text-lg">{product.grade}</div>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs sm:text-sm text-muted-foreground">Quantity:</span>
+                                                <div className="font-semibold text-sm sm:text-base md:text-lg">
+                                                    {product.quantity?.toLocaleString('en-IN')} {product.quantityUnit}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs sm:text-sm text-muted-foreground">Price:</span>
+                                                <div className="font-semibold text-primary text-sm sm:text-base md:text-lg">
+                                                    ₹{Number(String(product.pricePerKg).replace('$', '')).toLocaleString("en-IN")}/kg
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+                                            <Calendar size={14} className="mr-1" />
+                                            Stock Available Until: {new Date(product.expiry).toLocaleDateString()}
+                                        </div>
+
+                                        <div className="flex space-x-2 pt-2">
+                                            <Link to={`/product/${product.id}`} className="flex-1">
+                                                <Button size="sm" className="w-full">
+                                                    <Eye size={14} className="mr-2" />
+                                                    View Details
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </CardContent>
                                 </Card>
                             ))}
                         </div>
                     )}
 
+                    {/* Pagination for Card View - always on mobile/tablet */}
+                    {itemsToShow.length > 0 && (
+                        <div className="lg:hidden flex items-center justify-between px-4 py-3">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {startIndex + 1} to {Math.min(startIndex + pageSize, itemsToShow.length)} of {itemsToShow.length} products
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <Select
+                                    value={String(pageSize)}
+                                    onValueChange={(value) => {
+                                        setPageSize(Number(value));
+                                        setCurrentPage(1);
+                                    }}
+                                >
+                                    <SelectTrigger className="w-[100px] h-8">
+                                        <SelectValue placeholder="Page size" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="6">6</SelectItem>
+                                        <SelectItem value="12">12</SelectItem>
+                                        <SelectItem value="24">24</SelectItem>
+                                        <SelectItem value="48">48</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <div className="flex space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8"
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8"
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* List/Table View */}
                     {viewMode === 'list' && (
-                        <Card>
+                        <Card className="hidden lg:block">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -766,9 +875,9 @@ const Marketplace = () => {
                         </Card>
                     )}
 
-                    {/* Pagination for Card View */}
+                    {/* Pagination for Card View - desktop when card view selected */}
                     {viewMode === 'card' && itemsToShow.length > 0 && (
-                        <div className="flex items-center justify-between px-4 py-3">
+                        <div className="hidden lg:flex items-center justify-between px-4 py-3">
                             <div className="text-sm text-muted-foreground">
                                 Showing {startIndex + 1} to {Math.min(startIndex + pageSize, itemsToShow.length)} of {itemsToShow.length} products
                             </div>

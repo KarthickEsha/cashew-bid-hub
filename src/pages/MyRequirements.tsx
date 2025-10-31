@@ -289,7 +289,7 @@ const MyRequirements = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2 w-full md:w-auto">
-          <div className="flex items-center space-x-1 bg-muted p-1 rounded-md">
+          <div className="hidden lg:flex items-center space-x-1 bg-muted p-1 rounded-md">
             <Button
               variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="sm"
@@ -324,39 +324,6 @@ const MyRequirements = () => {
           </Link>
         </div>
       </div>
-
-      {/* Stats */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {[
-          {
-            label: "Total Requirements",
-            value: requirements.length,
-            color: "text-blue-600",
-          },
-          {
-            label: "Active",
-            value: requirements.filter((r) => r.status === "active").length,
-            color: "text-green-600",
-          },
-          {
-            label: "Draft",
-            value: requirements.filter((r) => r.status === "draft").length,
-            color: "text-gray-600",
-          },
-          {
-            label: "Total Responses",
-            value: requirements.reduce((acc, r) => acc + getResponseCount(r.id.toString()), 0),
-            color: "text-orange-600",
-          },
-        ].map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <div className={`text-sm ${stat.color}`}>{stat.label}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div> */}
 
       {/* Filters */}
       {filterOpen && (
@@ -415,7 +382,121 @@ const MyRequirements = () => {
         </Card>
       )}
 
-      {/* Requirements Grid or Table */}
+      {/* Mobile/Tablet: Card-only view */}
+      <div className="block lg:hidden">
+        {filteredRequirements.length === 0 ? (
+          <Card className="p-10 text-center">
+            <Inbox className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <p className="text-lg font-medium">No data found for the selected filters</p>
+            <p className="text-sm text-muted-foreground mt-1">Try changing your search or filter options</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {currentRequirements.map((requirement) => (
+              <Card
+                key={requirement.id}
+                className="hover:shadow-warm transition-shadow"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <CardTitle className="text-lg">{requirement.title}</CardTitle>
+                        <div className="flex items-center space-x-1">
+                          {getStatusIcon(requirement.status)}
+                          <Badge className={getStatusColor(requirement.status)}>
+                            {getDisplayStatus(requirement.status)}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Grade:</span>
+                      <div className="font-semibold">{requirement.grade}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Quantity:</span>
+                      <div className="font-semibold">{requirement.quantity} kg</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Origin:</span>
+                      <div className="font-semibold">
+                        {requirement.preferredOrigin
+                          ? requirement.preferredOrigin.charAt(0).toUpperCase() + requirement.preferredOrigin.slice(1).toLowerCase()
+                          : ""}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Responses:</span>
+                      <div className="font-semibold text-primary">{getResponseCount(requirement.id.toString())}</div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm">
+                      <DollarSign size={14} className="mr-1 text-muted-foreground" />
+                      <span className="font-medium">{requirement.budgetRange}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <MapPin size={14} className="mr-1" />
+                      {requirement.deliveryLocation}
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Calendar size={14} className="mr-1" />
+                      Expires: {formatDateSafe(requirement.requirementExpiry)}
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-border">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
+                      <span>Created: {new Date(requirement.createdDate).toLocaleDateString()}</span>
+                      <span>Modified: {new Date(requirement.lastModified).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <div className="relative inline-block">
+                        <Link to={`/requirement/${requirement.id}`}>
+                          <Button variant="outline" size="sm">
+                            <Eye size={14} className="mr-2" /> View
+                          </Button>
+                        </Link>
+                        {(() => {
+                          const totalCount = getResponseCount(requirement.id.toString());
+                          return totalCount > 0 ? (
+                            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] h-4 min-w-4 px-1 leading-none">
+                              {totalCount}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                      <Link to={`/edit-requirement/${requirement.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Edit size={14} className="mr-2" /> Edit
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          setDeleteId(requirement.id);
+                          setDeleteOpen(true);
+                        }}
+                      >
+                        <Trash2 size={14} className="mr-2" /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop/Laptop: existing toggle between Table and Cards */}
+      <div className="hidden lg:block">
       {viewMode === 'list' ? (
         <Card>
           <Table>
@@ -715,6 +796,7 @@ const MyRequirements = () => {
           ))}
         </div>
       )}
+      </div>
 
       {/* Pagination */}
       {filteredRequirements.length > 0 && (

@@ -339,30 +339,30 @@ const PostRequirement = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-[15px] sm:text-base md:text-[17px]">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">{t('postRequirement.title')}</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2">{t('postRequirement.title')}</h1>
+        <p className="text-muted-foreground text-xs sm:text-sm md:text-base">
           {t('postRequirement.subtitle')}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <FileText size={20} className="mr-2" />
+          <CardTitle className="flex items-center text-base sm:text-lg md:text-xl">
+            <FileText className="mr-2 h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
             {t('postRequirement.requirementDetails')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">{t('postRequirement.basicInfo')}</h3>
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold">{t('postRequirement.basicInfo')}</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="grade">{t('postRequirement.productGrade')} *</Label>
+                <Label className="text-sm sm:text-base" htmlFor="grade">{t('postRequirement.productGrade')} *</Label>
                 <Select
                   value={formData.grade}
                   onValueChange={(value) =>
@@ -384,7 +384,7 @@ const PostRequirement = () => {
               </div>
 
               <div>
-                <Label htmlFor="origin">{t('postRequirement.origin')} *</Label>
+                <Label className="text-sm sm:text-base" htmlFor="origin">{t('postRequirement.origin')} *</Label>
                 <Select
                   value={formData.origin}
                   onValueChange={(value) => {
@@ -406,9 +406,9 @@ const PostRequirement = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="quantity">{t('postRequirement.requiredQuantity')} *</Label>
+                <Label className="text-sm sm:text-base md:text-lg" htmlFor="quantity">{t('postRequirement.requiredQuantity')} *</Label>
                 <Input
                   id="quantity"
                   name="quantity"
@@ -425,7 +425,7 @@ const PostRequirement = () => {
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="minSupplyQuantity">{t('postRequirement.minSupplyQuantity')} *</Label>
+                <Label className="text-sm sm:text-base md:text-lg" htmlFor="minSupplyQuantity">{t('postRequirement.minSupplyQuantity')} *</Label>
                 <Input
                   id="minSupplyQuantity"
                   name="minSupplyQuantity"
@@ -441,16 +441,14 @@ const PostRequirement = () => {
                 )}
               </div>
             </div>
-
-            {/* ... */}
           </div>
 
           {/* Budget Information */}
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* First Expected Price Field */}
               <div className="grid gap-2">
-                <Label htmlFor="expectedPrice">{t('postRequirement.expectedPrice')} *</Label>
+                <Label className="text-sm sm:text-base" htmlFor="expectedPrice">{t('postRequirement.expectedPrice')} *</Label>
                 <Input
                   id="expectedPrice"
                   name="expectedPrice"
@@ -484,13 +482,13 @@ const PostRequirement = () => {
                   }
                   className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                 />
-                <Label htmlFor="allowLowerBid">{t('postRequirement.allowLowerBid')}</Label>
+                <Label className="text-sm sm:text-base" htmlFor="allowLowerBid">{t('postRequirement.allowLowerBid')}</Label>
               </div>
             </div>
           </div>
 
           <div>
-            <Label>{t('postRequirement.expectedDeliveryDate')} *</Label>
+            <Label className="text-sm sm:text-base">{t('postRequirement.expectedDeliveryDate')} *</Label>
             <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -565,10 +563,10 @@ const PostRequirement = () => {
 
           {/* Delivery Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">{t('postRequirement.deliveryInfo')}</h3>
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold">{t('postRequirement.deliveryInfo')}</h3>
 
             <div>
-              <Label htmlFor="deliveryLocation">{t('postRequirement.deliveryLocation')} *</Label>
+              <Label className="text-sm sm:text-base" htmlFor="deliveryLocation">{t('postRequirement.deliveryLocation')} *</Label>
               <Input
                 id="deliveryLocation"
                 placeholder={t('postRequirement.enterDeliveryLocation')}
@@ -583,10 +581,10 @@ const PostRequirement = () => {
 
 
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
               <div>
-                <Label>{t('postRequirement.country')} *</Label>
+                <Label className="text-sm sm:text-base">{t('postRequirement.country')} *</Label>
                 <Select
                   value={formData.country}
                   onValueChange={(value) =>
@@ -616,7 +614,7 @@ const PostRequirement = () => {
               </div>
 
               <div>
-                <Label htmlFor="city">{t('postRequirement.city')} *</Label>
+                <Label className="text-sm sm:text-base" htmlFor="city">{t('postRequirement.city')} *</Label>
                 <Input
                   id="city"
                   placeholder={t('postRequirement.enterCity')}
@@ -630,10 +628,10 @@ const PostRequirement = () => {
 
           {/* Additional Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">{t('postRequirement.additionalInfo')}</h3>
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold">{t('postRequirement.additionalInfo')}</h3>
 
             <div>
-              <Label htmlFor="specifications">{t('postRequirement.specifications')}</Label>
+              <Label className="text-sm sm:text-base" htmlFor="specifications">{t('postRequirement.specifications')}</Label>
               <p className="text-sm text-muted-foreground mb-2">
                 {t('postRequirement.specificationsHint')}
               </p>
@@ -650,12 +648,12 @@ const PostRequirement = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-6 border-t border-border">
-            <Button variant="outline" onClick={() => handleSubmit(true)}>
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-6 border-t border-border">
+            <Button variant="outline" className="w-full sm:w-auto text-sm sm:text-base" onClick={() => handleSubmit(true)}>
               <Save size={16} className="mr-2" />
               {t('postRequirement.saveDraft')}
             </Button>
-            <Button onClick={() => handleSubmit(false)} size="lg" disabled={!isFormValid || isSubmitting}>
+            <Button className="w-full sm:w-auto text-sm sm:text-base" onClick={() => handleSubmit(false)} size="lg" disabled={!isFormValid || isSubmitting}>
               <Send size={16} className="mr-2" />
               {t('postRequirement.postRequirementBtn')}
             </Button>
