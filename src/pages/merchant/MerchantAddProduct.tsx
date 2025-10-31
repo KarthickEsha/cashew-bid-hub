@@ -239,10 +239,10 @@ const MerchantAddProduct = () => {
                     location: s.location || '',
                     origin: s.origin || '',
                     description: s.description || '',
-                    allowBuyerOffers: Boolean(s.negotiatePrice || false),
-                    yearOfCrop: '', // Not in the response
-                    nutCount: '', // Not in the response
-                    outTurn: '', // Not in the response
+                    allowBuyerOffers: Boolean((s.negotiatePrice ?? s.negotiateprice) || false),
+                    yearOfCrop: s.yearofcrop !== undefined && s.yearofcrop !== null ? String(s.yearofcrop) : '',
+                    nutCount: s.netcount !== undefined && s.netcount !== null ? String(s.netcount) : '',
+                    outTurn: s.outturn !== undefined && s.outturn !== null ? String(s.outturn) : '',
                     grade: s.grade || '',
                     stockAvailable: String(s.availableqty || '')
                 }));

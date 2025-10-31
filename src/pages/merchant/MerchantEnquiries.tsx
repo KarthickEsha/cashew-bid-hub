@@ -18,6 +18,7 @@ import { useRequirements } from "@/hooks/useRequirements";
 import { useResponses } from "@/hooks/useResponses";
 import { useUser } from "@clerk/clerk-react";
 import { useProfile } from "@/hooks/useProfile";
+import { extractBackendUserId } from "@/lib/profile";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -250,7 +251,16 @@ const MerchantEnquiries = () => {
 
   // Filter out expired enquiries
   const activeEnquiries = useMemo(() => {
-    return enquiries.filter(enquiry => !isExpired(enquiry));
+    const backendUserId = extractBackendUserId();
+    return enquiries.filter(enquiry => {
+      // hide expired
+      if (isExpired(enquiry)) return false;
+      // if we know both creator and current user, exclude same-user items
+      if (backendUserId && enquiry?.userId && String(enquiry.userId) === String(backendUserId)) {
+        return false;
+      }
+      return true;
+    });
   }, [enquiries]);
 
   // Function to refresh enquiries

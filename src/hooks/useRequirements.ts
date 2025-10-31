@@ -28,6 +28,8 @@ export interface Requirement {
   fixedPrice: number;
   isDraft: boolean;
   createdAt: string;
+  // Backend creator user id (buyer) to support filtering by owner
+  userId?: string;
   // Additional fields for MyRequirements compatibility
   title?: string;
   preferredOrigin?: string;
@@ -173,6 +175,9 @@ export const useRequirements = create<RequirementsState>()(
             const productName = item.productName || `${grade} Cashews`;
             const fixedPrice = Number(item.fixedPrice ?? 0);
             const isDraft = Boolean(item.isDraft ?? (status === 'draft'));
+            const userId = String(
+              item.userId ?? item.user_id ?? item.userID ?? item.userid ?? ''
+            ) || undefined;
 
             return {
               id,
@@ -196,6 +201,7 @@ export const useRequirements = create<RequirementsState>()(
               fixedPrice,
               isDraft,
               createdAt,
+              userId,
               // Extra fields for MyRequirements compatibility
               title: item.title || `${quantity} of ${grade} Cashews`,
               preferredOrigin: item.preferredOrigin || origin,
@@ -493,7 +499,9 @@ export const useRequirements = create<RequirementsState>()(
             allowLowerBid: req.allowLowerBid || false,
             minSupplyQuantity: req.minSupplyQuantity || '0',
             createdAt: req.createdAt || new Date().toISOString(),
-            lastModified: req.lastModified || req.createdAt || new Date().toISOString()
+            lastModified: req.lastModified || req.createdAt || new Date().toISOString(),
+            // Surface backend creator id for UI filtering
+            userId: req.userId,
           };
         });
         

@@ -160,7 +160,7 @@ const MerchantOrders = () => {
     let ignore = false;
     (async () => {
       try {
-        const view = 'buyer';
+        const view = 'merchant';
         // const userID = extractBackendUserId() || (profile as any)?.id || '';
         const params = new URLSearchParams({ view });
         // if (userID) params.set('userID', userID);
@@ -424,7 +424,7 @@ const MerchantOrders = () => {
           variant="outline"
           size="sm"
           onClick={() => setShowFilterCard(prev => !prev)}
-          className="flex items-center space-x-1 lg:hidden"
+          className="flex items-center space-x-1"
         >
           <Filter className="h-4 w-4" />
         </Button>
@@ -437,8 +437,8 @@ const MerchantOrders = () => {
             <CardTitle className="text-base md:text-lg">Filter Response</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-4">
-              <div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
                 <label className="text-xs md:text-sm font-medium mb-2 block">Search</label>
                 <Input
                   type="text"
@@ -447,7 +447,7 @@ const MerchantOrders = () => {
                   onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-xs md:text-sm font-medium mb-2 block">Product</label>
                 <Select
                   value={filters.product}
@@ -465,7 +465,7 @@ const MerchantOrders = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-xs md:text-sm font-medium mb-2 block">Status</label>
                 <Select
                   value={filters.status}

@@ -128,6 +128,7 @@ const Marketplace = () => {
                     const normalizedType = rawType.toLowerCase().startsWith('kern') ? 'Kernel' : 'RCN';
                     return {
                         id: String(s?.id || s?._id || Math.random().toString(36).slice(2)),
+                        merchantId: s?.merchantId || s?.merchantID || s?.merchantid || '',
                         merchantName: s?.merchantCompanyName || profile?.companyName || "Your Company Name",
                         location: typeof location === 'string' ? location : String(location ?? ''),
                         origin: s?.origin || 'Not specified',
@@ -247,6 +248,11 @@ const Marketplace = () => {
 
     const applyFilters = () => {
         let result = [...products];
+
+        // Exclude stocks created by the currently logged-in user
+        if (profile?.id) {
+            result = result.filter((p: any) => p.merchantId !== profile.id);
+        }
 
         if (filters.search) {
             result = result.filter(

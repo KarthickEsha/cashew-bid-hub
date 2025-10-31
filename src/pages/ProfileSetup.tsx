@@ -103,6 +103,26 @@ const ProfileSetup = () => {
           delete newErrors.address;
         }
         break;
+      case 'officeAddress':
+        if (!String(value || '').trim()) {
+          newErrors.officeAddress = 'Business address is required';
+        } else if (String(value).length < 10) {
+          newErrors.officeAddress = 'Business address must be at least 10 characters';
+        } else {
+          delete newErrors.officeAddress;
+        }
+        break;
+      case 'officePhone': {
+        const cleaned = String(value).replace(/[\s\-\(\)]/g, '');
+        if (!cleaned) {
+          newErrors.officePhone = 'Business phone number is required';
+        } else if (!/^[0-9]{10}$/.test(cleaned)) {
+          newErrors.officePhone = 'Please enter a valid 10-digit business phone number';
+        } else {
+          delete newErrors.officePhone;
+        }
+        break;
+      }
     }
 
     setErrors(newErrors);
@@ -110,7 +130,7 @@ const ProfileSetup = () => {
 
   const handleInputChange = (field: string, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (['phone', 'pincode', 'officeEmail', 'establishedYear', 'address',].includes(field)) {
+    if (['phone', 'pincode', 'officeEmail', 'establishedYear', 'address', 'officeAddress', 'officePhone'].includes(field)) {
       validateField(field, value);
     }
   };
@@ -200,7 +220,9 @@ const ProfileSetup = () => {
     formData.country &&
     formData.pincode &&
     formData.description &&
-    formData.phone.length == 10
+    formData.phone.length == 10 &&
+    String(formData.officeAddress || '').trim().length >= 10 &&
+    String(formData.officePhone || '').replace(/[\s\-\(\)]/g, '').length === 10
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
@@ -463,24 +485,30 @@ const ProfileSetup = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="officeAddress">Address</Label>
+                  <Label htmlFor="officeAddress">Address *</Label>
                   <Textarea
                     id="officeAddress"
                     value={formData.officeAddress}
                     onChange={(e) => handleInputChange('officeAddress', e.target.value)}
                     placeholder="Enter business address"
                     rows={3}
+                    className={errors.officeAddress ? 'border-destructive' : ''}
+                    required
                   />
+                  {errors.officeAddress && <p className="text-sm text-destructive">{errors.officeAddress}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="officePhone">Phone Number</Label>
+                  <Label htmlFor="officePhone">Phone Number *</Label>
                   <Input
                     id="officePhone"
                     value={formData.officePhone}
                     onChange={(e) => handleInputChange('officePhone', e.target.value)}
                     maxLength={10}
                     placeholder="Enter business phone number"
+                    className={errors.officePhone ? 'border-destructive' : ''}
+                    required
                   />
+                  {errors.officePhone && <p className="text-sm text-destructive">{errors.officePhone}</p>}
                 </div>
               </div>
 

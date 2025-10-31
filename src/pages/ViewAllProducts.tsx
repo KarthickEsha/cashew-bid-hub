@@ -26,19 +26,27 @@ const ViewAllProducts = () => {
         const items = (resp as any)?.data?.products || [];
         setMerchant(m);
         // map backend stock -> minimal fields used in this page
-        const mapped = Array.isArray(items) ? items.map((s: any) => ({
-          id: String(s.productId || s.id || s._id),
-          name: m.companyName || s.grade || 'Stock',
-          grade: s.grade || 'RAW Cashews',
-          availableQty: s.availableqty,
-          price: s.sellingprice,
-          expireDate: s.expiredate,
-          location: s.location,
-          description: s.description,
-          pricingType: s.pricingType,
-          verified: false,
-          rating: 4.5,
-        })) : [];
+        const mapped = Array.isArray(items)
+          ? items
+              .map((s: any) => {
+                const q = Number(s.availableqty ?? s.availableQty ?? 0);
+                return {
+                  id: String(s.productId || s.id || s._id),
+                  name: m.companyName || s.grade || 'Stock',
+                  grade: s.grade || 'RAW Cashews',
+                  availableQty: q,
+                  price: s.sellingprice,
+                  expireDate: s.expiredate,
+                  location: s.location,
+                  description: s.description,
+                  pricingType: s.pricingType,
+                  verified: false,
+                  rating: 4.5,
+                };
+              })
+              // Only keep products with quantity > 0
+              .filter((p: any) => Number(p.availableQty) > 0)
+          : [];
         setMerchantProducts(mapped);
       } catch (e) {
         // fallback minimal info

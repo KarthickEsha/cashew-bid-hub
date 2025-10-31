@@ -107,10 +107,6 @@ const MyRequirements = () => {
       : "bg-blue-100 text-blue-800";
   };
 
-  const getDisplayStatus = (status: string) => {
-    return status.toLowerCase() === 'closed' ? 'Closed' : 'Active';
-  };
-
   // Status priority: Active > Draft > Confirmed > Closed (customize as needed)
   const getStatusPriority = (status: string) => {
     const s = status?.toLowerCase();
@@ -226,6 +222,11 @@ const MyRequirements = () => {
     } catch {
       return '-';
     }
+  };
+
+  const capitalize = (s: string) => {
+    if (!s) return s;
+    return s.charAt(0).toUpperCase() + s.slice(1);
   };
 
   const requestSort = (key: string) => {
@@ -405,7 +406,7 @@ const MyRequirements = () => {
                         <div className="flex items-center space-x-1">
                           {getStatusIcon(requirement.status)}
                           <Badge className={getStatusColor(requirement.status)}>
-                            {getDisplayStatus(requirement.status)}
+                            {requirement.status}
                           </Badge>
                         </div>
                       </div>
@@ -610,7 +611,7 @@ const MyRequirements = () => {
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(requirement.status)}>
-                        {getDisplayStatus(requirement.status)}
+                        {capitalize(requirement.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -689,7 +690,7 @@ const MyRequirements = () => {
                       <div className="flex items-center space-x-1">
                         {getStatusIcon(requirement.status)}
                         <Badge className={getStatusColor(requirement.status)}>
-                          {getDisplayStatus(requirement.status)}
+                          {requirement.status}
                         </Badge>
                       </div>
                     </div>

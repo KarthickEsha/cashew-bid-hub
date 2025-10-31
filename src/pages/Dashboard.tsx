@@ -247,7 +247,20 @@ const Dashboard = () => {
     }
     if (Array.isArray(dashLists.myResponses)) {
       add(dashLists.myResponses, (it) => ({
-        message: t('dashboard.activity.orderPlaced', { type: it.productId || 'Cashews', quantity: it.quantity }),
+        message: t('dashboard.activity.orderPlaced', {
+          type:
+            it.productName ||
+            (it.product && (it.product.name || it.product.title || it.product.label)) ||
+            it.productTitle ||
+            it.productLabel ||
+            it.origin ||
+            it.grade ||
+            it.name ||
+            it.title ||
+            it.productId ||
+            'Cashews',
+          quantity: it.quantity
+        }),
         status: it.status,
         createdAt: it.createdAt,
       }));
@@ -387,7 +400,7 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
-            <div className="mt-4">
+            {/* <div className="mt-4">
               <Button
                 variant="ghost"
                 size="sm"
@@ -397,7 +410,7 @@ const Dashboard = () => {
                 {showAllActivity ? 'Show Less' : t('dashboard.viewAllActivity')}
                 <ArrowRight size={14} className="ml-2" />
               </Button>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
 
