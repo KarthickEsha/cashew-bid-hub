@@ -62,7 +62,7 @@ const Layout = ({ children }: LayoutProps) => {
       try {
         const res = await fetchNotifications();
         if (cancelled) return;
-        const total = (res?.data || []).length;
+        const total = (res?.data || []).filter((n: any) => !n?.isView).length;
         setNotifCount(total);
       } catch {
         if (!cancelled) setNotifCount(0);
@@ -134,7 +134,7 @@ const Layout = ({ children }: LayoutProps) => {
                   </div>
                   
                   {/* Notifications */}
-                  <NotificationPanel>
+                  <NotificationPanel onCountChange={setNotifCount}>
                     <Button variant="ghost" size="sm" className="relative p-1.5 sm:p-2">
                       <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
                       <Badge

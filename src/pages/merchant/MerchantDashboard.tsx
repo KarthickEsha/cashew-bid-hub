@@ -208,6 +208,7 @@ const MerchantDashboard = () => {
   const recentActivity = Array.isArray(dashLists?.myQuotes)
     ? [...dashLists.myQuotes]
         .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
         .map((q: any) => ({
           id: q.id,
           type: "quote",

@@ -209,7 +209,7 @@ export function AppSidebar() {
         // Only count enquiries with status "processing"
         count = payload.filter((enquiry: any) =>
           enquiry.status && typeof enquiry.status === 'string' &&
-          enquiry.status.toLowerCase() === 'processing'
+          (enquiry.status.toLowerCase() === 'confirmed' || enquiry.status.toLowerCase() === 'rejected')
         ).length;
       } else if (
         payload &&

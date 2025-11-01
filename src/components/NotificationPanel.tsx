@@ -8,9 +8,10 @@ import { fetchNotifications, deleteNotificationServer, type ServerNotification }
 
 interface NotificationPanelProps {
   children: React.ReactNode;
+  onCountChange?: (count: number) => void;
 }
 
-const NotificationPanel = ({ children }: NotificationPanelProps) => {
+const NotificationPanel = ({ children, onCountChange }: NotificationPanelProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, deleteNotification, markAllAsRead } = useNotifications();
   const [serverItems, setServerItems] = useState<ServerNotification[] | null>(null);
@@ -70,6 +71,13 @@ const NotificationPanel = ({ children }: NotificationPanelProps) => {
     if (serverItems) return serverItems.filter((n) => !n.isView).length;
     return notifications.filter((n) => !n.read).length;
   }, [serverItems, notifications]);
+
+  // Notify parent (e.g., header) when unread count changes
+  useEffect(() => {
+    if (typeof onCountChange === 'function') {
+      onCountChange(unreadCount);
+    }
+  }, [unreadCount, onCountChange]);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>

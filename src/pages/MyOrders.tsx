@@ -177,7 +177,7 @@ const MyOrders = () => {
       case 'cancelled':
         return <Badge variant="outline" className="text-red-600 border-red-300 bg-red-50">Cancelled</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline"  className="text-red-600 border-red-300 bg-red-50">{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>;
     }
   };
 

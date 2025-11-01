@@ -33,7 +33,7 @@ const MerchantRejectedOrders = () => {
           id: `${item.buyerName}-${item.product}-${item.merchantPrice}-${item.merchantAvailableQuantity}-${Math.random()}`,
           customerName: item.buyerName ?? 'Unknown',
           productName: item.product ?? 'Product',
-          quantity: item.buyerRequiredQuantity ?? 0,
+          quantity: item.merchantAvailableQuantity ?? 0,
           expectedPrice: item.buyerExpectedPrice ?? 0,
           price: item.merchantPrice ?? 0,
           availableQty: item.merchantAvailableQuantity ?? 0,

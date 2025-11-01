@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRequirements } from '@/hooks/useRequirements';
 import { useResponses } from '@/hooks/useResponses';
-import { X } from 'lucide-react';
+import { IndianRupee, X } from 'lucide-react';
 import {
     ArrowLeft,
     Calendar,
@@ -487,7 +487,7 @@ const RequirementDetails = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <DollarSign size={16} className="text-muted-foreground" />
+                                    <IndianRupee size={16} className="text-muted-foreground" />
                                     <div>
                                         <div className="text-sm text-muted-foreground">Budget Range</div>
                                         <div className="font-medium">{requirement.budgetRange}</div>
