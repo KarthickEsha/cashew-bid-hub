@@ -101,19 +101,23 @@ export function MerchantSidebar() {
 
   const { orders } = useOrders();
   const { products } = useInventory(); 
+  const { profile } = useProfile();
 
   // Filter out skipped responses and get counts
   const activeResponses = responses.filter(r => r.status !== 'skipped');
 
   // Only show active enquiries (not expired and not completed)
-  const activeEnquiries = getRequirementsAsEnquiries().filter(enquiry => {
-    const expiryDate = new Date(enquiry.deliveryDeadline || 0);
-    const now = new Date();
-    return (
-      expiryDate > now &&
-      (enquiry.status === 'active' || enquiry.status === 'pending' || enquiry.status === 'viewed' || enquiry.status === 'accepted' || enquiry.status === "responded")
-    );
-  });
+ const activeEnquiries = getRequirementsAsEnquiries().filter(enquiry => {
+  const expiryDate = new Date(enquiry.deliveryDeadline || 0);
+  const now = new Date();
+  const isCurrentUser = enquiry.userId === profile?.id; // Assuming profile contains the current user's info
+  
+  return (
+    expiryDate > now &&
+    enquiry.status === 'active' &&
+    !isCurrentUser  // Exclude if it's the current user's enquiry
+  );
+});
 
   // Only show selected (confirmed) responses (kept for potential local usage)
   const selectedResponses = activeResponses.filter(r => {
@@ -160,7 +164,7 @@ export function MerchantSidebar() {
 
   // Counts persisted by MerchantProducts
   const [stockCounts, setStockCounts] = useState<Record<string, { active: number; out_of_stock: number }>>({});
-  const { profile } = useProfile();
+  
   const STOCK_COUNTS_KEY = "stocks_counts_v1";
   useEffect(() => {
     if (profile?.productType && profile.productType !== "Both") {
@@ -182,29 +186,33 @@ export function MerchantSidebar() {
   }, []);
 
   // Fetch Buyer Response count from backend
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const view = 'buyer';
-        const params = new URLSearchParams({ view });
-        params.set('ownOnly', "true");
-        const data: unknown = await apiFetch(`/api/stocks/enquiries?${params.toString()}`);
-        const payload: unknown = (data as any)?.data ?? data;
-        let count = 0;
+ useEffect(() => {
+  let mounted = true;
+  (async () => {
+    try {
+      const view = 'merchant';
+      const params = new URLSearchParams({ view });
+      params.set('ownOnly', "true");
+      const data: unknown = await apiFetch(`/api/stocks/enquiries?${params.toString()}`);
+      const payload: unknown = (data as any)?.data ?? data;
+      let count = 0;
 
-        if (Array.isArray(payload)) {
-          count = payload.length;
-        } else if (payload && typeof payload === 'object' && 'count' in payload && typeof (payload as { count: unknown }).count === 'number') {
-          count = (payload as { count: number }).count;
-        }
-        if (mounted) setBuyerResponseCount(count);
-      } catch {
-        if (mounted) setBuyerResponseCount(null);
+      if (Array.isArray(payload)) {
+        count = payload.filter(item => {
+          const status = item.status?.toLowerCase();
+          return status === 'processing' || status === 'pending';
+        }).length;
+      } else if (payload && typeof payload === 'object' && 'count' in payload && typeof (payload as { count: unknown }).count === 'number') {
+        count = (payload as { count: number }).count;
       }
-    })();
-    return () => { mounted = false };
-  }, []);
+      
+      if (mounted) setBuyerResponseCount(count);
+    } catch {
+      if (mounted) setBuyerResponseCount(null);
+    }
+  })();
+  return () => { mounted = false };
+}, []);
 
   // Read counts from localStorage and keep in sync (no API re-fetch here)
   useEffect(() => {

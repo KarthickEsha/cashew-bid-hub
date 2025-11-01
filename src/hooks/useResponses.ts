@@ -89,9 +89,10 @@ export const useResponses = create<ResponsesState>()(
 
           const updatedResponses = state.responses.map(response => {
             if (response.id === responseId) {
+              const oldStatus = response.status;
               console.log('Found response to update:', {
                 id: response.id,
-                oldStatus: response.status,
+                oldStatus,
                 newStatus: status
               });
 
@@ -102,6 +103,26 @@ export const useResponses = create<ResponsesState>()(
               };
 
               console.log('Updated response:', updatedResponse);
+              
+              // Dispatch event for sidebar count update
+              const event = new CustomEvent('quote:statusChange', {
+                detail: {
+                  status: status,
+                  oldStatus: oldStatus,
+                  timestamp: Date.now()
+                }
+              });
+              console.log('Dispatching quote:statusChange event:', event.detail);
+              window.dispatchEvent(event);
+              
+              // Also dispatch to document in case window events aren't working
+              document.dispatchEvent(new CustomEvent('quote:statusChange', {
+                detail: {
+                  status: status,
+                  oldStatus: oldStatus,
+                  timestamp: Date.now()
+                }
+              }));
 
               // Handle order creation/update for accepted/rejected statuses
               if (status === 'accepted' || status === 'rejected') {

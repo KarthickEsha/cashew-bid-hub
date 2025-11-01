@@ -76,32 +76,106 @@ export function AppSidebar() {
 
   useEffect(() => {
     // Count seller responses from store helper (fallbacks handled inside hook)
-    const count = getSellerResponseCount?.() ?? responses.length ?? 0;
-    setNewResponseCount(Number(count) || 0);
     if (profile?.productType && profile.productType !== "Both") {
       setCurrentProductType(profile.productType);
     } else {
       setCurrentProductType("RCN")
     }
   }, [responses, getSellerResponseCount, profile?.productType]);
+  
+  
+
+
 
   // Fetch seller response count directly from API so badge reflects backend total (merchant view)
-  useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        const view = 'buyer';
-        const userID = extractBackendUserId() || (profile as any)?.id || '';
-        const params = new URLSearchParams({ view });
-        if (userID) params.set('userID', userID);
-        const data: any = await apiFetch(`/api/quotes/get-all-quotes?${params.toString()}`, { method: 'GET' });
-        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-        setNewResponseCount(Array.isArray(list) ? list.length : 0);
-      } catch (e) {
-        // Keep existing count on error
+ useEffect(() => {
+  const fetchNewResponsesCount = async () => {
+    try {
+      const view = 'buyer';
+      const userID = extractBackendUserId() || (profile as any)?.id || '';
+      const params = new URLSearchParams({ view });
+      if (userID) params.set('userID', userID);
+
+      // Fetch all quotes
+      const data: any = await apiFetch(`/api/quotes/get-all-quotes?${params.toString()}`, {
+        method: 'GET'
+      });
+
+      // Process the response
+      const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      
+      // Count only quotes with status 'new'
+      const newQuotesCount = list.filter((quote: any) => 
+        String(quote.status || '').toLowerCase() === 'new'
+      ).length;
+
+      setNewResponseCount(newQuotesCount);
+    } catch (e) {
+      console.error('Failed to fetch new quotes count:', e);
+      // Keep existing count on error
+    }
+  };
+
+  // Initial fetch
+  fetchNewResponsesCount();
+
+  // Set up event listener for status changes
+  const handleStatusChange = (e: any) => {
+    console.log('Status change event received:', e.detail);
+    
+    // Handle both direct event and CustomEvent with detail
+    const detail = e.detail || e;
+    const { status, oldStatus } = detail || {};
+    
+    if (status === undefined || oldStatus === undefined) {
+      console.warn('Missing status or oldStatus in event detail:', detail);
+      return;
+    }
+
+    console.log(`Status changed from '${oldStatus}' to '${status}'`);
+
+    // Update count based on status change
+    setNewResponseCount(prev => {
+      // Normalize status values to lowercase for comparison
+      const newStatus = String(status).toLowerCase().trim();
+      const prevStatus = String(oldStatus).toLowerCase().trim();
+      
+      console.log(`Updating count - Previous status: '${prevStatus}', New status: '${newStatus}'`);
+      
+      // Handle both 'new' and 'New' status values
+      const wasNew = prevStatus === 'new';
+      const isNew = newStatus === 'new';
+      
+      if (!wasNew && isNew) {
+        const newCount = prev + 1;
+        console.log(`Incrementing count from ${prev} to ${newCount}`);
+        return newCount;
+      } 
+      else if (wasNew && !isNew) {
+        const newCount = Math.max(0, prev - 1);
+        console.log(`Decrementing count from ${prev} to ${newCount}`);
+        return newCount;
       }
-    };
-    fetchCount();
-  }, [profile?.id]);
+      
+      console.log(`No count change needed - Previous status: '${prevStatus}', New status: '${newStatus}'`);
+      return prev;
+    });
+  };
+
+  // Add event listeners to both window and document
+  const eventName = 'quote:statusChange';
+  window.addEventListener(eventName, handleStatusChange as EventListener);
+  document.addEventListener(eventName, handleStatusChange as EventListener);
+  
+  console.log('Added event listeners for', eventName);
+  
+  // Cleanup
+  return () => {
+    window.removeEventListener(eventName, handleStatusChange as EventListener);
+    document.removeEventListener(eventName, handleStatusChange as EventListener);
+    console.log('Removed event listeners for', eventName);
+  };
+}, [profile?.id]);  // Only re-run if profile.id changes
 
   // Ensure seller responses are loaded once from API and persisted
   useEffect(() => {
@@ -120,29 +194,45 @@ export function AppSidebar() {
   const fetchMyEnquiriesCount = useCallback(async () => {
     const ac = new AbortController();
     try {
-      const view = 'merchant';
-      // const userID = extractBackendUserId() || (profile as any)?.id || '';
+      const view = 'buyer';
       const params = new URLSearchParams({ view });
       params.set('ownOnly', "true");
-      // if (userID) params.set('userID', userID);
-      const res: any = await apiFetch(`/api/stocks/enquiries?${params.toString()}`, { method: 'GET' });
+      const res: any = await apiFetch(`/api/stocks/enquiries?${params.toString()}`, {
+        method: 'GET',
+        signal: ac.signal
+      });
+
       const payload: unknown = (res as any)?.data ?? res;
       let count = 0;
+
       if (Array.isArray(payload)) {
-        count = payload.length;
+        // Only count enquiries with status "processing"
+        count = payload.filter((enquiry: any) =>
+          enquiry.status && typeof enquiry.status === 'string' &&
+          enquiry.status.toLowerCase() === 'processing'
+        ).length;
       } else if (
         payload &&
         typeof payload === 'object' &&
         'count' in payload &&
         typeof (payload as any).count === 'number'
       ) {
+        // If we get a count directly, we can't filter by status
+        // So we'll use the count as is, but you might want to handle this case differently
         count = (payload as any).count;
       }
-      setMyEnquiriesCount(count || 0);
-      try { localStorage.setItem('myEnquiries:lastCount', String(count || 0)); } catch { }
-    } catch {
-      // keep last known count on error
+
+      setMyEnquiriesCount(count);
+      try {
+        localStorage.setItem('myEnquiries:lastCount', String(count));
+      } catch (e) {
+        console.warn('Failed to save count to localStorage', e);
+      }
+    } catch (e) {
+      console.error('Failed to fetch enquiries count', e);
+      // Keep last known count on error
     }
+
     return () => ac.abort();
   }, []);
 
@@ -248,7 +338,7 @@ export function AppSidebar() {
     // { path: "/notifications", label: t('sidebar.myActivity.notifications'), icon: Bell, badge: 0 },
     // { path: "/profile", label: t('sidebar.myActivity.profile'), icon: User },
     { path: "/post-requirement", label: t('sidebar.mainNav.postRequirement'), icon: Plus, },
-    { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText, badge: requirements.length },
+    { path: "/my-requirements", label: t('sidebar.myActivity.myRequirements'), icon: FileText, badge: 0 },
     { path: "/responses", label: t('sidebar.myActivity.sellerResponse'), icon: MessageSquare, badge: newResponseCount }
   ];
 

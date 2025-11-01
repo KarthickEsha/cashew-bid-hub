@@ -38,7 +38,6 @@ const Dashboard = () => {
   const [errorDash, setErrorDash] = useState<string | null>(null);
   const [enquiriesCount, setEnquiriesCount] = useState<number>(0);
   const { profile } = useProfile();
-  const [marketplaceCount, setMarketplaceCount] = useState<number>(0);
 
   // Fetch protected buyer dashboard
   useEffect(() => {
@@ -68,36 +67,21 @@ const Dashboard = () => {
     };
   }, []);
 
-  // Fetch marketplace count for dashboard card
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const role = String(profile?.role || '').toLowerCase();
-        const view = role === 'processor' ? 'merchant' : 'buyer';
-        const userIdParam = role === 'processor' && profile?.id ? `&userId=${encodeURIComponent(profile.id)}` : '';
-        const types = ['RCN', 'Kernel'];
-        const results = await Promise.all(
-          types.map(async (type) => {
-            const url = `/api/stocks/get-all-stocks?type=${encodeURIComponent(type)}&view=${view}${userIdParam}`;
-            const resp: any = await apiFetch(url, { method: 'GET' });
-            const list: any[] = Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
-            // Count only items with positive available quantity when possible
-            const count = list.filter((s: any) => Number(s?.availableqty ?? s?.quantity ?? 0) > 0).length;
-            return count;
-          })
-        );
-        if (!mounted) return;
-        setMarketplaceCount(results.reduce((a, b) => a + b, 0));
-      } catch {
-        if (!mounted) return;
-        setMarketplaceCount(0);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [profile?.role, profile?.id]);
+  // Get product type from user profile
+  const userProductType = profile?.productType || 'RCN'; // Default to RCN if not specified
+  const isKernel = userProductType === 'Kernel';
+  const isRCN = userProductType === 'RCN' || userProductType === 'Both';
+  
+  // Get marketplace counts
+  const marketplaceKernelCount = dashCards?.marketplace?.kernel || 0;
+  const marketplaceRCNCount = dashCards?.marketplace?.rcn || 0;
+  
+  // Determine which count to show based on user's product type
+  const marketplaceCount = isKernel ? marketplaceKernelCount : 
+                          isRCN ? marketplaceRCNCount : 0;
+  
+  // Get the product type label
+  const productTypeLabel = isKernel ? 'Kernel' : 'RCN';
 
   // Fetch buyer enquiries to compute myResponses count from enquiries endpoint
   useEffect(() => {
@@ -188,10 +172,10 @@ const Dashboard = () => {
     },
     {
       title: 'Marketplace',
-      value: (marketplaceCard?.count ?? marketplaceCount).toString(),
+      value: marketplaceCount.toString(),
       icon: Store,
       color: "text-violet-500",
-      trend: t('dashboard.browseMarketplace'),
+      trend: productTypeLabel,
       path: "/marketplace",
     }
   ];
